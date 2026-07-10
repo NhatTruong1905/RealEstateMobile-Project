@@ -9,6 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.ndnt</groupId>
+    <packaging>war</packaging>
     <artifactId>real-estate-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>real-estate-backend</name>
@@ -75,7 +76,8 @@
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>10.1</version>
+            <version>10.9.1</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -87,6 +89,12 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.modelmapper</groupId>
+            <artifactId>modelmapper</artifactId>
+            <version>3.2.6</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

@@ -1,14 +1,15 @@
-package com.ndnt.controller;
+package com.ndnt.controller.admin;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 
-@RestController
+@Controller
+@RequestMapping("/admin")
 public class HomeController {
-    @GetMapping("/home")
-    public ModelAndView home(){
+    @GetMapping("/")
+    public ModelAndView home() {
         return new ModelAndView("index");
     }
 }
