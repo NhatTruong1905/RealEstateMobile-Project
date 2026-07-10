@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"><title>Đăng nhập</title></head>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+<header class="navbar navbar-dark bg-dark shadow-sm py-2 px-4">
+    <h5 class="mb-0 font-weight-bold">
+        <span class="text-white text-decoration-none">Trang Quản Trị Bất Động Sản</span>
+    </h5>
+</header>
+
+<main class="flex-grow-1 d-flex align-items-center justify-content-center">
+    <div class="card p-4 shadow-sm" style="width: 350px;">
+        <h4 class="text-center mb-4">Đăng Nhập</h4>
+
+<!--        <div th:if="${param.error}" class="alert alert-danger p-2 text-center small">Tài khoản hoặc mật khẩu không chính xác</div>-->
+<!--        <div th:if="${param.logout}" class="alert alert-success p-2 text-center small">Đã thoát hệ thống!</div>-->
+
+        <form th:action="@{/admin/login}" method="post">
+            <div class="mb-3">
+                <label class="form-label">Tài khoản</label>
+                <input type="text" name="username" class="form-control" required autofocus>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Mật khẩu</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100 rounded-0 fw-bold text-uppercase py-2">Đăng nhập</button>
+        </form>
+    </div>
+</main>
+
+<footer th:replace="~{layout/footer :: footer}"></footer>
+
+</body>
+</html>
