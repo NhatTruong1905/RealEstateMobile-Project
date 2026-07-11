@@ -7,35 +7,33 @@ import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.Instant;
-
 @Getter
 @Setter
 @Entity
 @Table(name = "interaction")
-public class Interaction extends BaseEntity {
+public class InteractionEntity extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "property_id", nullable = false)
-    private Property property;
+    private PropertyEntity propertyEntity;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "sender_id", nullable = false)
-    private User sender;
+    private UserEntity sender;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "receiver_id", nullable = false)
-    private User receiver;
+    private UserEntity receiver;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "type_id", nullable = false)
-    private InteractionType type;
+    private InteractionTypeEntity type;
 
     @Lob
     @Column(name = "message")

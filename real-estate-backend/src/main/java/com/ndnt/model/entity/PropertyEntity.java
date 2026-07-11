@@ -10,28 +10,27 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "property")
-public class Property extends BaseEntity {
+public class PropertyEntity extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private UserEntity userEntity;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "type_id", nullable = false)
-    private PropertyType type;
+    private PropertyTypeEntity type;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
-    private PropertyCategory category;
+    private PropertyCategoryEntity category;
 
     @Size(max = 255)
     @NotNull
@@ -45,7 +44,7 @@ public class Property extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "ward_id", nullable = false)
-    private Ward ward;
+    private WardEntity wardEntity;
 
     @Size(max = 45)
     @Column(name = "city", length = 45)

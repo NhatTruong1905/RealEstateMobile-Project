@@ -1,8 +1,24 @@
-<header th:fragment="header" class="navbar navbar-dark bg-dark shadow-sm py-2 px-4 d-flex justify-content-between align-items-center">
-    <h5 class="mb-0 font-weight-bold">
-        <a th:href="@{/admin/}" class="text-white text-decoration-none">Trang Quản Trị Bất Động Sản</a>
+<header th:fragment="header" class="py-3 px-4 d-flex justify-content-between align-items-center border-bottom"
+        style="background-color: #1a2b4c; font-family: 'Inter', system-ui, sans-serif;">
+
+    <h5 class="mb-0 fw-bold" style="letter-spacing: 0.5px;">
+        <a th:href="@{/admin/}" class="text-white text-decoration-none">
+            Trang Quản Trị Bất Động Sản
+        </a>
     </h5>
-    <div>
-        <a th:href="@{/logout}" class="text-light small text-decoration-none">Đăng xuất</a>
+
+<!--    <div class="d-flex align-items-center" style="width: 300px;">-->
+<!--        <div class="input-group input-group-sm">-->
+<!--            <span class="input-group-text bg-white border-0 rounded-start-pill ps-3"><i-->
+<!--                    class="bi bi-search text-muted"></i></span>-->
+<!--            <input type="text" class="form-control border-0 rounded-end-pill bg-white shadow-none"-->
+<!--                   placeholder="Search...">-->
+<!--        </div>-->
+<!--    </div>-->
+
+    <div class="d-flex align-items-center gap-3">
+        <a th:href="@{/admin/logout}" class="btn btn-outline-light btn-sm px-3 rounded-pill fw-medium text-decoration-none">
+            Đăng xuất
+        </a>
     </div>
 </header>

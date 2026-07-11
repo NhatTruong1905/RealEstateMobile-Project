@@ -8,8 +8,5 @@ import org.springframework.web.servlet.ModelAndView;
 @RequestMapping("/admin")
 public class UserController {
 
-    @GetMapping("/login")
-    public ModelAndView loginView() {
-        return new ModelAndView("login");
-    }
+
 }

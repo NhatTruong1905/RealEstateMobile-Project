@@ -38,3 +38,4 @@ mvnw.cmd
 .mvn
 .agents
 out
+application-secret.properties

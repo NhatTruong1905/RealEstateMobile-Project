@@ -1,12 +1,101 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Tiêu đề mặc định</title>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Bảng điều khiển Admin</title>
 </head>
-<body>
-<h1>Chào mừng đến với trang quản trị</h1>
 
-<p>Xin chào, Người dùng vô danh!</p>
+<body th:replace="~{layout/base :: main('dashboard', ~{:: #dashboard-content})}">
+
+<div id="dashboard-content">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <p class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">Thứ Hai · Tháng 11 2025</p>
+            <h2 class="fw-bold mb-0 text-dark">Chào mừng trở lại, <span style="color: #1a2b4c;">Quản trị viên</span></h2>
+            <p class="text-muted mt-2 mb-0" style="font-size: 0.9rem;">Tổng số lượt truy cập tăng <span class="text-success fw-medium">+10%</span> so với tuần trước.</p>
+        </div>
+        <div class="d-none d-sm-block">
+            <button class="btn btn-light bg-white border shadow-sm me-2 fw-medium"><i class="bi bi-download me-1"></i> Xuất dữ liệu</button>
+            <button class="btn text-white fw-medium shadow-sm" style="background-color: #1a2b4c;"><i class="bi bi-plus-lg me-1"></i> Báo cáo mới</button>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex align-items-center text-muted fw-medium">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
+                            <i class="bi bi-eye"></i>
+                        </div>
+                        Lượt truy cập
+                    </div>
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1"><i class="bi bi-arrow-up-right me-1"></i>+10%</span>
+                </div>
+                <h2 class="fw-bold mb-3">1.24<span class="text-muted fs-5 fw-normal">M</span></h2>
+                <div class="text-muted" style="font-size: 0.85rem;">
+                    <i class="bi bi-arrow-up text-success"></i> Tăng từ 1.12M tuần trước
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex align-items-center text-muted fw-medium">
+                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        Tin đăng mới
+                    </div>
+                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-1"><i class="bi bi-arrow-down-right me-1"></i>-7%</span>
+                </div>
+                <h2 class="fw-bold mb-3">408</h2>
+                <div class="text-muted" style="font-size: 0.85rem;">
+                    <i class="bi bi-arrow-down text-danger"></i> Giảm từ 439 tuần trước
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex align-items-center text-muted fw-medium">
+                        <div class="bg-purple bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px; color: #805ad5; background-color: rgba(128, 90, 213, 0.1);">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        Tài khoản mới
+                    </div>
+                    <span class="badge rounded-pill px-2 py-1" style="color: #805ad5; background-color: rgba(128, 90, 213, 0.1);">- ~12%</span>
+                </div>
+                <h2 class="fw-bold mb-3">842</h2>
+                <div class="text-muted" style="font-size: 0.85rem;">
+                    Ổn định quanh mức 835 tuần trước
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex align-items-center text-muted fw-medium">
+                        <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
+                            <i class="bi bi-bar-chart"></i>
+                        </div>
+                        Giao dịch
+                    </div>
+                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-2 py-1">- steady</span>
+                </div>
+                <h2 class="fw-bold mb-3">33<span class="text-muted fs-5 fw-normal">%</span></h2>
+                <div class="text-muted" style="font-size: 0.85rem;">
+                    Bằng với mức 33% tuần trước
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 </body>
 </html>

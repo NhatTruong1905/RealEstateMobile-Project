@@ -5,15 +5,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
-
-import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "property_type")
-public class PropertyType extends BaseEntity {
+@Table(name = "interaction_type")
+public class InteractionTypeEntity extends BaseEntity {
     @Size(max = 50)
     @NotNull
     @Column(name = "code", nullable = false, length = 50)
@@ -23,4 +20,6 @@ public class PropertyType extends BaseEntity {
     @NotNull
     @Column(name = "name", nullable = false)
     private String name;
+
+
 }

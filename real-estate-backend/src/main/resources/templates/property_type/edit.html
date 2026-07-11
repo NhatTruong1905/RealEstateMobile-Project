@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Cập nhật Loại hình BĐS</title>
+</head>
+
+<body th:replace="~{layout/base :: main('propertyType', ~{:: #propertyType-form-content})}">
+
+<div id="propertyType-form-content">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <a th:href="@{/admin/property-types-list}" class="text-decoration-none text-muted mb-2 d-inline-block"
+               style="font-size: 0.85rem;">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+            <h3 class="fw-bold mb-0 text-dark"
+                th:text="${propertyType.id != null ? 'Sửa Loại Hình BĐS' : 'Thêm Mới Loại Hình BĐS'}">
+                Cập nhật Loại hình
+            </h3>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+
+                    <form id="formPropertyType" th:action="@{/api/property-type}" th:object="${propertyType}"
+                          method="post">
+
+                        <input type="hidden" th:field="*{id}"/>
+
+                        <div class="mb-4">
+                            <label for="code" class="form-label fw-bold text-dark">Mã loại hình (Code) <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 py-2" id="code" th:field="*{code}"
+                                   placeholder="Ví dụ: SALE, RENT, PROJECT..." required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="name" class="form-label fw-bold text-dark">Tên hiển thị <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 py-2" id="name" th:field="*{name}"
+                                   placeholder="Ví dụ: Bán, Cho thuê, Dự án..." required>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-3 border-top">
+                            <button type="submit" class="btn px-4 py-2 fw-medium text-white rounded-3 shadow-sm"
+                                    style="background-color: #1a2b4c;">
+                                <i class="bi bi-save me-1"></i> Lưu thông tin
+                            </button>
+
+                            <button type="reset" class="btn btn-light px-4 py-2 fw-medium border rounded-3 shadow-none">
+                                Hủy bỏ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("formPropertyType").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(async response => {
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        message = result.message;
+                        alert(message);
+                        window.location.href = "/admin/property-types-list";
+                    } else {
+                        alert("LỖI:\n" + result.join("\n"));
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi khi gọi API:', error);
+                    alert("Có lỗi xảy ra, vui lòng thử lại sau!");
+                });
+        });
+    </script>
+</div>
+</body>
+</html>

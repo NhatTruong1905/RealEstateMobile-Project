@@ -5,15 +5,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
-
-import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "role")
-public class Role extends BaseEntity {
+public class RoleEntity extends BaseEntity {
     @Size(max = 50)
     @NotNull
     @Column(name = "code", nullable = false, length = 50)

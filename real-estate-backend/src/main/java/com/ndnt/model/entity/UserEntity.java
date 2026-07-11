@@ -7,17 +7,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.Instant;
-
 @Getter
 @Setter
 @Entity
 @Table(name = "user")
-public class User extends BaseEntity {
+public class UserEntity extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "role_id", nullable = false)
-    private Role role;
+    private RoleEntity roleEntity;
 
     @Size(max = 255)
     @NotNull

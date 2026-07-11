@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Quản lý Loại hình BĐS</title>
+</head>
+
+<body th:replace="~{layout/base :: main('propertyType', ~{:: #propertyType-content})}">
+
+<div id="propertyType-content">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <p class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">Quản lý danh mục</p>
+            <h3 class="fw-bold mb-0 text-dark">Loại hình Bất Động Sản</h3>
+        </div>
+        <div>
+            <a th:href="@{/admin/property-types-edit}" class="btn text-white fw-medium shadow-sm rounded-3" style="background-color: #1a2b4c;">
+                <i class="bi bi-plus-lg me-1"></i> Thêm loại hình
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eaeaea;">
+                    <tr>
+                        <th class="py-3" style="width: 10%;">#ID</th>
+                        <th class="py-3" style="width: 25%;">Mã</th>
+                        <th class="py-3" style="width: 40%;">Tên loại hình</th>
+                        <th class="py-3 text-center" style="width: 25%;">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="type : ${propertyTypes}" style="border-bottom: 1px solid #f4f7f9;">
+                        <td class="fw-bold text-dark" th:text="${type.id}"></td>
+                        <td>
+                            <span class="badge bg-light text-secondary border px-2 py-1 fw-medium" th:text="${type.code}"></span>
+                        </td>
+                        <td class="fw-medium text-dark" th:text="${type.name}"></td>
+                        <td class="text-center">
+                            <a th:href="@{/admin/property-types-edit-{id}(id=${type.id})}"
+                               class="btn btn-sm btn-light border shadow-none rounded-3 me-2 text-primary">
+                                <i class="bi bi-pencil-square"></i> Sửa
+                            </a>
+
+                            <form th:action="@{/admin/property-types/delete/{id}(id=${type.id})}" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa loại hình này không?');">
+                                <button type="submit" class="btn btn-sm btn-light border shadow-none rounded-3 text-danger">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(propertyTypes)}">
+                        <td colspan="4" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Chưa có dữ liệu loại hình nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
