@@ -116,12 +116,12 @@
         <a th:href="@{/admin/property-types-list}" class="nav-link-custom" th:classappend="${activeMenu == 'propertyType' ? 'active' : ''}">
             <i class="bi bi-tags"></i> Loại hình BĐS
         </a>
-        <a th:href="@{/admin/property-categories}" class="nav-link-custom" th:classappend="${activeMenu == 'propertyCategory' ? 'active' : ''}">
+        <a th:href="@{/admin/property-categories-list}" class="nav-link-custom" th:classappend="${activeMenu == 'propertyCategory' ? 'active' : ''}">
             <i class="bi bi-grid"></i> Phân khúc
         </a>
 
         <div class="sidebar-heading">Khách hàng & Đối tác</div>
-        <a th:href="@{/admin/users}" class="nav-link-custom" th:classappend="${activeMenu == 'userEntity' ? 'active' : ''}">
+        <a th:href="@{/admin/users-list}" class="nav-link-custom" th:classappend="${activeMenu == 'userEntity' ? 'active' : ''}">
             <i class="bi bi-people"></i> Tài khoản
         </a>
         <a th:href="@{/admin/interactions}" class="nav-link-custom" th:classappend="${activeMenu == 'interaction' ? 'active' : ''}">

@@ -10,4 +10,6 @@ public interface PropertyTypeService {
     PropertyTypeDTO findById(int id);
 
     void createOrUpdatePropertyType(PropertyTypeDTO propertyTypeDTO);
+
+    void deletePropertyType(int id);
 }

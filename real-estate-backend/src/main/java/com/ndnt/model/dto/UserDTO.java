@@ -10,7 +10,10 @@ public class UserDTO extends BaseDTO {
     private String password;
     private Integer roleId;
     private String roleName;
-    private String fullName;
+    private String roleCode;
+    private String fullname;
     private String email;
     private String phone;
+    private Integer status;
+    private String avatar;
 }

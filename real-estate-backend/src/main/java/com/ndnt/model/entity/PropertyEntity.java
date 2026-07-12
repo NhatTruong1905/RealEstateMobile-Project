@@ -20,7 +20,7 @@ public class PropertyEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity userEntity;
+    private UserEntity user;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

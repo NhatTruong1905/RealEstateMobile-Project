@@ -15,7 +15,7 @@ public class UserEntity extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "role_id", nullable = false)
-    private RoleEntity roleEntity;
+    private RoleEntity role;
 
     @Size(max = 255)
     @NotNull
@@ -32,14 +32,17 @@ public class UserEntity extends BaseEntity {
     private String fullname;
 
     @Size(max = 20)
-    @Column(name = "phone", length = 20)
+    @Column(name = "phone", length = 20, unique = true)
     private String phone;
 
     @Size(max = 255)
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
 
     @ColumnDefault("1")
     @Column(name = "status")
     private Integer status;
+
+    @Column(name = "avatar")
+    private String avatar;
 }

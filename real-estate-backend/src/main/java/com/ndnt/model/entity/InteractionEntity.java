@@ -16,7 +16,7 @@ public class InteractionEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "property_id", nullable = false)
-    private PropertyEntity propertyEntity;
+    private PropertyEntity property;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

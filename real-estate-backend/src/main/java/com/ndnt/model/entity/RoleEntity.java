@@ -13,7 +13,7 @@ import lombok.Setter;
 public class RoleEntity extends BaseEntity {
     @Size(max = 50)
     @NotNull
-    @Column(name = "code", nullable = false, length = 50)
+    @Column(name = "code", nullable = false, length = 50, unique = true)
     private String code;
 
     @Size(max = 255)

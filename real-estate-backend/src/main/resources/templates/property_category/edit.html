@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Cập nhật Loại hình BĐS</title>
+    <title>Cập nhật Phân khúc BĐS</title>
 </head>
 
-<body th:replace="~{layout/base :: main('propertyType', ~{:: #propertyType-form-content})}">
+<body th:replace="~{layout/base :: main('propertyCategory', ~{:: #propertyCategory-form-content})}">
 
-<div id="propertyType-form-content">
+<div id="propertyCategory-form-content">
 
     <div class="d-flex justify-content-between align-items-end mb-4">
         <div>
-            <a th:href="@{/admin/property-types-list}" class="text-decoration-none text-muted mb-2 d-inline-block"
+            <a th:href="@{/admin/property-categories-list}" class="text-decoration-none text-muted mb-2 d-inline-block"
                style="font-size: 0.85rem;">
                 <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
             </a>
             <h3 class="fw-bold mb-0 text-dark"
-                th:text="${propertyType.id != null ? 'Sửa Loại Hình BĐS' : 'Thêm Mới Loại Hình BĐS'}">
-                Cập nhật Loại hình
+                th:text="${propertyCategory.id != null ? 'Sửa Phân Khúc BĐS' : 'Thêm Mới Phân Khúc BĐS'}">
+                Cập nhật Phân Khúc
             </h3>
         </div>
     </div>
@@ -26,17 +26,18 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
 
-                    <form id="formPropertyType" th:action="@{/admin/api/property-types}" th:object="${propertyType}"
+                    <form id="formPropertyCategory" th:action="@{/admin/api/property-categories}"
+                          th:object="${propertyCategory}"
                           method="post">
 
                         <input type="hidden" th:field="*{id}"/>
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
                         <div class="mb-4">
-                            <label for="code" class="form-label fw-bold text-dark">Mã loại hình (Code) <span
+                            <label for="code" class="form-label fw-bold text-dark">Mã phân khúc (Code) <span
                                     class="text-danger">*</span></label>
                             <input type="text" class="form-control rounded-3 py-2" id="code" th:field="*{code}"
-                                   placeholder="Ví dụ: SALE, RENT, PROJECT..." required>
+                                   placeholder="Ví dụ: APARTMENT, HOUSE, VILLA..." required>
                             <div id="code-error" class="text-danger fst-italic mt-1"
                                  style="display: none; font-size: 0.85rem;"></div>
                         </div>
@@ -45,7 +46,7 @@
                             <label for="name" class="form-label fw-bold text-dark">Tên hiển thị <span
                                     class="text-danger">*</span></label>
                             <input type="text" class="form-control rounded-3 py-2" id="name" th:field="*{name}"
-                                   placeholder="Ví dụ: Bán, Cho thuê, Dự án..." required>
+                                   placeholder="Ví dụ: Căn hộ chung cư, Nhà riêng, Biệt thự..." required>
                         </div>
 
                         <div class="d-flex gap-2 pt-3 border-top">
@@ -65,12 +66,12 @@
     </div>
 
     <script>
-        document.getElementById("formPropertyType").addEventListener("submit", function (event) {
+        document.getElementById("formPropertyCategory").addEventListener("submit", function (event) {
             event.preventDefault();
 
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
-            const csrfToken = data._csrf;
+            const csrfToken = formData.get('_csrf');
             delete data._csrf;
 
             const codeErrorDiv = document.getElementById("code-error");
@@ -90,7 +91,7 @@
 
                     if (response.ok) {
                         alert(result.message);
-                        window.location.href = "/admin/property-types-list";
+                        window.location.href = "/admin/property-categories-list";
                     } else {
                         if (result.message) {
                             codeErrorDiv.innerText = result.message;
@@ -109,5 +110,6 @@
         });
     </script>
 </div>
+
 </body>
 </html>

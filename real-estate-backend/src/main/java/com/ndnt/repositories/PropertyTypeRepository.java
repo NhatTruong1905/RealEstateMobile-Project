@@ -7,4 +7,8 @@ import java.util.List;
 
 public interface PropertyTypeRepository extends JpaRepository<PropertyTypeEntity, Integer> {
     PropertyTypeEntity findById(int id);
+
+    void deleteById(int id);
+
+    boolean existsByCode(String code);
 }

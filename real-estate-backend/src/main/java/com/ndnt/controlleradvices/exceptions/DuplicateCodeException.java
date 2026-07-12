@@ -1,0 +1,7 @@
+package com.ndnt.controlleradvices.exceptions;
+
+public class DuplicateCodeException extends RuntimeException {
+    public DuplicateCodeException(String message) {
+        super(message);
+    }
+}

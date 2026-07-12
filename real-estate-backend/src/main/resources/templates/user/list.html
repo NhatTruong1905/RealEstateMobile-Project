@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Quản lý Người Dùng</title>
+</head>
+
+<body th:replace="~{layout/base :: main('user', ~{:: #user-content})}">
+
+<div id="user-content">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <p class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">Khách
+                hàng & Đối tác</p>
+            <h3 class="fw-bold mb-0 text-dark">Quản Lý Tài Khoản</h3>
+        </div>
+        <div>
+            <a th:href="@{/admin/users-edit}" class="btn text-white fw-medium shadow-sm rounded-3"
+               style="background-color: #1a2b4c;">
+                <i class="bi bi-person-plus-fill me-1"></i> Thêm người dùng
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="text-muted"
+                           style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eaeaea;">
+                    <tr>
+                        <th class="py-3" style="width: 5%;">#ID</th>
+                        <th class="py-3 text-center" style="width: 8%;">Ảnh</th>
+                        <th class="py-3" style="width: 15%;">Tài khoản</th>
+                        <th class="py-3" style="width: 20%;">Họ và tên</th>
+                        <th class="py-3" style="width: 20%;">Liên hệ</th>
+                        <th class="py-3" style="width: 12%;">Trạng thái</th>
+                        <th class="py-3 text-center" style="width: 20%;">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="u : ${users}" style="border-bottom: 1px solid #f4f7f9;">
+                        <td class="fw-bold text-dark" th:text="${u.id}"></td>
+
+                        <td class="text-center">
+                            <img th:if="${u.avatar != null and !u.avatar.isEmpty()}" th:src="${u.avatar}" alt="Avatar"
+                                 class="rounded-circle object-fit-cover shadow-sm border" style="width: 45px; height: 45px;">
+
+                            <div th:unless="${u.avatar != null and !u.avatar.isEmpty()}"
+                                 class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center border shadow-sm"
+                                 style="width: 45px; height: 45px; color: #a0aec0;">
+                                <i class="bi bi-person-fill fs-4"></i>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="fw-bold text-dark mb-1" th:text="${u.username}"></div>
+                            <span class="badge bg-light text-primary border px-2 py-1" style="font-size: 0.7rem;"
+                                  th:text="${u.getRoleCode() == 'ROLE_ADMIN' ? 'Quản trị viên' : 'Khách hàng'}">Role</span>
+                        </td>
+
+                        <td class="fw-medium text-dark" th:text="${u.fullname}"></td>
+
+                        <td>
+                            <div class="small text-muted mb-1" th:if="${u.email != null and !u.email.isEmpty()}">
+                                <i class="bi bi-envelope me-1"></i> <span th:text="${u.email}"></span>
+                            </div>
+                            <div class="small text-muted" th:if="${u.phone != null and !u.phone.isEmpty()}">
+                                <i class="bi bi-telephone me-1"></i> <span th:text="${u.phone}"></span>
+                            </div>
+                        </td>
+
+                        <td>
+                            <span th:if="${u.status == 1}"
+                                  class="badge bg-success-subtle text-success px-2 py-1 border border-success-subtle rounded-pill">Hoạt động</span>
+                            <span th:if="${u.status == 0}"
+                                  class="badge bg-danger-subtle text-danger px-2 py-1 border border-danger-subtle rounded-pill">Đã khóa</span>
+                        </td>
+
+                        <td class="text-center">
+                            <a th:href="@{/admin/users-edit-{id}(id=${u.id})}"
+                               class="btn btn-sm btn-light border shadow-none rounded-3 me-2 text-primary">
+                                <i class="bi bi-pencil-square"></i> Sửa
+                            </a>
+
+                            <form th:action="@{/api/users/{id}(id=${u.id})}" class="d-inline delete-user-form">
+                                <button type="submit"
+                                        class="btn btn-sm btn-light border shadow-none rounded-3 text-danger">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(users)}">
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-people fs-1 d-block mb-2"></i>
+                            Chưa có dữ liệu người dùng nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const deleteForms = document.querySelectorAll('.delete-user-form');
+
+            deleteForms.forEach(form => {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    if (!confirm('Bạn có chắc chắn muốn xóa người dùng này không? Các dữ liệu liên quan có thể bị ảnh hưởng.')) {
+                        return;
+                    }
+
+                    const url = this.action;
+                    const formData = new FormData(this);
+                    const csrfToken = formData.get('_csrf');
+
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                alert("Xóa người dùng thành công!");
+                                window.location.reload();
+                            } else {
+                                alert("LỖI: Không thể xóa người dùng này.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Lỗi khi gọi API xóa:', error);
+                            alert("Có lỗi xảy ra, vui lòng thử lại sau!");
+                        });
+                });
+            });
+        });
+    </script>
+</div>
+
+</body>
+</html>

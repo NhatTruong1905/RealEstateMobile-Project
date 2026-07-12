@@ -47,7 +47,8 @@ public class SpringSecurityConfig {
                         .failureUrl("/admin/login?error=true")
                         .permitAll()
                 )
-                .logout((logout) -> logout.logoutSuccessUrl("/admin/login").permitAll());
+                .logout((logout) -> logout.logoutSuccessUrl("/admin/login")
+                        .permitAll().deleteCookies("JSESSIONID"));
 
 
         return http.build();
