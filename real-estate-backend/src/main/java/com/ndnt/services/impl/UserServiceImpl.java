@@ -1,6 +1,13 @@
 package com.ndnt.services.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.ndnt.controlleradvices.exceptions.DuplicateEmailException;
+import com.ndnt.controlleradvices.exceptions.DuplicatePhoneException;
+import com.ndnt.controlleradvices.exceptions.DuplicateUsernameException;
+import com.ndnt.controlleradvices.exceptions.InvalidUserException;
 import com.ndnt.converter.UserConverter;
+import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
 import com.ndnt.model.entity.UserEntity;
 import com.ndnt.repositories.UserRepository;
@@ -15,10 +22,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
 @Transactional
@@ -31,6 +38,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Autowired
+    private Cloudinary cloudinary;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -74,39 +84,51 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void createOrUpdateUser(UserDTO userDTO) {
-//        UserEntity user = userConverter.toUserEntity(userDTO);
-//        UserEntity existingUser = userRepository.getUserByUsername(userDTO.getUsername());
-//        UserEntity existingEmailUser = null;
-//
-//        if (userDTO.getEmail() != null && !userDTO.getEmail().trim().isEmpty()) {
-//            existingEmailUser = userRepository.getUserByEmail(userDTO.getEmail().trim());
-//        }
-//        if (userDTO.getId() == null) {
-//            if (existingUser != null) {
-//                throw new DuplicateUsernameException("Tên đăng nhập đã tồn tại!");
-//            }
-//            if (existingEmailUser != null) {
-//                throw new DuplicateEmailException("Email này đã được sử dụng!");
-//            }
-//            if (userDTO.getPassword() == null || userDTO.getPassword().trim().isEmpty()) {
-//                throw new InvalidPasswordException("Vui lòng nhập mật khẩu!");
-//            }
-//            user.setRole(RoleUser.ROLE_CUSTOMER.name());
-//            user.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
-//        } else {
-//            if (existingUser != null && !existingUser.getId().equals(userDTO.getId())) {
-//                throw new DuplicateUsernameException("Tên đăng nhập đã tồn tại!");
-//            }
-//            if (existingEmailUser != null && !existingEmailUser.getId().equals(userDTO.getId())) {
-//                throw new DuplicateEmailException("Email này đã được sử dụng bởi người khác!");
-//            }
-//            if (userDTO.getPassword() != null && !userDTO.getPassword().trim().isEmpty()) {
-//                user.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
-//            } else {
-//                User oldUser = userRepository.getUserById(userDTO.getId());
-//                user.setPassword(oldUser.getPassword());
-//            }
-//        }
+    public void createOrUpdateUser(UserAdminDTO userDTO) {
+        UserEntity userEntity = this.userConverter.toUserEntity(userDTO);
+        if (userDTO.getId() == null) {
+            if (userDTO.getUsername() != null
+                    && !userDTO.getUsername().isEmpty()
+                    && this.userRepository.existsByUsername(userDTO.getUsername().trim())) {
+                throw new DuplicateUsernameException("Tên đăng nhập đã tồn tại! Thử tên khác!");
+            }
+            if (userDTO.getPhone() != null
+                    && !userDTO.getPhone().isEmpty()
+                    && this.userRepository.existsByPhone(userDTO.getPhone().trim())) {
+                throw new DuplicatePhoneException("Số điện thoại người dùng đã tồn tại! Thử số khác!");
+            }
+            if (userDTO.getEmail() != null
+                    && !userDTO.getEmail().isEmpty()
+                    && this.userRepository.existsByEmail(userDTO.getEmail().trim())) {
+                throw new DuplicateEmailException("Email người dùng đã tồn tại! Thử số khác!");
+            }
+            userEntity.setPassword(this.bCryptPasswordEncoder.encode("123456"));
+        } else {
+            if (userDTO.getPassword() != null && !userDTO.getPassword().trim().isEmpty()) {
+                userEntity.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
+            } else {
+                UserEntity oldUser = userRepository.findById(userDTO.getId()).get();
+                userEntity.setPassword(oldUser.getPassword());
+            }
+        }
+
+        if (userDTO.getFile() != null && !userDTO.getFile().isEmpty()) {
+            try {
+                Map res = this.cloudinary.uploader().upload(userDTO.getFile().getBytes(),
+                        ObjectUtils.asMap("resource_type", "auto"));
+                userEntity.setAvatar(res.get("secure_url").toString());
+            } catch (IOException ex) {
+                Logger.getLogger(UserServiceImpl.class.getName()).log(Level.SEVERE, "Lỗi upload avatar", ex);
+                throw new RuntimeException("Lỗi hệ thống: Không thể tải lên ảnh đại diện!", ex);
+            }
+        } else {
+            if (userDTO.getId() != null) {
+                UserEntity oldUser = this.userRepository.findById(userDTO.getId()).get();
+                userEntity.setAvatar(oldUser.getAvatar());
+            }
+        }
+        this.userRepository.save(userEntity);
     }
+
 }
+

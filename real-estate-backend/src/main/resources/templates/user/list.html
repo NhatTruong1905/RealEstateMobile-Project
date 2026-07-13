@@ -44,7 +44,8 @@
 
                         <td class="text-center">
                             <img th:if="${u.avatar != null and !u.avatar.isEmpty()}" th:src="${u.avatar}" alt="Avatar"
-                                 class="rounded-circle object-fit-cover shadow-sm border" style="width: 45px; height: 45px;">
+                                 class="rounded-circle object-fit-cover shadow-sm border"
+                                 style="width: 45px; height: 45px;">
 
                             <div th:unless="${u.avatar != null and !u.avatar.isEmpty()}"
                                  class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center border shadow-sm"
@@ -83,7 +84,8 @@
                                 <i class="bi bi-pencil-square"></i> Sửa
                             </a>
 
-                            <form th:action="@{/api/users/{id}(id=${u.id})}" class="d-inline delete-user-form">
+                            <form th:action="@{/admin/api/users/{id}(id=${u.id})}" method="post"
+                                  class="d-inline delete-user-form">
                                 <button type="submit"
                                         class="btn btn-sm btn-light border shadow-none rounded-3 text-danger">
                                     <i class="bi bi-trash"></i> Xóa

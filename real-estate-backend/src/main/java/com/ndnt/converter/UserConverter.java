@@ -1,5 +1,6 @@
 package com.ndnt.converter;
 
+import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
 import com.ndnt.model.entity.UserEntity;
 import org.modelmapper.ModelMapper;
@@ -16,6 +17,10 @@ public class UserConverter {
     }
 
     public UserEntity toUserEntity(UserDTO userDTO) {
+        return modelMapper.map(userDTO, UserEntity.class);
+    }
+
+    public UserEntity toUserEntity(UserAdminDTO userDTO) {
         return modelMapper.map(userDTO, UserEntity.class);
     }
 }

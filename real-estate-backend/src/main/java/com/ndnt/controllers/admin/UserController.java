@@ -1,12 +1,14 @@
 package com.ndnt.controllers.admin;
 
 import com.ndnt.model.dto.PropertyTypeDTO;
+import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
 import com.ndnt.services.RoleService;
 import com.ndnt.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -14,8 +16,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin")
@@ -49,13 +51,14 @@ public class UserController {
     }
 
 
-    @PostMapping("/api/users")
-    public ResponseEntity<?> createOrUpdateUser(@Valid @RequestBody UserDTO userDTO, BindingResult bindingResult) {
+    @PostMapping(path = "/api/users", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> createOrUpdateUser(@Valid @ModelAttribute(name = "user") UserAdminDTO userDTO, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .collect(Collectors.toList());
+            Map<String, String> errors = new HashMap<>();
+            for (FieldError fieldError : bindingResult.getFieldErrors()) {
+                errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            }
             return ResponseEntity.badRequest().body(errors);
         }
 
@@ -73,7 +76,7 @@ public class UserController {
     }
 
     @DeleteMapping("/api/users/{id}")
-    public ResponseEntity<?> deletePropertyType(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteUser(@PathVariable Integer id) {
         this.userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }

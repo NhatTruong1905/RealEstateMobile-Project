@@ -1,5 +1,6 @@
 package com.ndnt.services;
 
+import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
 import com.ndnt.model.entity.UserEntity;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,5 +14,5 @@ public interface UserService extends UserDetailsService {
 
     void deleteUser(Integer id);
 
-    void createOrUpdateUser(UserDTO userDTO);
+    void createOrUpdateUser(UserAdminDTO userDTO);
 }

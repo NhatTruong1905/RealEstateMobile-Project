@@ -41,7 +41,7 @@ public class UserEntity extends BaseEntity {
 
     @ColumnDefault("1")
     @Column(name = "status")
-    private Integer status;
+    private Integer status = 1;
 
     @Column(name = "avatar")
     private String avatar;

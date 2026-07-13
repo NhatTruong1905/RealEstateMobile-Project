@@ -26,7 +26,8 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
 
-                    <form id="formUser" th:action="@{/api/users}" th:object="${user}" method="post" enctype="multipart/form-data">
+                    <form id="formUser" th:action="@{/admin/api/users}" th:object="${user}" method="post"
+                          enctype="multipart/form-data">
 
                         <input type="hidden" th:field="*{id}"/>
 
@@ -39,15 +40,20 @@
                                     <img id="avatarPreview"
                                          th:src="${user.avatar != null and !user.avatar.isEmpty() ? user.avatar : 'https://via.placeholder.com/150?text=Avatar'}"
                                          class="rounded-circle object-fit-cover border shadow-sm"
-                                         style="width: 130px; height: 130px; background-color: #f8f9fa;" alt="Avatar Preview">
+                                         style="width: 130px; height: 130px; background-color: #f8f9fa;"
+                                         alt="Avatar Preview">
 
-                                    <label for="avatarFile" class="position-absolute bottom-0 end-0 bg-white border rounded-circle p-2 shadow-sm" style="cursor: pointer; right: 5px !important; bottom: 5px !important;" title="Chọn ảnh đại diện">
+                                    <label for="avatarFile"
+                                           class="position-absolute bottom-0 end-0 bg-white border rounded-circle p-2 shadow-sm"
+                                           style="cursor: pointer; right: 5px !important; bottom: 5px !important;"
+                                           title="Chọn ảnh đại diện">
                                         <i class="bi bi-camera-fill text-primary"></i>
                                     </label>
 
-                                    <input type="file" id="avatarFile" name="avatarFile" class="d-none" accept="image/png, image/jpeg, image/jpg">
+                                    <input type="file" id="avatarFile" name="file" class="d-none"
+                                           accept="image/png, image/jpeg, image/jpg">
                                 </div>
-                                <div class="form-text small mt-2 text-muted">Định dạng: JPG, PNG. Tối đa 2MB.</div>
+                                <div class="form-text small mt-2 text-muted">Định dạng: JPG, PNG. Tối đa 5MB.</div>
                             </div>
                         </div>
 
@@ -57,50 +63,84 @@
                                     <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control rounded-3 py-2" id="username"
                                        th:field="*{username}"
-                                       placeholder="Nhập tên tài khoản..." required
-                                       th:readonly="${user.id != null}"
-                                       th:classappend="${user.id != null ? 'bg-light text-muted' : ''}">
-                                <div class="form-text small text-muted mt-1" th:if="${user.id != null}">
-                                    Không thể thay đổi username của tài khoản đã tạo.
+                                       placeholder="Nhập tên tài khoản..." required>
+                                <div id="error-username" class="text-danger fst-italic small mt-1 error-message"
+                                     style="display: none;"></div>
+                                <div class="form-text small text-muted mt-1">
+                                    Tên đăng nhập phải là duy nhất trong hệ thống.
                                 </div>
                             </div>
 
                             <div class="col-md-6 mb-4">
                                 <label class="form-label fw-bold text-dark">Mật khẩu</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock-fill text-muted"></i></span>
-                                    <input type="text" class="form-control rounded-end-3 py-2 bg-light text-muted border-start-0"
-                                           value="*** Mật khẩu mặc định ***" readonly>
+
+                                <div th:if="${user.id == null}">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0"><i
+                                                class="bi bi-lock-fill text-muted"></i></span>
+                                        <input type="text"
+                                               class="form-control rounded-end-3 py-2 bg-light text-muted border-start-0"
+                                               value="*** Mật khẩu mặc định ***" readonly>
+                                    </div>
+                                    <div class="form-text small text-primary mt-1">
+                                        <i class="bi bi-info-circle me-1"></i>Hệ thống sẽ tự động cấp mật khẩu.
+                                    </div>
                                 </div>
-                                <div class="form-text small text-primary mt-1" th:if="${user.id == null}">
-                                    <i class="bi bi-info-circle me-1"></i>Hệ thống sẽ tự động cấp.
+
+                                <div th:if="${user.id != null}">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i
+                                                class="bi bi-key text-muted"></i></span>
+                                        <input type="password" class="form-control py-2 border-start-0 border-end-0"
+                                               id="password"
+                                               th:field="*{password}" placeholder="Nhập để đổi mật khẩu...">
+
+                                        <button class="btn border border-start-0 rounded-end-3 bg-white shadow-none"
+                                                type="button" id="togglePassword">
+                                            <i class="bi bi-eye-slash text-muted" id="toggleIcon"></i>
+                                        </button>
+                                    </div>
+                                    <div id="error-password" class="text-danger fst-italic small mt-1 error-message"
+                                         style="display: none;"></div>
+                                    <div class="form-text small text-muted mt-1">Để trống nếu giữ nguyên mật khẩu cũ.
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="col-md-12 mb-4">
-                                <label for="fullname" class="form-label fw-bold text-dark">Họ và Tên <span class="text-danger">*</span></label>
+                                <label for="fullname" class="form-label fw-bold text-dark">Họ và Tên <span
+                                        class="text-danger">*</span></label>
                                 <input type="text" class="form-control rounded-3 py-2" id="fullname"
                                        th:field="*{fullname}" placeholder="Ví dụ: Nguyễn Văn A..." required>
+                                <div id="error-fullname" class="text-danger fst-italic small mt-1 error-message"
+                                     style="display: none;"></div>
                             </div>
 
                             <div class="col-md-6 mb-4">
                                 <label for="phone" class="form-label fw-bold text-dark">Số điện thoại</label>
                                 <input type="text" class="form-control rounded-3 py-2" id="phone" th:field="*{phone}"
                                        placeholder="Nhập số điện thoại...">
+                                <div id="error-phone" class="text-danger fst-italic small mt-1 error-message"
+                                     style="display: none;"></div>
                             </div>
 
                             <div class="col-md-6 mb-4">
                                 <label for="email" class="form-label fw-bold text-dark">Email liên hệ</label>
                                 <input type="email" class="form-control rounded-3 py-2" id="email" th:field="*{email}"
                                        placeholder="Ví dụ: email@domain.com...">
+                                <div id="error-email" class="text-danger fst-italic small mt-1 error-message"
+                                     style="display: none;"></div>
                             </div>
 
                             <div class="col-md-6 mb-4">
-                                <label for="roleId" class="form-label fw-bold text-dark">Vai trò <span class="text-danger">*</span></label>
+                                <label for="roleId" class="form-label fw-bold text-dark">Vai trò <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select rounded-3 py-2" id="roleId" th:field="*{roleId}" required>
                                     <option value="" disabled selected>-- Chọn vai trò --</option>
                                     <option th:each="r : ${roles}" th:value="${r.id}" th:text="${r.name}"></option>
                                 </select>
+                                <div id="error-roleId" class="text-danger fst-italic small mt-1 error-message"
+                                     style="display: none;"></div>
                             </div>
 
                         </div>
@@ -122,38 +162,57 @@
     </div>
 
     <script>
-        // 1. Script xử lý tính năng Xem trước ảnh (Preview Image)
-        document.getElementById('avatarFile').addEventListener('change', function(event) {
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener('click', function () {
+                const passwordInput = document.getElementById('password');
+                const toggleIcon = document.getElementById('toggleIcon');
+
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+
+                if (type === 'password') {
+                    toggleIcon.classList.remove('bi-eye');
+                    toggleIcon.classList.add('bi-eye-slash');
+                } else {
+                    toggleIcon.classList.remove('bi-eye-slash');
+                    toggleIcon.classList.add('bi-eye');
+                }
+            });
+        }
+
+        document.getElementById('avatarFile').addEventListener('change', function (event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Thay thế src của thẻ img bằng dữ liệu ảnh vừa chọn
+                reader.onload = function (e) {
                     document.getElementById('avatarPreview').src = e.target.result;
                 }
                 reader.readAsDataURL(file);
             }
         });
 
-        // 2. Script xử lý Submit Form
         document.getElementById("formUser").addEventListener("submit", function (event) {
             event.preventDefault();
 
             const formData = new FormData(this);
-            const data = Object.fromEntries(formData.entries());
             const csrfToken = formData.get('_csrf');
 
             const errorDiv = document.getElementById("form-error");
             errorDiv.style.display = "none";
             errorDiv.innerText = "";
 
+            document.querySelectorAll('.error-message').forEach(function (el) {
+                el.style.display = 'none';
+                el.innerText = '';
+            });
+
             fetch(this.action, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken
                 },
-                body: JSON.stringify(data)
+                body: formData
             })
                 .then(async response => {
                     const result = await response.json();
@@ -165,8 +224,14 @@
                         if (result.message) {
                             errorDiv.innerText = result.message;
                             errorDiv.style.display = "block";
-                        } else if (Array.isArray(result)) {
-                            alert("LỖI DỮ LIỆU:\n" + result.join("\n"));
+                        } else if (typeof result === 'object') {
+                            for (const [field, errorMessage] of Object.entries(result)) {
+                                const errorDiv = document.getElementById(`error-${field}`);
+                                if (errorDiv) {
+                                    errorDiv.innerText = errorMessage;
+                                    errorDiv.style.display = "block";
+                                }
+                            }
                         } else {
                             alert("Có lỗi không xác định xảy ra!");
                         }

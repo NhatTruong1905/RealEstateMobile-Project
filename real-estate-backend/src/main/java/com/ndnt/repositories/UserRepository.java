@@ -11,5 +11,9 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer>, User
 
     List<UserEntity> findAllByStatusOrderByIdDesc(Integer status);
 
-    UserEntity getUserByEmail(String email);
+    boolean existsByUsername(String username);
+
+    boolean existsByPhone(String phone);
+
+    boolean existsByEmail(String email);
 }
