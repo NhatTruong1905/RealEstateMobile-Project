@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Entity
@@ -21,5 +23,6 @@ public class InteractionTypeEntity extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "interactionType")
+    private List<InteractionEntity> interactionEntities;
 }

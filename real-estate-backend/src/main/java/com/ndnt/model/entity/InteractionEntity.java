@@ -33,7 +33,7 @@ public class InteractionEntity extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "type_id", nullable = false)
-    private InteractionTypeEntity type;
+    private InteractionTypeEntity interactionType;
 
     @Lob
     @Column(name = "message")

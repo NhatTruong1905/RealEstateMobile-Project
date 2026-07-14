@@ -13,6 +13,8 @@ import com.ndnt.model.entity.UserEntity;
 import com.ndnt.repositories.UserRepository;
 import com.ndnt.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -57,18 +59,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDTO> getUsers() {
-        List<UserEntity> userEntities = this.userRepository.findAllByStatusOrderByIdDesc(1);
+    public Page<UserDTO> getUsers(Pageable pageable) {
+        Page<UserEntity> userEntities = this.userRepository.findAllByStatus(1, pageable);
 
-        List<UserDTO> userDTOs = new ArrayList<>();
-        for (UserEntity u : userEntities) {
+        return userEntities.map(u -> {
             UserDTO uDTO = this.userConverter.toUserDTO(u);
-            uDTO.setRoleId(u.getRole().getId());
-            uDTO.setRoleCode(u.getRole().getCode());
-            uDTO.setRoleName(u.getRole().getName());
-            userDTOs.add(uDTO);
-        }
-        return userDTOs;
+            if (u.getRole() != null) {
+                uDTO.setRoleId(u.getRole().getId());
+                uDTO.setRoleCode(u.getRole().getCode());
+                uDTO.setRoleName(u.getRole().getName());
+            }
+            return uDTO;
+        });
     }
 
     @Override

@@ -8,6 +8,10 @@ import com.ndnt.services.RoleService;
 import com.ndnt.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -29,9 +33,29 @@ public class UserController {
     private RoleService roleService;
 
     @GetMapping("/users-list")
-    public ModelAndView listUsers() {
+    public ModelAndView listUsers(@RequestParam(defaultValue = "1") int page,
+                                  @RequestParam(defaultValue = "5") int size) {
         ModelAndView mav = new ModelAndView("user/list");
-        mav.addObject("users", this.userService.getUsers());
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
+        Page<UserDTO> userPage = this.userService.getUsers(pageable);
+        mav.addObject("users", userPage.getContent());
+        mav.addObject("currentPage", page);
+        mav.addObject("totalPages", userPage.getTotalPages());
+        mav.addObject("totalItems", userPage.getTotalElements());
+
+        int windowSize = 5;
+        int startPage = Math.max(1, page - windowSize / 2);
+        int endPage = Math.min(userPage.getTotalPages(), page + windowSize / 2);
+
+        if (endPage - startPage + 1 < windowSize) {
+            if (startPage == 1) {
+                endPage = Math.min(userPage.getTotalPages(), startPage + windowSize - 1);
+            } else if (endPage == userPage.getTotalPages()) {
+                startPage = Math.max(1, endPage - windowSize + 1);
+            }
+        }
+        mav.addObject("startPage", startPage);
+        mav.addObject("endPage", endPage);
         return mav;
     }
 

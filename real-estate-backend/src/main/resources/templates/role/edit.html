@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Cập nhật Vai trò</title>
+</head>
+
+<body th:replace="~{layout/base :: main('role', ~{:: #role-form-content})}">
+
+<div id="role-form-content">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <a th:href="@{/admin/roles-list}" class="text-decoration-none text-muted mb-2 d-inline-block"
+               style="font-size: 0.85rem;">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+            <h3 class="fw-bold mb-0 text-dark"
+                th:text="${role.id != null ? 'Cập Nhật Vai Trò' : 'Thêm Mới Vai Trò'}">
+                Cập Nhật Thông Tin
+            </h3>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+
+                    <form id="formRole" th:action="@{/admin/api/roles}" th:object="${role}" method="post">
+
+                        <input type="hidden" th:field="*{id}"/>
+
+                        <div id="form-error" class="alert alert-danger mb-4"
+                             style="display: none; font-size: 0.9rem;"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="code" class="form-label fw-bold text-dark">Mã Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control rounded-3 py-2" id="code" th:field="*{code}"
+                                       placeholder="Ví dụ: ROLE_ADMIN, ROLE_STAFF..." required
+                                       style="text-transform: uppercase;">
+
+                                <div id="error-code" class="text-danger fst-italic small mt-1 error-message" style="display: none;"></div>
+                                <div class="form-text small text-muted mt-1">Mã code viết liền không dấu, thường bắt đầu bằng ROLE_</div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label for="name" class="form-label fw-bold text-dark">Tên Vai Trò <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control rounded-3 py-2" id="name" th:field="*{name}"
+                                       placeholder="Ví dụ: Quản trị viên, Nhân viên..." required>
+
+                                <div id="error-name" class="text-danger fst-italic small mt-1 error-message" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-3 border-top mt-2">
+                            <button type="submit" class="btn px-4 py-2 fw-medium text-white rounded-3 shadow-sm"
+                                    style="background-color: #1a2b4c;">
+                                <i class="bi bi-save me-1"></i> Lưu thông tin
+                            </button>
+
+                            <button type="reset" class="btn btn-light px-4 py-2 fw-medium border rounded-3 shadow-none">
+                                Làm mới
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("formRole").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            if (formData.has('code')) {
+                formData.set('code', formData.get('code').toUpperCase());
+            }
+
+            const data = Object.fromEntries(formData.entries());
+            const csrfToken = formData.get('_csrf');
+
+            const formErrorDiv = document.getElementById("form-error");
+            formErrorDiv.style.display = "none";
+            formErrorDiv.innerText = "";
+
+            document.querySelectorAll('.error-message').forEach(function (el) {
+                el.style.display = 'none';
+                el.innerText = '';
+            });
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify(data)
+            })
+                .then(async response => {
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert(result.message || "Lưu thành công!");
+                        window.location.href = "/admin/roles-list";
+                    } else {
+                        if (result.message) {
+                            formErrorDiv.innerText = result.message;
+                            formErrorDiv.style.display = "block";
+                        } else if (typeof result === 'object' && !Array.isArray(result)) {
+                            for (const [field, errorMessage] of Object.entries(result)) {
+                                const errorDiv = document.getElementById(`error-${field}`);
+                                if (errorDiv) {
+                                    errorDiv.innerText = errorMessage;
+                                    errorDiv.style.display = "block";
+                                }
+                            }
+                        } else if (Array.isArray(result)) {
+                            alert("LỖI DỮ LIỆU:\n" + result.join("\n"));
+                        } else {
+                            alert("Có lỗi không xác định xảy ra!");
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi khi gọi API:', error);
+                    alert("Không thể kết nối đến máy chủ, vui lòng thử lại sau!");
+                });
+        });
+    </script>
+</div>
+
+</body>
+</html>

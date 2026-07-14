@@ -1,8 +1,8 @@
 package com.ndnt.repositories;
 
-import com.ndnt.model.entity.RoleEntity;
+import com.ndnt.model.entity.WardEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface RoleRepository extends JpaRepository<RoleEntity, Integer> {
+public interface WardRepository extends JpaRepository<WardEntity, Integer> {
     boolean existsByCode(String code);
 }

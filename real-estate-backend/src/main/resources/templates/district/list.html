@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Quản lý Quận/Huyện</title>
+</head>
+
+<body th:replace="~{layout/base :: main('district', ~{:: #district-content})}">
+
+<div id="district-content">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <p class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">Hệ
+                thống</p>
+            <h3 class="fw-bold mb-0 text-dark">Quản Lý Quận/Huyện</h3>
+        </div>
+        <div>
+            <a th:href="@{/admin/districts-edit}" class="btn text-white fw-medium shadow-sm rounded-3"
+               style="background-color: #1a2b4c;">
+                <i class="bi bi-plus-lg me-1"></i> Thêm Quận/Huyện
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="text-muted"
+                           style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eaeaea;">
+                    <tr>
+                        <th class="py-3" style="width: 10%;">#ID</th>
+                        <th class="py-3" style="width: 25%;">Mã Code</th>
+                        <th class="py-3" style="width: 45%;">Tên Quận/Huyện</th>
+                        <th class="py-3 text-center" style="width: 20%;">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="d : ${districts}" style="border-bottom: 1px solid #f4f7f9;">
+                        <td class="fw-bold text-dark" th:text="${d.id}"></td>
+
+                        <td>
+                            <span class="badge bg-light text-dark border px-2 py-1"
+                                  style="font-size: 0.8rem; letter-spacing: 0.5px;"
+                                  th:text="${d.code}">CODE</span>
+                        </td>
+
+                        <td class="fw-medium text-dark" th:text="${d.name}"></td>
+
+                        <td class="text-center">
+                            <a th:href="@{/admin/districts-edit-{id}(id=${d.id})}"
+                               class="btn btn-sm btn-light border shadow-none rounded-3 me-2 text-primary">
+                                <i class="bi bi-pencil-square"></i> Sửa
+                            </a>
+
+                            <form th:action="@{/admin/api/districts/{id}(id=${d.id})}" method="post"
+                                  class="d-inline delete-district-form">
+                                <button type="submit"
+                                        class="btn btn-sm btn-light border shadow-none rounded-3 text-danger">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(districts)}">
+                        <td colspan="4" class="text-center text-muted py-5">
+                            <i class="bi bi-geo-alt fs-1 d-block mb-2"></i>
+                            Chưa có dữ liệu quận/huyện nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div th:if="${totalPages > 1}"
+                     class="d-flex justify-content-between align-items-center mt-4 border-top pt-3">
+                    <div class="text-muted small">
+                        Hiển thị <span class="fw-bold text-dark" th:text="${districts.size()}"></span> trong tổng số
+                        <span class="fw-bold text-dark" th:text="${totalItems}"></span> bản ghi.
+                    </div>
+
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0 shadow-sm">
+                            <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/districts-list(page=${currentPage - 1})}"
+                                   tabindex="-1">Trước</a>
+                            </li>
+
+                            <li class="page-item disabled" th:if="${startPage > 1}">
+                                <span class="page-link border-0">...</span>
+                            </li>
+
+                            <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}"
+                                th:classappend="${currentPage == i} ? 'active'">
+                                <a class="page-link" th:href="@{/admin/districts-list(page=${i})}" th:text="${i}">1</a>
+                            </li>
+
+                            <li class="page-item disabled" th:if="${endPage < totalPages}">
+                                <span class="page-link border-0">...</span>
+                            </li>
+
+                            <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/districts-list(page=${currentPage + 1})}">Sau</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const deleteForms = document.querySelectorAll('.delete-district-form');
+
+            deleteForms.forEach(form => {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    if (!confirm('Bạn có chắc chắn muốn xóa Quận/Huyện này không?')) {
+                        return;
+                    }
+
+                    const url = this.action;
+                    const formData = new FormData(this);
+                    const csrfToken = formData.get('_csrf');
+
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                alert("Xóa thành công!");
+                                window.location.reload();
+                            } else {
+                                alert("LỖI: Không thể xóa dữ liệu này.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Lỗi khi gọi API xóa:', error);
+                            alert("Có lỗi xảy ra, vui lòng thử lại sau!");
+                        });
+                });
+            });
+        });
+    </script>
+</div>
+
+</body>
+</html>

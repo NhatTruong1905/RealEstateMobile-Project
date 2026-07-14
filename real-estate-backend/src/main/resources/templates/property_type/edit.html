@@ -36,7 +36,8 @@
                             <label for="code" class="form-label fw-bold text-dark">Mã loại hình (Code) <span
                                     class="text-danger">*</span></label>
                             <input type="text" class="form-control rounded-3 py-2" id="code" th:field="*{code}"
-                                   placeholder="Ví dụ: SALE, RENT, PROJECT..." required>
+                                   placeholder="Ví dụ: SALE, RENT, PROJECT..." required
+                                   style="text-transform: uppercase;">
                             <div id="code-error" class="text-danger fst-italic mt-1"
                                  style="display: none; font-size: 0.85rem;"></div>
                         </div>
@@ -69,6 +70,9 @@
             event.preventDefault();
 
             const formData = new FormData(this);
+            if (formData.has('code')) {
+                formData.set('code', formData.get('code').toUpperCase());
+            }
             const data = Object.fromEntries(formData.entries());
             const csrfToken = data._csrf;
             delete data._csrf;
