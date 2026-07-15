@@ -77,9 +77,11 @@ public class PropertyEntity extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @ColumnDefault("1")
+    @ColumnDefault("0")
     @Column(name = "status")
-    private Integer status;
+    private Integer status = 0;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_staff_id")
+    private UserEntity assignedStaff;
 }
