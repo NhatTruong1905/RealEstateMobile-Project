@@ -1,5 +1,6 @@
 package com.ndnt.model.entity;
 
+import com.ndnt.model.enums.StatusProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -10,6 +11,8 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -44,7 +47,7 @@ public class PropertyEntity extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "ward_id", nullable = false)
-    private WardEntity wardEntity;
+    private WardEntity ward;
 
     @Size(max = 45)
     @Column(name = "city", length = 45)
@@ -79,9 +82,8 @@ public class PropertyEntity extends BaseEntity {
 
     @ColumnDefault("0")
     @Column(name = "status")
-    private Integer status = 0;
+    private String status = StatusProperty.PENDING.getStatus();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_staff_id")
-    private UserEntity assignedStaff;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "property")
+    private List<AssignmentEntity> assignments = new ArrayList<>();
 }

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Quản lý Tin đăng BĐS</title>
+</head>
+
+<body th:replace="~{layout/base :: main('property', ~{:: #property-content})}">
+
+<div id="property-content">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <p class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">Quản lý
+                Bất Động Sản</p>
+            <h3 class="fw-bold mb-0 text-dark">Danh Sách Tin Đăng</h3>
+        </div>
+        <div>
+            <a th:href="@{/admin/properties-edit}" class="btn text-white fw-medium shadow-sm rounded-3"
+               style="background-color: #1a2b4c;">
+                <i class="bi bi-plus-lg me-1"></i> Đăng tin mới
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="text-muted"
+                           style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eaeaea;">
+                    <tr>
+                        <th class="py-3" style="width: 5%;">#ID</th>
+                        <th class="py-3" style="width: 25%;">Tiêu đề</th>
+                        <th class="py-3" style="width: 20%;">Địa chỉ</th>
+                        <th class="py-3" style="width: 10%;">Giá</th>
+                        <th class="py-3 text-center" style="width: 15%;">Trạng thái</th>
+                        <th class="py-3 text-center" style="width: 25%;">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p : ${properties}" style="border-bottom: 1px solid #f4f7f9;">
+                        <td class="fw-bold text-dark" th:text="${p.id}"></td>
+
+                        <td>
+                            <a href="javascript:void(0)" class="fw-bold text-dark text-truncate d-block view-full-text"
+                               style="max-width: 250px; text-decoration: none;"
+                               data-title="Tiêu đề bài đăng" th:data-content="${p.title}" th:text="${p.title}">
+                            </a>
+                            <small class="text-muted" th:text="${p.area + ' m²'}"></small>
+                        </td>
+
+                        <td>
+                            <a href="javascript:void(0)" class="text-muted small text-truncate d-block view-full-text"
+                               style="max-width: 200px; text-decoration: none;"
+                               data-title="Địa chỉ chi tiết" th:data-content="${p.addressProperty}"
+                               th:text="${p.addressProperty}">
+                            </a>
+                        </td>
+
+                        <td class="fw-medium text-danger"
+                            th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')}"></td>
+
+                        <td class="text-center">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"
+                                  style="font-size: 0.75rem;" th:if="${p.status == 'Đang mở bán'}">ĐANG MỞ BÁN</span>
+
+                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1"
+                                  style="font-size: 0.75rem;" th:if="${p.status == 'Chờ duyệt'}">CHỜ DUYỆT</span>
+
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"
+                                  style="font-size: 0.75rem;" th:if="${p.status == 'Từ chối'}">TỪ CHỐI</span>
+
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1"
+                                  style="font-size: 0.75rem;" th:if="${p.status == 'Đã xóa'}">ĐÃ XÓA</span>
+                        </td>
+
+                        <td class="text-center">
+                            <button th:if="${p.status != 'Đã xóa'}"
+                                    type="button"
+                                    class="btn btn-sm btn-light border shadow-none rounded-3 me-1 text-success btn-assign"
+                                    title="Giao bài đăng cho nhân viên"
+                                    data-bs-toggle="modal" data-bs-target="#assignModal"
+                                    th:data-id="${p.id}" th:data-title="${p.title}">
+                                <i class="bi bi-person-check"></i> Giao
+                            </button>
+
+                            <a th:href="@{/admin/properties-edit-{id}(id=${p.id})}"
+                               class="btn btn-sm btn-light border shadow-none rounded-3 me-1 text-primary"
+                               title="Sửa bài đăng">
+                                <i class="bi bi-pencil-square"></i> Sửa
+                            </a>
+
+                            <form th:if="${p.status != 'Đã xóa'}"
+                                  th:action="@{/admin/api/properties/{id}(id=${p.id})}" method="post"
+                                  class="d-inline delete-property-form">
+                                <button type="submit"
+                                        class="btn btn-sm btn-light border shadow-none rounded-3 text-danger"
+                                        title="Xóa bài đăng">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(properties)}">
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-building fs-1 d-block mb-2"></i>
+                            Chưa có bài đăng bất động sản nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${totalPages > 1}"
+                 class="d-flex justify-content-between align-items-center mt-4 border-top pt-3">
+                <div class="text-muted small">
+                    Hiển thị <span class="fw-bold text-dark" th:text="${properties.size()}"></span> trong tổng số
+                    <span class="fw-bold text-dark" th:text="${totalItems}"></span> bản ghi.
+                </div>
+
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0 shadow-sm">
+                        <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/properties-list(page=${currentPage - 1})}"
+                               tabindex="-1">Trước</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${startPage > 1}">
+                            <span class="page-link border-0">...</span>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}"
+                            th:classappend="${currentPage == i} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/properties-list(page=${i})}" th:text="${i}">1</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${endPage < totalPages}">
+                            <span class="page-link border-0">...</span>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/properties-list(page=${currentPage + 1})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" id="infoModalLabel">Chi tiết</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-dark" id="infoModalBody" style="line-height: 1.6;">
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3 shadow-none px-4" data-bs-dismiss="modal">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+
+                <form id="formAssignTask" th:action="@{/admin/api/properties/assign}" method="post">
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <h5 class="modal-title fw-bold text-dark" id="assignModalLabel">Giao việc xử lý tin đăng</h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body text-dark">
+                        <div class="alert alert-info py-2" style="font-size: 0.85rem;">
+                            <strong>Tin đăng:</strong> <span id="assignPropertyTitle" class="fst-italic"></span>
+                        </div>
+
+                        <input type="hidden" id="assignPropertyId" name="propertyId">
+
+                        <div class="mb-3 mt-3">
+                            <label class="form-label fw-bold">Chọn nhân viên xử lý <span
+                                    class="text-danger">*</span></label>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <p class="text-muted small mb-0">Bạn có thể tick chọn nhiều nhân viên cùng lúc.</p>
+                                <div class="form-check" th:if="${not #lists.isEmpty(staffs)}">
+                                    <input class="form-check-input border-primary shadow-none" type="checkbox"
+                                           id="checkAllStaff">
+                                    <label class="form-check-label fw-bold text-primary" style="cursor: pointer;"
+                                           for="checkAllStaff">
+                                        Chọn tất cả
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="border rounded-3 p-3 bg-light" style="max-height: 250px; overflow-y: auto;">
+
+                                <div class="form-check mb-2" th:each="staff : ${staffs}">
+                                    <label>
+                                        <input class="form-check-input border-secondary shadow-none staff-checkbox"
+                                               type="checkbox"
+                                               name="staffIds"
+                                               th:value="${staff.id}"
+                                               th:id="'staff_' + ${staff.id}">
+                                    </label>
+
+                                    <label class="form-check-label text-dark" style="cursor: pointer;"
+                                           th:for="'staff_' + ${staff.id}"
+                                           th:text="${staff.username + ' - ' + staff.fullname}">
+
+                                    </label>
+                                </div>
+
+                                <div th:if="${#lists.isEmpty(staffs)}"
+                                     class="text-center text-danger fst-italic small py-2">
+                                    Chưa có nhân viên nào trong hệ thống!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-3 shadow-none px-4" data-bs-dismiss="modal">
+                            Hủy
+                        </button>
+                        <button type="submit" class="btn text-white rounded-3 shadow-sm px-4"
+                                style="background-color: #1a2b4c;">
+                            <i class="bi bi-send-check"></i> Xác nhận giao
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const checkAllBtn = document.getElementById('checkAllStaff');
+            const staffCheckboxes = document.querySelectorAll('.staff-checkbox');
+            if (checkAllBtn) {
+                checkAllBtn.addEventListener('change', function () {
+                    staffCheckboxes.forEach(cb => cb.checked = this.checked);
+                });
+
+                staffCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        const allChecked = Array.from(staffCheckboxes).every(c => c.checked);
+                        checkAllBtn.checked = allChecked && staffCheckboxes.length > 0;
+                    });
+                });
+            }
+
+            document.querySelectorAll('.btn-assign').forEach(button => {
+                button.addEventListener('click', async function () {
+                    const propertyId = this.getAttribute('data-id');
+                    const propertyTitle = this.getAttribute('data-title');
+
+                    document.getElementById('assignPropertyId').value = propertyId;
+                    document.getElementById('assignPropertyTitle').innerText = propertyTitle;
+
+                    staffCheckboxes.forEach(cb => cb.checked = false);
+                    if (checkAllBtn) checkAllBtn.checked = false;
+
+                    try {
+                        const response = await fetch(`/admin/api/assignment/${propertyId}`);
+                        if (response.ok) {
+                            const assignedStaffIds = await response.json();
+
+                            assignedStaffIds.forEach(staffId => {
+                                const checkbox = document.getElementById('staff_' + staffId);
+                                if (checkbox) {
+                                    checkbox.checked = true;
+                                }
+                            });
+
+
+                            if (checkAllBtn && assignedStaffIds.length > 0 && assignedStaffIds.length === staffCheckboxes.length) {
+                                checkAllBtn.checked = true;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Lỗi khi tải danh sách nhân viên đã giao:', error);
+                    }
+                });
+            });
+
+            const formAssign = document.getElementById("formAssignTask");
+            if (formAssign) {
+                formAssign.addEventListener("submit", function (event) {
+                    event.preventDefault();
+
+                    const propertyId = document.getElementById('assignPropertyId').value;
+                    const checkedCheckboxes = document.querySelectorAll('input[name="staffIds"]:checked');
+                    const staffIdsArray = Array.from(checkedCheckboxes).map(cb => parseInt(cb.value));
+
+                    if (staffIdsArray.length === 0) {
+                        alert("Vui lòng tick chọn ít nhất 1 nhân viên để giao việc!");
+                        return;
+                    }
+
+                    const requestData = {
+                        propertyId: parseInt(propertyId),
+                        staffIds: staffIdsArray
+                    };
+
+                    const csrfToken = document.querySelector('input[name="_csrf"]')?.value || '';
+
+                    const apiUrl = "/admin/api/assignment";
+                    fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify(requestData)
+                    })
+                        .then(async response => {
+                            const result = await response.json();
+                            if (response.ok) {
+                                alert("Giao việc thành công!");
+                                bootstrap.Modal.getInstance(document.getElementById('assignModal')).hide();
+                                window.location.reload();
+                            } else {
+                                alert("LỖI: " + (result.message || "Không thể thực hiện giao việc."));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Lỗi khi gọi API assign:', error);
+                            alert("Có lỗi kết nối, vui lòng thử lại sau!");
+                        });
+                });
+            }
+
+            const deleteForms = document.querySelectorAll('.delete-property-form');
+            deleteForms.forEach(form => {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    if (!confirm('Bạn có chắc chắn muốn xóa mềm tin đăng này không?')) return;
+
+                    fetch(this.action, {
+                        method: 'DELETE',
+                        headers: {'X-CSRF-TOKEN': new FormData(this).get('_csrf')}
+                    }).then(response => {
+                        if (response.ok) {
+                            alert("Xóa thành công!");
+                            window.location.reload();
+                        } else alert("LỖI: Không thể xóa.");
+                    }).catch(err => console.error(err));
+                });
+            });
+
+            document.querySelectorAll('.view-full-text').forEach(item => {
+                item.addEventListener('click', function () {
+                    const title = this.getAttribute('data-title');
+                    const content = this.getAttribute('data-content');
+
+                    document.getElementById('infoModalLabel').innerText = title;
+                    document.getElementById('infoModalBody').innerText = content;
+
+                    new bootstrap.Modal(document.getElementById('infoModal')).show();
+                });
+            });
+        });
+    </script>
+</div>
+</body>
+</html>

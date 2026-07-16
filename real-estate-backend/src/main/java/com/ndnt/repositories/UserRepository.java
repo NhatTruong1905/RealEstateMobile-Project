@@ -13,9 +13,13 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer>, User
 
     Page<UserEntity> findAllByStatus(Integer status, Pageable pageable);
 
+    List<UserEntity> findAllByStatusAndRole_Code(Integer status, String roleCode);
+
     boolean existsByUsername(String username);
 
     boolean existsByPhone(String phone);
 
     boolean existsByEmail(String email);
+
+    List<UserEntity> findByRole_Code(String roleCode);
 }

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Cập nhật Tin Đăng</title>
+</head>
+
+<body th:replace="~{layout/base :: main('property', ~{:: #property-form-content})}">
+
+<div id="property-form-content">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+    <style>
+        .ts-wrapper.form-select {
+            padding: 0 !important;
+            border: none !important;
+            background-image: none !important;
+        }
+
+        .ts-control {
+            border: 1px solid #dee2e6 !important;
+            border-radius: 0.5rem !important;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 1rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: #1a2b4c !important;
+            box-shadow: 0 0 0 0.25rem rgba(26, 43, 76, 0.25) !important;
+        }
+
+        .ts-dropdown {
+            border-radius: 0.5rem !important;
+            margin-top: 5px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+    </style>
+
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <a th:href="@{/admin/properties-list}" class="text-decoration-none text-muted mb-2 d-inline-block"
+               style="font-size: 0.85rem;">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+            <h3 class="fw-bold mb-0 text-dark"
+                th:text="${property.id != null ? 'Cập Nhật Tin Đăng BĐS' : 'Đăng Tin BĐS Mới'}">
+                Cập Nhật Thông Tin
+            </h3>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4 p-md-5">
+
+            <form id="formProperty" th:action="@{/admin/api/properties}" th:object="${property}" method="post">
+
+                <input type="hidden" th:field="*{id}"/>
+                <div id="form-error" class="alert alert-danger mb-4" style="display: none; font-size: 0.9rem;"></div>
+
+                <div class="mb-4">
+                    <label for="title" class="form-label fw-bold text-dark">Tiêu đề bài đăng <span
+                            class="text-danger">*</span></label>
+                    <input type="text" class="form-control rounded-3 py-2" id="title" th:field="*{title}"
+                           placeholder="Nhập tiêu đề hấp dẫn..." required>
+                    <div id="error-title" class="text-danger fst-italic small mt-1 error-message"
+                         style="display: none;"></div>
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-6">
+
+                        <div class="mb-4">
+                            <label for="userId" class="form-label fw-bold text-dark">Người đăng (Khách hàng) <span
+                                    class="text-danger">*</span></label>
+
+                            <select id="userId" th:field="*{userId}" placeholder="-- Chọn Người Đăng --" required>
+                                <option value=""></option>
+                                <option th:each="user : ${users}" th:value="${user.id}"
+                                        th:text="${user.fullname + ' (' + user.username + ')'}"></option>
+                            </select>
+
+                            <div id="error-userId" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="categoryId" class="form-label fw-bold text-dark">Phân khúc BĐS <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select rounded-3 py-2" id="categoryId" th:field="*{categoryId}"
+                                    required>
+                                <option value="">-- Chọn Phân khúc --</option>
+                                <option th:each="cat : ${categories}" th:value="${cat.id}"
+                                        th:text="${cat.name}"></option>
+                            </select>
+                            <div id="error-categoryId" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="wardId" class="form-label fw-bold text-dark">Phường / Xã <span
+                                    class="text-danger">*</span></label>
+                            <select id="wardId" th:field="*{wardId}" placeholder="Gõ để tìm kiếm Phường/Xã..." required>
+                                <option value=""></option>
+                                <option th:each="w : ${wards}" th:value="${w.id}"
+                                        th:text="${w.name} + ' - ' + ${w.getDistrictName()}"></option>
+                            </select>
+                            <div id="error-wardId" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="price" class="form-label fw-bold text-dark">Giá (VNĐ) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control rounded-3 py-2" id="price" th:field="*{price}"
+                                   required>
+                            <div id="error-price" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="floorCount" class="form-label fw-bold text-dark">Số tầng</label>
+                            <input type="number" class="form-control rounded-3 py-2" id="floorCount"
+                                   th:field="*{floorCount}" placeholder="VD: 1, 2, 3...">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="bedroomCount" class="form-label fw-bold text-dark">Số phòng ngủ</label>
+                            <input type="number" class="form-control rounded-3 py-2" id="bedroomCount"
+                                   th:field="*{bedroomCount}">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="direction" class="form-label fw-bold text-dark">Hướng nhà</label>
+                            <input type="text" class="form-control rounded-3 py-2" id="direction"
+                                   th:field="*{direction}" placeholder="Đông, Tây, Nam, Bắc...">
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="mb-4">
+                            <label for="status" class="form-label fw-bold text-dark">Trạng thái <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select rounded-3 py-2 text-primary fw-bold" id="status"
+                                    th:field="*{status}" required>
+                                <option th:each="st : ${status}"
+                                        th:value="${st.status}"
+                                        th:text="${st.status}">
+                                </option>
+                            </select>
+                            <div id="error-status" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="typeId" class="form-label fw-bold text-dark">Loại hình giao dịch <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select rounded-3 py-2" id="typeId" th:field="*{typeId}" required>
+                                <option value="">-- Chọn Loại hình --</option>
+                                <option th:each="type : ${types}" th:value="${type.id}" th:text="${type.name}"></option>
+                            </select>
+                            <div id="error-typeId" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="address" class="form-label fw-bold text-dark">Số nhà, Tên đường <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 py-2" id="address" name="address"
+                                   th:value="${property.addressProperty}" placeholder="Ví dụ: 123 Lê Lợi..." required>
+                            <div id="error-addressProperty" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="area" class="form-label fw-bold text-dark">Diện tích (m²) <span
+                                    class="text-danger">*</span></label>
+                            <input type="number" class="form-control rounded-3 py-2" id="area" th:field="*{area}"
+                                   step="0.01" required>
+                            <div id="error-area" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="bathroomCount" class="form-label fw-bold text-dark">Số phòng tắm</label>
+                            <input type="number" class="form-control rounded-3 py-2" id="bathroomCount"
+                                   th:field="*{bathroomCount}">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="legal" class="form-label fw-bold text-dark">Giấy tờ pháp lý</label>
+                            <input type="text" class="form-control rounded-3 py-2" id="legal" th:field="*{legal}"
+                                   placeholder="Sổ hồng, Sổ đỏ, Hợp đồng...">
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="description" class="form-label fw-bold text-dark">Mô tả chi tiết</label>
+                    <textarea class="form-control rounded-3 py-2" id="description" th:field="*{description}" rows="5"
+                              placeholder="Nhập mô tả chi tiết tiện ích, vị trí, tình trạng nhà..."></textarea>
+                </div>
+
+                <div class="d-flex gap-2 pt-3 border-top mt-2">
+                    <button type="submit" class="btn px-4 py-2 fw-medium text-white rounded-3 shadow-sm"
+                            style="background-color: #1a2b4c;">
+                        <i class="bi bi-save me-1"></i> Lưu bài đăng
+                    </button>
+                    <button type="reset" class="btn btn-light px-4 py-2 fw-medium border rounded-3 shadow-none">Làm
+                        mới
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            new TomSelect("#wardId", {
+                create: false,
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                },
+                plugins: ['dropdown_input']
+            });
+
+            new TomSelect("#userId", {
+                create: false,
+                plugins: ['dropdown_input']
+            });
+        });
+
+        document.getElementById("formProperty").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const data = Object.fromEntries(new FormData(this).entries());
+            const csrfToken = data._csrf;
+            delete data._csrf;
+
+            const formErrorDiv = document.getElementById("form-error");
+            formErrorDiv.style.display = "none";
+            formErrorDiv.innerText = "";
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.style.display = 'none';
+                el.innerText = '';
+            });
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken},
+                body: JSON.stringify(data)
+            })
+                .then(async response => {
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message || "Lưu thành công!");
+                        window.location.href = "/admin/properties-list";
+                    } else {
+                        if (result.message) {
+                            formErrorDiv.innerText = result.message;
+                            formErrorDiv.style.display = "block";
+                        } else if (typeof result === 'object' && !Array.isArray(result)) {
+                            for (const [field, errorMessage] of Object.entries(result)) {
+                                const errorDiv = document.getElementById(`error-${field}`);
+                                if (errorDiv) {
+                                    errorDiv.innerText = errorMessage;
+                                    errorDiv.style.display = "block";
+                                }
+                            }
+                        } else alert("LỖI:\n" + result.join("\n"));
+                    }
+                }).catch(error => {
+                console.error(error);
+                alert("Lỗi khi kết nối đến server!");
+            });
+        });
+    </script>
+</div>
+</body>
+</html>

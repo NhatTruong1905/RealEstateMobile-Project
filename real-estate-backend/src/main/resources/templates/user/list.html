@@ -56,8 +56,16 @@
 
                         <td>
                             <div class="fw-bold text-dark mb-1" th:text="${u.username}"></div>
-                            <span class="badge bg-light text-primary border px-2 py-1" style="font-size: 0.7rem;"
-                                  th:text="${u.getRoleCode() == 'ROLE_ADMIN' ? 'Quản trị viên' : 'Khách hàng'}">Role</span>
+                            <div th:switch="${u.getRoleCode()}" class="mt-1">
+                                <span th:case="'ROLE_ADMIN'"
+                                      class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"
+                                      style="font-size: 0.7rem;">Quản trị viên</span>
+                                <span th:case="'ROLE_STAFF'"
+                                      class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1"
+                                      style="font-size: 0.7rem;">Nhân viên</span>
+                                <span th:case="ROLE_USER" class="badge bg-light text-primary border px-2 py-1"
+                                      style="font-size: 0.7rem;">Khách hàng</span>
+                            </div>
                         </td>
 
                         <td class="fw-medium text-dark" th:text="${u.fullname}"></td>

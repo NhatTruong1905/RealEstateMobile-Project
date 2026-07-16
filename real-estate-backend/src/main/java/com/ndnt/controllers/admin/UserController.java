@@ -34,7 +34,7 @@ public class UserController {
 
     @GetMapping("/users-list")
     public ModelAndView listUsers(@RequestParam(defaultValue = "1") int page,
-                                  @RequestParam(defaultValue = "5") int size) {
+                                  @RequestParam(defaultValue = "8") int size) {
         ModelAndView mav = new ModelAndView("user/list");
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
         Page<UserDTO> userPage = this.userService.getUsers(pageable);

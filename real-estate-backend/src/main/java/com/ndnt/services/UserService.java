@@ -12,6 +12,10 @@ import java.util.List;
 public interface UserService extends UserDetailsService {
     Page<UserDTO> getUsers(Pageable pageable);
 
+    List<UserDTO> getUsers();
+
+    List<UserDTO> getListStaff();
+
     UserDTO findById(Integer id);
 
     void deleteUser(Integer id);

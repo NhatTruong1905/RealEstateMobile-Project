@@ -74,6 +74,38 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<UserDTO> getUsers() {
+        List<UserEntity> userEntities = this.userRepository.findAllByStatusAndRole_Code(1, "ROLE_USER");
+        List<UserDTO> userDTOs = new ArrayList<>();
+        for (UserEntity uEntity : userEntities) {
+            UserDTO uDTO = this.userConverter.toUserDTO(uEntity);
+            if (uEntity.getRole() != null) {
+                uDTO.setRoleId(uEntity.getRole().getId());
+                uDTO.setRoleCode(uEntity.getRole().getCode());
+                uDTO.setRoleName(uEntity.getRole().getName());
+            }
+            userDTOs.add(uDTO);
+        }
+        return userDTOs;
+    }
+
+    @Override
+    public List<UserDTO> getListStaff() {
+        List<UserEntity> userEntities = this.userRepository.findByRole_Code("ROLE_STAFF");
+        List<UserDTO> userDTOs = new ArrayList<>();
+        for (UserEntity uEntity : userEntities) {
+            UserDTO uDTO = this.userConverter.toUserDTO(uEntity);
+            if (uEntity.getRole() != null) {
+                uDTO.setRoleId(uEntity.getRole().getId());
+                uDTO.setRoleCode(uEntity.getRole().getCode());
+                uDTO.setRoleName(uEntity.getRole().getName());
+            }
+            userDTOs.add(uDTO);
+        }
+        return userDTOs;
+    }
+
+    @Override
     public UserDTO findById(Integer id) {
         return this.userConverter.toUserDTO(this.userRepository.findById(id).get());
     }

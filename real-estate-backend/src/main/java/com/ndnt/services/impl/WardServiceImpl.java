@@ -35,6 +35,22 @@ public class WardServiceImpl implements WardService {
     }
 
     @Override
+    public List<WardDTO> getWards() {
+        List<WardEntity> wardEntities = wardRepository.findAll();
+        List<WardDTO> wardDTOs = new ArrayList<>();
+        for (WardEntity wEntity : wardEntities) {
+            WardDTO wDTO = this.wardConverter.toWardDTO(wEntity);
+            if (wEntity.getDistrict() != null) {
+                wDTO.setDistrictId(wEntity.getDistrict().getId());
+                wDTO.setDistrictName(wEntity.getDistrict().getName());
+                wDTO.setDistrictCode(wEntity.getDistrict().getCode());
+            }
+            wardDTOs.add(wDTO);
+        }
+        return wardDTOs;
+    }
+
+    @Override
     public WardDTO findById(Integer id) {
         return this.wardConverter.toWardDTO(this.wardRepository.findById(id).get());
     }

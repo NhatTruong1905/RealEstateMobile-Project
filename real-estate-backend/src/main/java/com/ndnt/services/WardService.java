@@ -10,6 +10,8 @@ import java.util.List;
 public interface WardService {
     Page<WardDTO> getWards(Pageable pageable);
 
+    List<WardDTO> getWards();
+
     WardDTO findById(Integer id);
 
     void createOrUpdateWard(WardDTO wardDTO);
