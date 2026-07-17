@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Quản lý Lịch sử Liên hệ</title>
+</head>
+
+<body th:replace="~{layout/base :: main('interaction', ~{:: #interaction-content})}">
+
+<div id="interaction-content">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <p class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">Quản lý
+                Khách hàng</p>
+            <h3 class="fw-bold mb-0 text-dark">Lịch Sử Liên Hệ (Tương Tác)</h3>
+        </div>
+        <div>
+            <a th:href="@{/admin/interactions-edit}" class="btn text-white fw-medium shadow-sm rounded-3"
+               style="background-color: #1a2b4c;">
+                <i class="bi bi-plus-lg me-1"></i> Thêm tương tác mới
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="text-muted"
+                           style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eaeaea;">
+                    <tr>
+                        <th class="py-3" style="width: 5%;">#ID</th>
+                        <th class="py-3" style="width: 25%;">Bất động sản</th>
+                        <th class="py-3" style="width: 15%;">Người gửi</th>
+                        <th class="py-3" style="width: 15%;">Người nhận</th>
+                        <th class="py-3" style="width: 10%;">Loại</th>
+                        <th class="py-3" style="width: 20%;">Lời nhắn</th>
+                        <th class="py-3 text-center" style="width: 10%;">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="i : ${interactions}" style="border-bottom: 1px solid #f4f7f9;">
+                        <td class="fw-bold text-dark" th:text="${i.id}"></td>
+
+                        <td>
+                            <a href="javascript:void(0)" class="fw-bold text-dark text-truncate d-block view-full-text"
+                               style="max-width: 250px; text-decoration: none;"
+                               data-title="Bất động sản"
+                               th:data-content="${i.propertyTitle != null ? i.propertyTitle : 'ID BĐS: ' + i.propertyId}"
+                               th:text="${i.propertyTitle != null ? i.propertyTitle : 'ID BĐS: ' + i.propertyId}">
+                            </a>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25"
+                                  th:text="${i.senderUsername != null ? i.senderUsername : 'ID: ' + i.senderId}"></span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"
+                                  th:text="${i.receiverUsername != null ? i.receiverUsername : 'ID: ' + i.receiverId}"></span>
+                        </td>
+                        <td class="fw-medium text-dark"
+                            th:text="${i.interactionTypeName != null ? i.interactionTypeName : 'Loại ID: ' + i.typeId}"></td>
+
+                        <td>
+                            <a href="javascript:void(0)" class="text-muted small text-truncate d-block view-full-text"
+                               style="max-width: 200px; text-decoration: none;"
+                               data-title="Nội dung lời nhắn"
+                               th:data-content="${i.message}"
+                               th:text="${i.message}">
+                            </a>
+                        </td>
+
+                        <td class="text-center">
+                            <a th:href="@{/admin/interactions-edit-{id}(id=${i.id})}"
+                               class="btn btn-sm btn-light border shadow-none rounded-3 me-1 text-primary"
+                               title="Sửa liên hệ">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+
+                            <form th:action="@{/admin/api/interactions/{id}(id=${i.id})}" method="post"
+                                  class="d-inline delete-form">
+                                <button type="submit"
+                                        class="btn btn-sm btn-light border shadow-none rounded-3 text-danger"
+                                        title="Xóa liên hệ">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(interactions)}">
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-chat-left-dots fs-1 d-block mb-2"></i>
+                            Chưa có lịch sử liên hệ nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${totalPages > 1}"
+                 class="d-flex justify-content-between align-items-center mt-4 border-top pt-3">
+                <div class="text-muted small">
+                    Hiển thị <span class="fw-bold text-dark" th:text="${interactions.size()}"></span> trong tổng số
+                    <span class="fw-bold text-dark" th:text="${totalItems}"></span> bản ghi.
+                </div>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0 shadow-sm">
+                        <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
+                            <a class="page-link"
+                               th:href="@{/admin/interactions-list(page=${currentPage - 1})}">Trước</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${startPage > 1}"><span
+                                class="page-link border-0">...</span></li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}"
+                            th:classappend="${currentPage == i} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/interactions-list(page=${i})}" th:text="${i}">1</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${endPage < totalPages}"><span class="page-link border-0">...</span>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/interactions-list(page=${currentPage + 1})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" id="infoModalLabel">Chi tiết</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-dark" id="infoModalBody" style="line-height: 1.6; white-space: pre-wrap;">
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3 shadow-none px-4" data-bs-dismiss="modal">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const deleteForms = document.querySelectorAll('.delete-form');
+            deleteForms.forEach(form => {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    if (!confirm('Bạn có chắc chắn muốn xóa lịch sử liên hệ này không?')) return;
+
+                    fetch(this.action, {
+                        method: 'DELETE',
+                        headers: {'X-CSRF-TOKEN': new FormData(this).get('_csrf')}
+                    }).then(response => {
+                        if (response.ok) {
+                            alert("Xóa thành công!");
+                            window.location.reload();
+                        } else alert("LỖI: Không thể xóa.");
+                    }).catch(err => console.error(err));
+                });
+            });
+
+            document.querySelectorAll('.view-full-text').forEach(item => {
+                item.addEventListener('click', function () {
+                    const title = this.getAttribute('data-title');
+                    const content = this.getAttribute('data-content');
+
+                    document.getElementById('infoModalLabel').innerText = title;
+                    document.getElementById('infoModalBody').innerText = content;
+
+                    new bootstrap.Modal(document.getElementById('infoModal')).show();
+                });
+            });
+        });
+    </script>
+</div>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Cập nhật Tương Tác</title>
+</head>
+
+<body th:replace="~{layout/base :: main('interaction', ~{:: #interaction-form-content})}">
+
+<div id="interaction-form-content">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <style>
+        .ts-wrapper.form-select {
+            padding: 0 !important;
+            border: none !important;
+            background-image: none !important;
+        }
+
+        .ts-control {
+            border: 1px solid #dee2e6 !important;
+            border-radius: 0.5rem !important;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 1rem;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: #1a2b4c !important;
+            box-shadow: 0 0 0 0.25rem rgba(26, 43, 76, 0.25) !important;
+        }
+
+        .ts-dropdown {
+            border-radius: 0.5rem !important;
+            margin-top: 5px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+    </style>
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <a th:href="@{/admin/interactions-list}" class="text-decoration-none text-muted mb-2 d-inline-block"
+               style="font-size: 0.85rem;">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+            <h3 class="fw-bold mb-0 text-dark"
+                th:text="${interaction != null && interaction.id != null ? 'Cập Nhật Lịch Sử Liên Hệ' : 'Tạo Lịch Sử Liên Hệ Mới'}">
+                Cập Nhật Thông Tin
+            </h3>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4 p-md-5">
+
+            <form id="formInteraction" th:action="@{/admin/api/interactions}"
+                  th:object="${interaction}"
+                  method="post">
+                <input type="hidden" name="id" th:value="${interaction?.id}"/>
+                <div id="form-error" class="alert alert-danger mb-4" style="display: none; font-size: 0.9rem;"></div>
+
+                <div class="row">
+                    <div class="col-md-6">
+
+                        <div class="mb-4">
+                            <label for="propertyId" class="form-label fw-bold text-dark">Bài đăng (Bất động sản) <span
+                                    class="text-danger">*</span></label>
+                            <select id="propertyId" name="propertyId" placeholder="-- Gõ để tìm kiếm bài đăng --"
+                                    required>
+                                <option value=""></option>
+                                <option th:each="p : ${properties}" th:value="${p.id}"
+                                        th:text="|ID: ${p.id} - ${p.title}|"
+                                        th:selected="${interaction?.propertyId == p.id}"></option>
+                            </select>
+                            <div id="error-propertyId" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="senderId" class="form-label fw-bold text-dark">Người gửi (Sender) <span
+                                    class="text-danger">*</span></label>
+                            <select id="senderId" name="senderId" placeholder="-- Chọn người gửi --" required>
+                                <option value=""></option>
+                                <option th:each="u : ${users}" th:value="${u.id}"
+                                        th:text="${u.fullname + ' (' + u.username + ')'}"
+                                        th:selected="${interaction?.senderId == u.id}"></option>
+                            </select>
+                            <div id="error-senderId" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <label for="interactionTypeId" class="form-label fw-bold text-dark">Loại liên hệ (Type) <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select rounded-3 py-2" id="interactionTypeId" name="interactionTypeId" required>
+                                <option value="">-- Chọn Loại Liên Hệ --</option>
+                                <option th:each="t : ${interactionTypes}" th:value="${t.id}" th:text="${t.name}"
+                                        th:selected="${interaction?.interactionTypeId == t.id}"></option>
+                            </select>
+                            <div id="error-typeId" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="receiverId" class="form-label fw-bold text-dark">Người nhận (Receiver) <span
+                                    class="text-danger">*</span></label>
+                            <select id="receiverId" name="receiverId" placeholder="-- Chọn người nhận --" required>
+                                <option value=""></option>
+                                <option th:each="u : ${users}" th:value="${u.id}"
+                                        th:text="${u.fullname + ' (' + u.username + ')'}"
+                                        th:selected="${interaction?.receiverId == u.id}"></option>
+                            </select>
+                            <div id="error-receiverId" class="text-danger fst-italic small mt-1 error-message"
+                                 style="display: none;"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="message" class="form-label fw-bold text-dark">Nội dung tin nhắn / Lời nhắn <span
+                            class="text-danger">*</span></label>
+                    <textarea class="form-control rounded-3 py-2" id="message" name="message" rows="5"
+                              placeholder="Nhập nội dung trao đổi, tin nhắn, ghi chú..." required
+                              th:text="${interaction?.message}"></textarea>
+                    <div id="error-message" class="text-danger fst-italic small mt-1 error-message"
+                         style="display: none;"></div>
+                </div>
+
+                <div class="d-flex gap-2 pt-3 border-top mt-2">
+                    <button type="submit" class="btn px-4 py-2 fw-medium text-white rounded-3 shadow-sm"
+                            style="background-color: #1a2b4c;">
+                        <i class="bi bi-save me-1"></i> Lưu tương tác
+                    </button>
+                    <button type="reset" class="btn btn-light px-4 py-2 fw-medium border rounded-3 shadow-none">Làm
+                        mới
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            new TomSelect("#propertyId", {
+                create: false,
+                plugins: ['dropdown_input'],
+                sortField: {field: "text", direction: "asc"}
+            });
+            new TomSelect("#senderId", {create: false, plugins: ['dropdown_input']});
+            new TomSelect("#receiverId", {create: false, plugins: ['dropdown_input']});
+        });
+
+        document.getElementById("formInteraction").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const data = Object.fromEntries(new FormData(this).entries());
+            const csrfToken = data._csrf;
+            delete data._csrf;
+
+            const formErrorDiv = document.getElementById("form-error");
+            formErrorDiv.style.display = "none";
+            formErrorDiv.innerText = "";
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.style.display = 'none';
+                el.innerText = '';
+            });
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken},
+                body: JSON.stringify(data)
+            })
+                .then(async response => {
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message || "Lưu thành công!");
+                        window.location.href = "/admin/interactions-list";
+                    } else {
+                        if (result.message) {
+                            formErrorDiv.innerText = result.message;
+                            formErrorDiv.style.display = "block";
+                        } else if (typeof result === 'object' && !Array.isArray(result)) {
+                            for (const [field, errorMessage] of Object.entries(result)) {
+                                const errorDiv = document.getElementById(`error-${field}`);
+                                if (errorDiv) {
+                                    errorDiv.innerText = errorMessage;
+                                    errorDiv.style.display = "block";
+                                }
+                            }
+                        } else alert("LỖI:\n" + result.join("\n"));
+                    }
+                }).catch(error => {
+                console.error(error);
+                alert("Lỗi khi kết nối đến server!");
+            });
+        });
+    </script>
+</div>
+</body>
+</html>

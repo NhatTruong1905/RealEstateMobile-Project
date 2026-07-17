@@ -70,7 +70,9 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public void createOrUpdateProperty(PropertyDTO propertyDTO) {
-        this.propertyRepository.save(this.propertyConverter.toPropertyEntity(propertyDTO));
+        PropertyEntity pEntity = this.propertyConverter.toPropertyEntity(propertyDTO);
+        pEntity.setCity("Hồ Chí Minh");
+        this.propertyRepository.save(pEntity);
     }
 
     @Override
