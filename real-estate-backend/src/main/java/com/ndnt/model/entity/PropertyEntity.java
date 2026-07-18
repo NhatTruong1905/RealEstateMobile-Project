@@ -85,5 +85,5 @@ public class PropertyEntity extends BaseEntity {
     private String status = StatusProperty.PENDING.getStatus();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "property")
-    private List<AssignmentEntity> assignments = new ArrayList<>();
+    private List<AssignmentPropertyEntity> assignments = new ArrayList<>();
 }

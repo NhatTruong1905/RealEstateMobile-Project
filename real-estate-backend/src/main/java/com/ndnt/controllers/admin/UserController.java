@@ -1,12 +1,15 @@
 package com.ndnt.controllers.admin;
 
+import com.ndnt.model.dto.InteractionDTO;
 import com.ndnt.model.dto.PropertyTypeDTO;
 import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
 import com.ndnt.model.dto.request.UserRequestDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
+import com.ndnt.services.AssignmentUserService;
 import com.ndnt.services.RoleService;
 import com.ndnt.services.UserService;
+import com.ndnt.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -32,6 +35,8 @@ public class UserController {
 
     @Autowired
     private RoleService roleService;
+    @Autowired
+    private AssignmentUserService assignmentUserService;
 
     @GetMapping("/users-list")
     public ModelAndView listUsers(@RequestParam(defaultValue = "1") int page,
@@ -39,12 +44,21 @@ public class UserController {
                                   @ModelAttribute("search") UserRequestDTO searchDTO) {
         ModelAndView mav = new ModelAndView("user/list");
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
+
+        if (SecurityUtils.getAuthorities().contains("ROLE_STAFF")) {
+            String username = SecurityUtils.getPrincipal().getUsername();
+            Integer staffId = this.userService.findByUsername(username).getId();
+            searchDTO.setStaffId(staffId);
+        }
         Page<UserDTO> userPage = this.userService.getUsers(searchDTO, pageable);
+
         mav.addObject("users", userPage.getContent());
         mav.addObject("currentPage", page);
         mav.addObject("totalPages", userPage.getTotalPages());
         mav.addObject("totalItems", userPage.getTotalElements());
         mav.addObject("search", searchDTO);
+        mav.addObject("staffs", this.userService.getListStaff());
+        mav.addObject("roles", this.roleService.getRoles());
 
         int windowSize = 5;
         int startPage = Math.max(1, page - windowSize / 2);
@@ -72,6 +86,22 @@ public class UserController {
     @GetMapping("/users-edit-{id}")
     public ModelAndView editUser(@PathVariable Integer id) {
         ModelAndView mav = new ModelAndView("user/edit");
+
+        if (SecurityUtils.getAuthorities().contains("ROLE_STAFF")) {
+            String username = SecurityUtils.getPrincipal().getUsername();
+            Integer staffId = this.userService.findByUsername(username).getId();
+            if (!staffId.equals(id) && !this.assignmentUserService.isStaffOfUser(staffId, id)) {
+                mav.setViewName("error/error");
+                return mav;
+            }
+        }
+
+        UserDTO userDTO = this.userService.findById(id);
+        if (userDTO == null) {
+            mav.setViewName("error/error");
+            return mav;
+        }
+
         mav.addObject("roles", this.roleService.getRoles());
         mav.addObject("user", this.userService.findById(id));
         return mav;

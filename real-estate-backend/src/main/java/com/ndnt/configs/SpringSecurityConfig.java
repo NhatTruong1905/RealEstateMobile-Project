@@ -52,7 +52,10 @@ public class SpringSecurityConfig {
                                 matcher.matcher("/admin/interactions-list"),
                                 matcher.matcher("/admin/interactions-edit*"),
                                 matcher.matcher("/admin/api/interactions"),
-                                matcher.matcher("/admin/api/interactions/**")
+                                matcher.matcher("/admin/api/interactions/**"),
+                                matcher.matcher("/admin/users-list"),
+                                matcher.matcher("/admin/users-edit*"),
+                                matcher.matcher("/admin/api/users")
                         )).hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(matcher.matcher("/admin/**")).hasRole("ADMIN")
                         .anyRequest().authenticated()

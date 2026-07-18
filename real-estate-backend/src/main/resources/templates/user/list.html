@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout/base :: head}">
     <title>Quản lý Người Dùng</title>
 </head>
@@ -42,7 +42,32 @@
                         <input type="text" name="phone" th:value="${search.phone}" class="form-control rounded-3"
                                placeholder="Số điện thoại...">
                     </div>
-                    <div class="col-md-3 d-flex align-items-end justify-content-end gap-2">
+
+                    <div class="col-md-3" sec:authorize="hasRole('ADMIN')">
+                        <label class="form-label small text-muted fw-medium">Vai trò hệ thống</label>
+                        <select name="roleId" class="form-select rounded-3">
+                            <option value="">-- Tất cả vai trò --</option>
+                            <option th:each="r : ${roles}"
+                                    th:value="${r.id}"
+                                    th:text="${r.name}"
+                                    th:selected="${search.roleId == r.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3" sec:authorize="hasRole('ADMIN')">
+                        <label class="form-label small text-muted fw-medium">Nhân viên quản lý</label>
+                        <select name="staffId" class="form-select rounded-3">
+                            <option value="">-- Chọn nhân viên --</option>
+                            <option th:each="staff : ${staffs}"
+                                    th:value="${staff.id}"
+                                    th:text="${staff.fullname}"
+                                    th:selected="${search.staffId == staff.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md d-flex align-items-end justify-content-end gap-2 ms-auto">
                         <button type="submit" class="btn btn-primary rounded-3 py-2 fw-medium shadow-sm flex-grow-1"
                                 style="max-width: 150px; background-color: #1a2b4c; border-color: #1a2b4c;">
                             <i class="bi bi-search"></i> Tìm kiếm
@@ -123,16 +148,24 @@
                         </td>
 
                         <td class="text-center">
+                            <button sec:authorize="hasRole('ADMIN')"
+                                    th:if="${u.getRoleCode() != 'ROLE_ADMIN' and u.getRoleCode() != 'ROLE_STAFF'}"
+                                    type="button"
+                                    class="btn btn-sm btn-light border shadow-none rounded-3 me-2 text-success btn-assign-user"
+                                    th:data-id="${u.id}" title="Phân công nhân viên quản lý khách hàng này">
+                                <i class="bi bi-person-plus-fill me-1"></i> Giao
+                            </button>
+
                             <a th:href="@{/admin/users-edit-{id}(id=${u.id})}"
                                class="btn btn-sm btn-light border shadow-none rounded-3 me-2 text-primary">
-                                <i class="bi bi-pencil-square"></i> Sửa
+                                <i class="bi bi-pencil-square me-1"></i> Sửa
                             </a>
 
                             <form th:action="@{/admin/api/users/{id}(id=${u.id})}" method="post"
                                   class="d-inline delete-user-form">
-                                <button type="submit"
+                                <button type="submit" sec:authorize="hasRole('ADMIN')"
                                         class="btn btn-sm btn-light border shadow-none rounded-3 text-danger">
-                                    <i class="bi bi-trash"></i> Xóa
+                                    <i class="bi bi-trash me-1"></i> Xóa
                                 </button>
                             </form>
                         </td>
@@ -157,17 +190,19 @@
                         <ul class="pagination pagination-sm mb-0 shadow-sm">
                             <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
                                 <a class="page-link"
-                                   th:href="@{/admin/users-list(page=${currentPage - 1}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone})}">Trước</a>
+                                   th:href="@{/admin/users-list(page=${currentPage - 1}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone}, roleId=${search.roleId}, staffId=${search.staffId})}">Trước</a>
                             </li>
+
                             <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}"
                                 th:classappend="${currentPage == i} ? 'active'">
                                 <a class="page-link"
-                                   th:href="@{/admin/users-list(page=${i}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone})}"
+                                   th:href="@{/admin/users-list(page=${i}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone}, roleId=${search.roleId}, staffId=${search.staffId})}"
                                    th:text="${i}"></a>
                             </li>
+
                             <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
                                 <a class="page-link"
-                                   th:href="@{/admin/users-list(page=${currentPage + 1}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone})}">Sau</a>
+                                   th:href="@{/admin/users-list(page=${currentPage + 1}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone}, roleId=${search.roleId}, staffId=${search.staffId})}">Sau</a>
                             </li>
                         </ul>
                     </nav>
@@ -176,14 +211,114 @@
         </div>
     </div>
 
+    <div sec:authorize="hasRole('ADMIN')" class="modal fade" id="assignmentUserModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-header border-bottom-0 pb-2">
+                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-person-gear me-1 text-success"></i> Phân
+                        Công Quản Lý Khách Hàng</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <p class="text-muted small mb-3">Chọn các nhân viên phụ trách chăm sóc khách hàng này.</p>
+                    <input type="hidden" id="submitAssignUserId">
+
+                    <div class="bg-light p-3 rounded-3 border" style="max-height: 250px; overflow-y: auto;">
+                        <div th:each="staff : ${staffs}" class="form-check py-1 border-bottom border-white">
+                            <input class="form-check-input check-staff-item" type="checkbox" th:value="${staff.id}"
+                                   th:id="'userStaffCheck-' + ${staff.id}">
+                            <label class="form-control-label ms-1 text-dark fw-medium small"
+                                   th:for="'userStaffCheck-' + ${staff.id}" th:text="${staff.fullname}"></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3 shadow-none px-3" data-bs-dismiss="modal">Hủy
+                    </button>
+                    <button type="button" id="btnConfirmSaveUserAssignment"
+                            class="btn text-white rounded-3 shadow-sm px-4" style="background-color: #1a2b4c;">
+                        <i class="bi bi-check-circle me-1"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const deleteForms = document.querySelectorAll('.delete-user-form');
+            const assignButtons = document.querySelectorAll('.btn-assign-user');
+            if (assignButtons.length > 0) {
+                const assignModalElement = document.getElementById('assignmentUserModal');
+                const assignModal = new bootstrap.Modal(assignModalElement);
+                const hiddenIdField = document.getElementById('submitAssignUserId');
+                const saveAssignBtn = document.getElementById('btnConfirmSaveUserAssignment');
 
+                assignButtons.forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const userId = this.getAttribute('data-id');
+                        hiddenIdField.value = userId;
+
+                        document.querySelectorAll('.check-staff-item').forEach(cb => cb.checked = false);
+                        fetch(`/admin/api/assignment-user/${userId}`)
+                            .then(res => {
+                                if (res.status === 403) {
+                                    window.location.href = "/admin/error";
+                                    return;
+                                }
+                                return res.json();
+                            })
+                            .then(assignedStaffIds => {
+                                if (assignedStaffIds) {
+                                    assignedStaffIds.forEach(id => {
+                                        const checkbox = document.getElementById(`userStaffCheck-${id}`);
+                                        if (checkbox) checkbox.checked = true;
+                                    });
+                                }
+                                assignModal.show();
+                            })
+                            .catch(err => console.error("Lỗi lấy thông tin phân công khách hàng:", err));
+                    });
+                });
+
+                saveAssignBtn.addEventListener('click', function () {
+                    const userId = parseInt(hiddenIdField.value);
+                    const staffIds = [];
+                    document.querySelectorAll('.check-staff-item:checked').forEach(cb => {
+                        staffIds.push(parseInt(cb.value));
+                    });
+
+                    const payload = {userId: userId, staffIds: staffIds};
+
+                    fetch('/admin/api/assignment-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('input[name="_csrf"]')?.value || '',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(res => {
+                            if (res.status === 403) {
+                                window.location.href = "/admin/error";
+                                return;
+                            }
+                            if (res.ok) {
+                                alert("Cập nhật phân công quản lý thành công!");
+                                assignModal.hide();
+                                window.location.reload();
+                            } else {
+                                alert("Cập nhật phân công thất bại.");
+                            }
+                        })
+                        .catch(err => console.error("Lỗi cập nhật phân công khách hàng:", err));
+                });
+            }
+            const deleteForms = document.querySelectorAll('.delete-user-form');
             deleteForms.forEach(form => {
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();
-
                     if (!confirm('Bạn có chắc chắn muốn xóa người dùng này không? Các dữ liệu liên quan có thể bị ảnh hưởng.')) {
                         return;
                     }
@@ -199,6 +334,10 @@
                         }
                     })
                         .then(response => {
+                            if (response.status === 403) {
+                                window.location.href = "/admin/error";
+                                return;
+                            }
                             if (response.ok) {
                                 alert("Xóa người dùng thành công!");
                                 window.location.reload();

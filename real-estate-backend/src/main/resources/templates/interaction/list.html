@@ -44,7 +44,7 @@
                             <option th:each="type : ${interactionTypes}"
                                     th:value="${type.id}"
                                     th:text="${type.name}"
-                                    th:selected="${search.interactionTypeId == String.valueOf(type.id)}">
+                                    th:selected="${search.interactionTypeId == type.id}">
                             </option>
                         </select>
                     </div>
@@ -55,7 +55,7 @@
                             <option th:each="staff : ${staffs}"
                                     th:value="${staff.id}"
                                     th:text="${staff.fullname}"
-                                    th:selected="${search.staffId == String.valueOf(staff.id)}">
+                                    th:selected="${search.staffId == staff.id}">
                             </option>
                         </select>
                     </div>
@@ -125,6 +125,12 @@
                         </td>
 
                         <td class="text-center">
+                            <button sec:authorize="hasRole('ADMIN')" type="button"
+                                    class="btn btn-sm btn-light border shadow-none rounded-3 me-1 text-success btn-assign-interaction"
+                                    th:data-id="${i.id}" title="Giao việc cho nhân viên">
+                                <i class="bi bi-person-plus-fill"></i>
+                            </button>
+
                             <a th:href="@{/admin/interactions-edit-{id}(id=${i.id})}"
                                class="btn btn-sm btn-light border shadow-none rounded-3 me-1 text-primary"
                                title="Sửa liên hệ">
@@ -162,18 +168,21 @@
                     <ul class="pagination pagination-sm mb-0 shadow-sm">
                         <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
                             <a class="page-link"
-                               th:href="@{/admin/interactions-list(page=${currentPage - 1})}">Trước</a>
+                               th:href="@{/admin/interactions-list(page=${currentPage - 1}, username=${search.username}, title=${search.title}, interactionTypeId=${search.interactionTypeId}, staffId=${search.staffId})}">Trước</a>
                         </li>
                         <li class="page-item disabled" th:if="${startPage > 1}"><span
                                 class="page-link border-0">...</span></li>
                         <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}"
                             th:classappend="${currentPage == i} ? 'active'">
-                            <a class="page-link" th:href="@{/admin/interactions-list(page=${i})}" th:text="${i}">1</a>
+                            <a class="page-link"
+                               th:href="@{/admin/interactions-list(page=${i}, username=${search.username}, title=${search.title}, interactionTypeId=${search.interactionTypeId}, staffId=${search.staffId})}"
+                               th:text="${i}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${endPage < totalPages}"><span class="page-link border-0">...</span>
                         </li>
                         <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
-                            <a class="page-link" th:href="@{/admin/interactions-list(page=${currentPage + 1})}">Sau</a>
+                            <a class="page-link"
+                               th:href="@{/admin/interactions-list(page=${currentPage + 1}, username=${search.username}, title=${search.title}, interactionTypeId=${search.interactionTypeId}, staffId=${search.staffId})}">Sau</a>
                         </li>
                     </ul>
                 </nav>
@@ -194,6 +203,42 @@
                 <div class="modal-footer border-top-0 pt-0">
                     <button type="button" class="btn btn-light rounded-3 shadow-none px-4" data-bs-dismiss="modal">
                         Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div sec:authorize="hasRole('ADMIN')" class="modal fade" id="assignmentModal" tabindex="-1"
+         aria-labelledby="assignmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-header border-bottom-0 pb-2">
+                    <h5 class="modal-title fw-bold text-dark" id="assignmentModalLabel"><i
+                            class="bi bi-person-gear me-1 text-success"></i> Phân Công Nhân Viên</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <p class="text-muted small mb-3">Chọn các nhân viên phụ trách theo dõi lịch sử tương tác này.</p>
+                    <input type="hidden" id="submitAssignInteractionId">
+
+                    <div class="bg-light p-3 rounded-3 border custom-staff-list"
+                         style="max-height: 250px; overflow-y: auto;">
+                        <div th:each="staff : ${staffs}" class="form-check py-1 border-bottom border-white">
+                            <input class="form-check-input check-staff-item" type="checkbox" th:value="${staff.id}"
+                                   th:id="'staffCheck-' + ${staff.id}">
+                            <label class="form-control-label ms-1 text-dark fw-medium small"
+                                   th:for="'staffCheck-' + ${staff.id}" th:text="${staff.fullname}"></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3 shadow-none px-3" data-bs-dismiss="modal">Hủy
+                    </button>
+                    <button type="button" id="btnConfirmSaveAssignment" class="btn text-white rounded-3 shadow-sm px-4"
+                            style="background-color: #1a2b4c;">
+                        <i class="bi bi-check-circle me-1"></i> Lưu thay đổi
                     </button>
                 </div>
             </div>
@@ -231,6 +276,75 @@
                     new bootstrap.Modal(document.getElementById('infoModal')).show();
                 });
             });
+
+            const assignButtons = document.querySelectorAll('.btn-assign-interaction');
+            if (assignButtons.length > 0) {
+                const assignModalElement = document.getElementById('assignmentModal');
+                const assignModal = new bootstrap.Modal(assignModalElement);
+                const hiddenIdField = document.getElementById('submitAssignInteractionId');
+                const saveAssignBtn = document.getElementById('btnConfirmSaveAssignment');
+
+                assignButtons.forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const interactionId = this.getAttribute('data-id');
+                        hiddenIdField.value = interactionId;
+
+                        document.querySelectorAll('.check-staff-item').forEach(cb => cb.checked = false);
+                        fetch(`/admin/api/assignment-interaction/${interactionId}`)
+                            .then(res => {
+                                if (res.status === 403) {
+                                    window.location.href = "/admin/error";
+                                    return;
+                                }
+                                return res.json();
+                            })
+                            .then(assignedStaffIds => {
+                                if (assignedStaffIds) {
+                                    assignedStaffIds.forEach(id => {
+                                        const checkbox = document.getElementById(`staffCheck-${id}`);
+                                        if (checkbox) checkbox.checked = true;
+                                    });
+                                }
+                                assignModal.show();
+                            })
+                            .catch(err => console.error("Lỗi lấy thông tin phân công:", err));
+                    });
+                });
+
+                saveAssignBtn.addEventListener('click', function () {
+                    const interactionId = parseInt(hiddenIdField.value);
+                    const staffIds = [];
+                    document.querySelectorAll('.check-staff-item:checked').forEach(cb => {
+                        staffIds.push(parseInt(cb.value));
+                    });
+
+                    const payload = {
+                        interactionId: interactionId,
+                        staffIds: staffIds
+                    };
+                    fetch('/admin/api/assignment-interaction', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('input[name="_csrf"]')?.value || ''
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(res => {
+                            if (res.status === 403) {
+                                window.location.href = "/admin/error";
+                                return;
+                            }
+                            if (res.ok) {
+                                alert("Cập nhật phân công nhân viên thành công!");
+                                assignModal.hide();
+                                window.location.reload();
+                            } else {
+                                alert("Cập nhật phân công thất bại.");
+                            }
+                        }).catch(err => console.error("Lỗi cập nhật phân công:", err));
+                });
+            }
         });
     </script>
 </div>

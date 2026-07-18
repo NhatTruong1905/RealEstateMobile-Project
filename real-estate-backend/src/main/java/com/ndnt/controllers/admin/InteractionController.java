@@ -4,10 +4,7 @@ import com.ndnt.model.dto.InteractionDTO;
 import com.ndnt.model.dto.PropertyTypeDTO;
 import com.ndnt.model.dto.request.InteractionRequestDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
-import com.ndnt.services.InteractionService;
-import com.ndnt.services.InteractionTypeService;
-import com.ndnt.services.PropertyService;
-import com.ndnt.services.UserService;
+import com.ndnt.services.*;
 import com.ndnt.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,15 +27,14 @@ import java.util.stream.Collectors;
 public class InteractionController {
     @Autowired
     private InteractionService interactionService;
-
     @Autowired
     private UserService userService;
-
     @Autowired
     private InteractionTypeService interactionTypeService;
-
     @Autowired
     private PropertyService propertyService;
+    @Autowired
+    private AssignmentInteractionService assignmentInteractionService;
 
     @GetMapping("/interactions-list")
     public ModelAndView listInteraction(@RequestParam(defaultValue = "1") int page,
@@ -54,6 +50,7 @@ public class InteractionController {
         }
         Page<InteractionDTO> interactionPage = this.interactionService.getInteractions(searchDTO, pageable);
 
+        mav.addObject("staffs", this.userService.getListStaff());
         mav.addObject("interactions", interactionPage.getContent());
         mav.addObject("currentPage", page);
         mav.addObject("totalPages", interactionPage.getTotalPages());
@@ -89,6 +86,22 @@ public class InteractionController {
     @GetMapping("/interactions-edit-{id}")
     public ModelAndView editInteraction(@PathVariable Integer id) {
         ModelAndView mav = new ModelAndView("interaction/edit");
+
+        if (SecurityUtils.getAuthorities().contains("ROLE_STAFF")) {
+            String username = SecurityUtils.getPrincipal().getUsername();
+            Integer staffId = this.userService.findByUsername(username).getId();
+            if (!this.assignmentInteractionService.isStaffOfInteraction(staffId, id)) {
+                mav.setViewName("error/error");
+                return mav;
+            }
+        }
+
+        InteractionDTO interactionDTO = this.interactionService.findById(id);
+        if (interactionDTO == null) {
+            mav.setViewName("error/error");
+            return mav;
+        }
+
         mav.addObject("interaction", this.interactionService.findById(id));
         mav.addObject("users", this.userService.getUsers());
         mav.addObject("interactionTypes", this.interactionTypeService.getInteractionTypes());

@@ -77,6 +77,12 @@ public class UserServiceImpl implements UserService {
                     predicates.add(builder.like(root.get("email"), "%" + searchDTO.getEmail().trim() + "%"));
                 if (searchDTO.getPhone() != null && !searchDTO.getPhone().isBlank())
                     predicates.add(builder.like(root.get("phone"), "%" + searchDTO.getPhone().trim() + "%"));
+                if (searchDTO.getStaffId() != null) {
+                    predicates.add(builder.equal(root.join("assignmentUserUsers").join("staff").get("id"), searchDTO.getStaffId()));
+                }
+                if (searchDTO.getRoleId() != null) {
+                    predicates.add(builder.equal(root.join("role").get("id"), searchDTO.getRoleId()));
+                }
             }
             return builder.and(predicates.toArray(new Predicate[0]));
         };

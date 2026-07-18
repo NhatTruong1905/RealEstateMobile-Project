@@ -10,4 +10,6 @@ public class UserRequestDTO {
     private String fullname;
     private String email;
     private String phone;
+    private Integer roleId;
+    private Integer staffId;
 }

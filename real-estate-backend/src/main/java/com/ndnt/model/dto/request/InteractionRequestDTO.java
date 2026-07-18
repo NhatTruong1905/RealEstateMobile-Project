@@ -8,6 +8,6 @@ import lombok.Setter;
 public class InteractionRequestDTO {
     private String username;
     private String title;
-    private String interactionTypeId;
+    private Integer interactionTypeId;
     private Integer staffId;
 }

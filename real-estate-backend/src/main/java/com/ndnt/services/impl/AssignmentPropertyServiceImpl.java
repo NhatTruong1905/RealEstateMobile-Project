@@ -1,26 +1,25 @@
 package com.ndnt.services.impl;
 
 import com.ndnt.model.dto.AssignmentDTO;
-import com.ndnt.model.entity.AssignmentEntity;
+import com.ndnt.model.entity.AssignmentPropertyEntity;
 import com.ndnt.model.entity.PropertyEntity;
 import com.ndnt.model.entity.UserEntity;
-import com.ndnt.repositories.AssignmentRepository;
+import com.ndnt.repositories.AssignmentPropertyRepository;
 import com.ndnt.repositories.PropertyRepository;
 import com.ndnt.repositories.UserRepository;
-import com.ndnt.services.AssignmentService;
+import com.ndnt.services.AssignmentPropertyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class AssignmentServiceImpl implements AssignmentService {
+public class AssignmentPropertyServiceImpl implements AssignmentPropertyService {
     @Autowired
-    private AssignmentRepository assignmentRepository;
+    private AssignmentPropertyRepository assignmentPropertyRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -30,24 +29,23 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     public void createOrUpdateAssignment(AssignmentDTO assignmentDTO) {
-        if (this.assignmentRepository.existsByProperty_Id(assignmentDTO.getPropertyId())) {
-            this.assignmentRepository.deleteAllByProperty_Id(assignmentDTO.getPropertyId());
-            this.assignmentRepository.flush();
+        if (this.assignmentPropertyRepository.existsByProperty_Id(assignmentDTO.getPropertyId())) {
+            this.assignmentPropertyRepository.deleteAllByProperty_Id(assignmentDTO.getPropertyId());
+            this.assignmentPropertyRepository.flush();
         }
         PropertyEntity p = this.propertyRepository.findById(assignmentDTO.getPropertyId()).get();
         for (Integer uId : assignmentDTO.getStaffIds()) {
             UserEntity u = this.userRepository.findById(uId).get();
-            AssignmentEntity assignment = new AssignmentEntity();
+            AssignmentPropertyEntity assignment = new AssignmentPropertyEntity();
             assignment.setProperty(p);
             assignment.setStaff(u);
-            this.assignmentRepository.save(assignment);
+            this.assignmentPropertyRepository.save(assignment);
         }
-
     }
 
     @Override
     public List<Integer> getAssignedStaffIdsByProperty(Integer propertyId) {
-        List<AssignmentEntity> assignments = this.assignmentRepository.findByProperty_Id(propertyId);
+        List<AssignmentPropertyEntity> assignments = this.assignmentPropertyRepository.findByProperty_Id(propertyId);
 
         return assignments.stream()
                 .map(assignment -> assignment.getStaff().getId())
@@ -56,6 +54,6 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     public boolean isStaffOfProperty(Integer staffId, Integer properTyId) {
-        return this.assignmentRepository.existsByStaff_IdAndProperty_Id(staffId, properTyId);
+        return this.assignmentPropertyRepository.existsByStaff_IdAndProperty_Id(staffId, properTyId);
     }
 }

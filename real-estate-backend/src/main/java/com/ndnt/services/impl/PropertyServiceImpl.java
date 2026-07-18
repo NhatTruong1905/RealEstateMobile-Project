@@ -3,7 +3,7 @@ package com.ndnt.services.impl;
 import com.ndnt.converter.PropertyConverter;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.dto.request.PropertyRequestDTO;
-import com.ndnt.model.entity.AssignmentEntity;
+import com.ndnt.model.entity.AssignmentPropertyEntity;
 import com.ndnt.model.entity.PropertyEntity;
 import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.repositories.PropertyRepository;
@@ -36,8 +36,8 @@ public class PropertyServiceImpl implements PropertyService {
             PropertyDTO pDTO = this.propertyConverter.toPropertyDTO(pEntity);
             pDTO.setAddressDetail(pEntity.getAddress() + "," + pEntity.getWard().getName() + "," + pEntity.getWard().getDistrict().getName() + ", " + pEntity.getCity());
             if (!pEntity.getAssignments().isEmpty()) {
-                for (AssignmentEntity assignmentEntity : pEntity.getAssignments()) {
-                    pDTO.getAssignmentIds().add(assignmentEntity.getId());
+                for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
+                    pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
                 }
             }
             propertyDTOs.add(pDTO);
@@ -105,8 +105,8 @@ public class PropertyServiceImpl implements PropertyService {
             pDTO.setAddressDetail(address + ", " + wardName + ", " + districtName + ", " + city);
 
             if (pEntity.getAssignments() != null && !pEntity.getAssignments().isEmpty()) {
-                for (AssignmentEntity assignmentEntity : pEntity.getAssignments()) {
-                    pDTO.getAssignmentIds().add(assignmentEntity.getId());
+                for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
+                    pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
                 }
             }
             return pDTO;

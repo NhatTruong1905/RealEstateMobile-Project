@@ -1,6 +1,5 @@
 package com.ndnt.controllers.admin;
 
-import com.ndnt.model.dto.PropertyCategoryDTO;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.dto.request.PropertyRequestDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
@@ -14,13 +13,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,7 +37,7 @@ public class PropertyController {
     @Autowired
     private DistrictService districtService;
     @Autowired
-    private AssignmentService assignmentService;
+    private AssignmentPropertyService assignmentPropertyService;
 
 
     @GetMapping("/properties-list")
@@ -100,7 +97,7 @@ public class PropertyController {
         if (SecurityUtils.getAuthorities().contains("ROLE_STAFF")) {
             String username = SecurityUtils.getPrincipal().getUsername();
             Integer staffId = this.userService.findByUsername(username).getId();
-            if (!this.assignmentService.isStaffOfProperty(staffId, id)) {
+            if (!this.assignmentPropertyService.isStaffOfProperty(staffId, id)) {
                 mav.setViewName("error/error");
                 return mav;
             }

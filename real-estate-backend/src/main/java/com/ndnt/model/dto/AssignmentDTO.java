@@ -9,5 +9,7 @@ import java.util.List;
 @Getter
 public class AssignmentDTO extends BaseDTO {
     private Integer propertyId;
+    private Integer interactionId;
+    private Integer userId;
     private List<Integer> staffIds;
 }

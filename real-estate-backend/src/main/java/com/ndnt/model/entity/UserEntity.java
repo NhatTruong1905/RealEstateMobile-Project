@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -49,5 +50,11 @@ public class UserEntity extends BaseEntity {
     private String avatar;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "staff")
-    private List<AssignmentEntity> assignments;
+    private List<AssignmentPropertyEntity> assignments = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+    private List<AssignmentUserEntity> assignmentUserUsers = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.LAZY,mappedBy = "staff")
+    private List<AssignmentUserEntity> assignmentUserStaffs = new ArrayList<>();
 }

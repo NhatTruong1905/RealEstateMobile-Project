@@ -9,6 +9,9 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @Entity
@@ -45,4 +48,6 @@ public class InteractionEntity extends BaseEntity {
     @ColumnDefault("1")
     private Integer status = 1;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "interaction")
+    private List<AssignmentInteractionEntity> assignmentInteractions = new ArrayList<>();
 }
