@@ -41,6 +41,19 @@ public class SpringSecurityConfig {
                 ))
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers(matcher.matcher("/admin/login")).permitAll()
+                        .requestMatchers(matcher.matcher("/admin/logout")).permitAll()
+                        .requestMatchers(matcher.matcher("/admin/error")).permitAll()
+                        .requestMatchers(new OrRequestMatcher(
+                                matcher.matcher("/admin/"),
+                                matcher.matcher("/admin/properties-list"),
+                                matcher.matcher("/admin/properties-edit*"),
+                                matcher.matcher("/admin/api/properties"),
+                                matcher.matcher("/admin/api/properties/**"),
+                                matcher.matcher("/admin/interactions-list"),
+                                matcher.matcher("/admin/interactions-edit*"),
+                                matcher.matcher("/admin/api/interactions"),
+                                matcher.matcher("/admin/api/interactions/**")
+                        )).hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(matcher.matcher("/admin/**")).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 ).formLogin(form -> form.loginPage("/admin/login")
@@ -50,7 +63,8 @@ public class SpringSecurityConfig {
                         .permitAll()
                 )
                 .logout((logout) -> logout.logoutSuccessUrl("/admin/login")
-                        .permitAll().deleteCookies("JSESSIONID"));
+                        .permitAll().deleteCookies("JSESSIONID"))
+                .exceptionHandling(exception -> exception.accessDeniedPage("/admin/error"));
 
 
         return http.build();

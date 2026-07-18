@@ -33,4 +33,9 @@ public class HomeController {
 
         return new ModelAndView("redirect:/admin/login");
     }
+
+    @GetMapping("/error")
+    public ModelAndView error() {
+        return new ModelAndView("error/error");
+    }
 }

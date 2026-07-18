@@ -53,4 +53,9 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .map(assignment -> assignment.getStaff().getId())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public boolean isStaffOfProperty(Integer staffId, Integer properTyId) {
+        return this.assignmentRepository.existsByStaff_IdAndProperty_Id(staffId, properTyId);
+    }
 }

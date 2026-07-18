@@ -3,6 +3,7 @@ package com.ndnt.controllers.admin;
 import com.ndnt.model.dto.PropertyTypeDTO;
 import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
+import com.ndnt.model.dto.request.UserRequestDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
 import com.ndnt.services.RoleService;
 import com.ndnt.services.UserService;
@@ -34,14 +35,16 @@ public class UserController {
 
     @GetMapping("/users-list")
     public ModelAndView listUsers(@RequestParam(defaultValue = "1") int page,
-                                  @RequestParam(defaultValue = "8") int size) {
+                                  @RequestParam(defaultValue = "8") int size,
+                                  @ModelAttribute("search") UserRequestDTO searchDTO) {
         ModelAndView mav = new ModelAndView("user/list");
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
-        Page<UserDTO> userPage = this.userService.getUsers(pageable);
+        Page<UserDTO> userPage = this.userService.getUsers(searchDTO, pageable);
         mav.addObject("users", userPage.getContent());
         mav.addObject("currentPage", page);
         mav.addObject("totalPages", userPage.getTotalPages());
         mav.addObject("totalItems", userPage.getTotalElements());
+        mav.addObject("search", searchDTO);
 
         int windowSize = 5;
         int startPage = Math.max(1, page - windowSize / 2);

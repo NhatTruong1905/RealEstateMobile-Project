@@ -18,7 +18,7 @@ public class PropertyDTO extends BaseDTO {
     private String address;
     private String city;
     private Integer wardId;
-    private String addressProperty;
+    private String addressDetail;
     private BigDecimal price;
     private BigDecimal area;
     private Integer floorCount;

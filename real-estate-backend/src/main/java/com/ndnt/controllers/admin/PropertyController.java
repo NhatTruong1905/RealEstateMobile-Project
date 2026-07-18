@@ -2,9 +2,11 @@ package com.ndnt.controllers.admin;
 
 import com.ndnt.model.dto.PropertyCategoryDTO;
 import com.ndnt.model.dto.PropertyDTO;
+import com.ndnt.model.dto.request.PropertyRequestDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
 import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.services.*;
+import com.ndnt.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,11 +14,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,21 +37,34 @@ public class PropertyController {
     private PropertyTypeService propertyTypeService;
     @Autowired
     private WardService wardService;
+    @Autowired
+    private DistrictService districtService;
+    @Autowired
+    private AssignmentService assignmentService;
 
 
     @GetMapping("/properties-list")
     public ModelAndView listProperty(@RequestParam(defaultValue = "1") int page,
-                                     @RequestParam(defaultValue = "8") int size) {
+                                     @RequestParam(defaultValue = "8") int size,
+                                     @ModelAttribute("search") PropertyRequestDTO searchDTO) {
         ModelAndView mav = new ModelAndView("property/list");
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
 
-        Page<PropertyDTO> propertyPage = this.propertyService.getProperties(pageable);
+        if (SecurityUtils.getAuthorities().contains("ROLE_STAFF")) {
+            String username = SecurityUtils.getPrincipal().getUsername();
+            Integer staffId = this.userService.findByUsername(username).getId();
+            searchDTO.setStaffId(staffId);
+        }
+        Page<PropertyDTO> propertyPage = this.propertyService.getProperties(searchDTO, pageable);
 
         mav.addObject("staffs", this.userService.getListStaff());
         mav.addObject("properties", propertyPage.getContent());
         mav.addObject("currentPage", page);
         mav.addObject("totalPages", propertyPage.getTotalPages());
         mav.addObject("totalItems", propertyPage.getTotalElements());
+        mav.addObject("wards", this.wardService.getWards());
+        mav.addObject("districts", this.districtService.getAllDistricts());
+        mav.addObject("search", searchDTO);
 
         int windowSize = 5;
         int startPage = Math.max(1, page - windowSize / 2);
@@ -71,6 +88,7 @@ public class PropertyController {
         mav.addObject("types", this.propertyTypeService.getPropertyTypes());
         mav.addObject("categories", this.propertyCategoryService.getPropertyCategories());
         mav.addObject("wards", this.wardService.getWards());
+        mav.addObject("users", this.userService.getUsers());
         mav.addObject("status", StatusProperty.values());
         return mav;
     }
@@ -78,6 +96,22 @@ public class PropertyController {
     @GetMapping("/properties-edit-{id}")
     public ModelAndView editProperty(@PathVariable Integer id) {
         ModelAndView mav = new ModelAndView("property/edit");
+
+        if (SecurityUtils.getAuthorities().contains("ROLE_STAFF")) {
+            String username = SecurityUtils.getPrincipal().getUsername();
+            Integer staffId = this.userService.findByUsername(username).getId();
+            if (!this.assignmentService.isStaffOfProperty(staffId, id)) {
+                mav.setViewName("error/error");
+                return mav;
+            }
+        }
+
+        PropertyDTO propertyDTO = this.propertyService.findById(id);
+        if (propertyDTO == null) {
+            mav.setViewName("error/error");
+            return mav;
+        }
+
         mav.addObject("users", this.userService.getUsers());
         mav.addObject("types", this.propertyTypeService.getPropertyTypes());
         mav.addObject("categories", this.propertyCategoryService.getPropertyCategories());
@@ -96,7 +130,6 @@ public class PropertyController {
                     .collect(Collectors.toList());
             return ResponseEntity.badRequest().body(errors);
         }
-
         this.propertyService.createOrUpdateProperty(propertyDTO);
 
         ResponseDTO responseDTO = new ResponseDTO();

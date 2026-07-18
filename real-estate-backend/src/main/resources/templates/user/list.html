@@ -22,6 +22,42 @@
         </div>
     </div>
 
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-funnel-fill me-1"></i> Bộ lọc tìm kiếm nâng cao</h6>
+            <form th:action="@{/admin/users-list}" method="get" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Tên đăng nhập</label>
+                        <input type="text" name="username" th:value="${search.username}" class="form-control rounded-3"
+                               placeholder="Tên đăng nhập...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Họ và tên</label>
+                        <input type="text" name="fullname" th:value="${search.fullname}" class="form-control rounded-3"
+                               placeholder="Họ và tên...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Số điện thoại</label>
+                        <input type="text" name="phone" th:value="${search.phone}" class="form-control rounded-3"
+                               placeholder="Số điện thoại...">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end justify-content-end gap-2">
+                        <button type="submit" class="btn btn-primary rounded-3 py-2 fw-medium shadow-sm flex-grow-1"
+                                style="max-width: 150px; background-color: #1a2b4c; border-color: #1a2b4c;">
+                            <i class="bi bi-search"></i> Tìm kiếm
+                        </button>
+                        <a th:href="@{/admin/users-list}"
+                           class="btn btn-outline-secondary rounded-3 py-2 fw-medium flex-grow-1"
+                           style="max-width: 120px;">
+                            <i class="bi bi-arrow-counterclockwise"></i> Làm mới
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4">
             <div class="table-responsive">
@@ -113,33 +149,25 @@
 
                 <div th:if="${totalPages > 1}"
                      class="d-flex justify-content-between align-items-center mt-4 border-top pt-3">
-                    <div class="text-muted small">
-                        Hiển thị <span class="fw-bold text-dark" th:text="${users.size()}"></span> trong tổng số
-                        <span class="fw-bold text-dark" th:text="${totalItems}"></span> bản ghi.
+                    <div class="text-muted small">Hiển thị <span class="fw-bold text-dark"
+                                                                 th:text="${users.size()}"></span> trong tổng số <span
+                            class="fw-bold text-dark" th:text="${totalItems}"></span> bản ghi.
                     </div>
-
                     <nav aria-label="Page navigation">
                         <ul class="pagination pagination-sm mb-0 shadow-sm">
                             <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
-                                <a class="page-link" th:href="@{/admin/users-list(page=${currentPage - 1})}"
-                                   tabindex="-1">Trước</a>
+                                <a class="page-link"
+                                   th:href="@{/admin/users-list(page=${currentPage - 1}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone})}">Trước</a>
                             </li>
-
-                            <li class="page-item disabled" th:if="${startPage > 1}">
-                                <span class="page-link border-0">...</span>
-                            </li>
-
                             <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}"
                                 th:classappend="${currentPage == i} ? 'active'">
-                                <a class="page-link" th:href="@{/admin/users-list(page=${i})}" th:text="${i}">1</a>
+                                <a class="page-link"
+                                   th:href="@{/admin/users-list(page=${i}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone})}"
+                                   th:text="${i}"></a>
                             </li>
-
-                            <li class="page-item disabled" th:if="${endPage < totalPages}">
-                                <span class="page-link border-0">...</span>
-                            </li>
-
                             <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
-                                <a class="page-link" th:href="@{/admin/users-list(page=${currentPage + 1})}">Sau</a>
+                                <a class="page-link"
+                                   th:href="@{/admin/users-list(page=${currentPage + 1}, username=${search.username}, fullname=${search.fullname}, phone=${search.phone})}">Sau</a>
                             </li>
                         </ul>
                     </nav>

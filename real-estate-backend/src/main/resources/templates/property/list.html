@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout/base :: head}">
     <title>Quản lý Tin đăng BĐS</title>
 </head>
@@ -7,6 +7,8 @@
 <body th:replace="~{layout/base :: main('property', ~{:: #property-content})}">
 
 <div id="property-content">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
     <div class="d-flex justify-content-between align-items-end mb-4">
         <div>
@@ -19,6 +21,113 @@
                style="background-color: #1a2b4c;">
                 <i class="bi bi-plus-lg me-1"></i> Đăng tin mới
             </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-funnel-fill me-1"></i> Bộ lọc tìm kiếm nâng cao</h6>
+            <form th:action="@{/admin/properties-list}" method="get" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Tiêu đề tin đăng</label>
+                        <input type="text" name="title" th:value="${search.title}" class="form-control rounded-3"
+                               placeholder="Nhập tiêu đề...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Địa chỉ số nhà</label>
+                        <input type="text" name="address" th:value="${search.address}" class="form-control rounded-3"
+                               placeholder="Tên đường, số nhà...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Quận / Huyện</label>
+                        <select name="districtId" id="search-district" class="form-select rounded-3">
+                            <option value="">-- Chọn Quận/Huyện --</option>
+                            <option th:each="d : ${districts}"
+                                    th:value="${d.id}"
+                                    th:text="${d.name}"
+                                    th:selected="${search.districtId == d.id}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Phường / Xã</label>
+                        <select name="wardId" id="search-ward" class="form-select rounded-3">
+                            <option value="">-- Chọn Phường/Xã --</option>
+                            <option th:each="w : ${wards}"
+                                    th:value="${w.id}"
+                                    th:text="${w.name} + ' - ' + ${w.getDistrictName()}"
+                                    th:selected="${search.wardId == w.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Giá từ (VND)</label>
+                        <input type="number" name="fromPrice" th:value="${search.fromPrice}"
+                               class="form-control rounded-3" placeholder="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Giá đến (VND)</label>
+                        <input type="number" name="toPrice" th:value="${search.toPrice}" class="form-control rounded-3"
+                               placeholder="Đến...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Diện tích (m²)</label>
+                        <input type="number" step="0.01" name="area" th:value="${search.area}"
+                               class="form-control rounded-3" placeholder="m²">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Số tầng</label>
+                        <input type="number" name="floorCount" th:value="${search.floorCount}"
+                               class="form-control rounded-3" placeholder="Số tầng">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Phòng ngủ</label>
+                        <input type="number" name="bedroomCount" th:value="${search.bedroomCount}"
+                               class="form-control rounded-3" placeholder="Số phòng">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Phòng tắm</label>
+                        <input type="number" name="bathroomCount" th:value="${search.bathroomCount}"
+                               class="form-control rounded-3" placeholder="Số phòng">
+                    </div>
+
+                    <div class="col-md-3" sec:authorize="hasRole('ADMIN')">
+                        <label class="form-label small text-muted fw-medium">Nhân viên phụ trách</label>
+                        <select name="staffId" class="form-select rounded-3">
+                            <option value="">-- Chọn nhân viên --</option>
+                            <option th:each="staff : ${staffs}"
+                                    th:value="${staff.id}"
+                                    th:text="${staff.fullname}"
+                                    th:selected="${search.staffId == staff.id}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Hướng nhà</label>
+                        <input type="text" name="direction" th:value="${search.direction}"
+                               class="form-control rounded-3" placeholder="Đông, Tây...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Pháp lý</label>
+                        <input type="text" name="legal" th:value="${search.legal}" class="form-control rounded-3"
+                               placeholder="Sổ đỏ, HĐMB...">
+                    </div>
+
+                    <div class="col-md-5 d-flex align-items-end justify-content-end gap-2">
+                        <button type="submit" class="btn btn-primary rounded-3 py-2 fw-medium shadow-sm flex-grow-1"
+                                style="max-width: 200px; background-color: #1a2b4c; border-color: #1a2b4c;">
+                            <i class="bi bi-search"></i> Tìm kiếm
+                        </button>
+                        <a th:href="@{/admin/properties-list}"
+                           class="btn btn-outline-secondary rounded-3 py-2 fw-medium flex-grow-1"
+                           style="max-width: 150px;">
+                            <i class="bi bi-arrow-counterclockwise"></i> Làm mới
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -52,8 +161,8 @@
                         <td>
                             <a href="javascript:void(0)" class="text-muted small text-truncate d-block view-full-text"
                                style="max-width: 200px; text-decoration: none;"
-                               data-title="Địa chỉ chi tiết" th:data-content="${p.addressProperty}"
-                               th:text="${p.addressProperty}">
+                               data-title="Địa chỉ chi tiết" th:data-content="${p.addressDetail}"
+                               th:text="${p.addressDetail}">
                             </a>
                         </td>
 
@@ -76,6 +185,7 @@
 
                         <td class="text-center">
                             <button th:if="${p.status != 'Đã xóa'}"
+                                    sec:authorize="hasRole('ADMIN')"
                                     type="button"
                                     class="btn btn-sm btn-light border shadow-none rounded-3 me-1 text-success btn-assign"
                                     title="Giao bài đăng cho nhân viên"
@@ -114,29 +224,32 @@
 
             <div th:if="${totalPages > 1}"
                  class="d-flex justify-content-between align-items-center mt-4 border-top pt-3">
-                <div class="text-muted small">
-                    Hiển thị <span class="fw-bold text-dark" th:text="${properties.size()}"></span> trong tổng số
-                    <span class="fw-bold text-dark" th:text="${totalItems}"></span> bản ghi.
+                <div class="text-muted small">Hiển thị <span class="fw-bold text-dark"
+                                                             th:text="${properties.size()}"></span> trong tổng số <span
+                        class="fw-bold text-dark" th:text="${totalItems}"></span> bản ghi.
                 </div>
 
                 <nav aria-label="Page navigation">
                     <ul class="pagination pagination-sm mb-0 shadow-sm">
                         <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
-                            <a class="page-link" th:href="@{/admin/properties-list(page=${currentPage - 1})}"
-                               tabindex="-1">Trước</a>
+                            <a class="page-link"
+                               th:href="@{/admin/properties-list(page=${currentPage - 1}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}">Trước</a>
                         </li>
                         <li class="page-item disabled" th:if="${startPage > 1}">
                             <span class="page-link border-0">...</span>
                         </li>
                         <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}"
                             th:classappend="${currentPage == i} ? 'active'">
-                            <a class="page-link" th:href="@{/admin/properties-list(page=${i})}" th:text="${i}">1</a>
+                            <a class="page-link"
+                               th:href="@{/admin/properties-list(page=${i}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}"
+                               th:text="${i}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${endPage < totalPages}">
                             <span class="page-link border-0">...</span>
                         </li>
                         <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
-                            <a class="page-link" th:href="@{/admin/properties-list(page=${currentPage + 1})}">Sau</a>
+                            <a class="page-link"
+                               th:href="@{/admin/properties-list(page=${currentPage + 1}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}">Sau</a>
                         </li>
                     </ul>
                 </nav>
@@ -240,6 +353,26 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            new TomSelect("#search-district", {
+                create: false,
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                },
+                placeholder: "-- Chọn Quận/Huyện --",
+                allowEmptyOption: true
+            });
+
+            new TomSelect("#search-ward", {
+                create: false,
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                },
+                placeholder: "-- Chọn Phường/Xã --",
+                allowEmptyOption: true
+            });
+
             const checkAllBtn = document.getElementById('checkAllStaff');
             const staffCheckboxes = document.querySelectorAll('.staff-checkbox');
             if (checkAllBtn) {

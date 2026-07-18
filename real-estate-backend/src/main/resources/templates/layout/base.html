@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:fragment="head">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -115,17 +115,19 @@
            th:classappend="${activeMenu == 'property' ? 'active' : ''}">
             <i class="bi bi-building"></i> Tin đăng (BĐS)
         </a>
-        <a th:href="@{/admin/property-types-list}" class="nav-link-custom"
-           th:classappend="${activeMenu == 'propertyType' ? 'active' : ''}">
-            <i class="bi bi-tags"></i> Loại hình BĐS
-        </a>
-        <a th:href="@{/admin/property-categories-list}" class="nav-link-custom"
-           th:classappend="${activeMenu == 'propertyCategory' ? 'active' : ''}">
-            <i class="bi bi-grid"></i> Phân khúc
-        </a>
+        <th:block sec:authorize="hasRole('ADMIN')">
+            <a th:href="@{/admin/property-types-list}" class="nav-link-custom"
+               th:classappend="${activeMenu == 'propertyType' ? 'active' : ''}">
+                <i class="bi bi-tags"></i> Loại hình BĐS
+            </a>
+            <a th:href="@{/admin/property-categories-list}" class="nav-link-custom"
+               th:classappend="${activeMenu == 'propertyCategory' ? 'active' : ''}">
+                <i class="bi bi-grid"></i> Phân khúc
+            </a>
+        </th:block>
 
         <div class="sidebar-heading">Khách hàng & Đối tác</div>
-        <a th:href="@{/admin/users-list}" class="nav-link-custom"
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users-list}" class="nav-link-custom"
            th:classappend="${activeMenu == 'user' ? 'active' : ''}">
             <i class="bi bi-people"></i> Tài khoản
         </a>
@@ -133,24 +135,26 @@
            th:classappend="${activeMenu == 'interaction' ? 'active' : ''}">
             <i class="bi bi-telephone"></i> Lịch sử liên hệ
         </a>
-        <a th:href="@{/admin/interaction-types-list}" class="nav-link-custom"
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/interaction-types-list}" class="nav-link-custom"
            th:classappend="${activeMenu == 'interactionType' ? 'active' : ''}">
             <i class="bi bi-chat-left-dots"></i> Loại tương tác
         </a>
 
-        <div class="sidebar-heading">Hệ thống</div>
-        <a th:href="@{/admin/roles-list}" class="nav-link-custom"
-           th:classappend="${activeMenu == 'role' ? 'active' : ''}">
-            <i class="bi bi-shield-lock"></i> Vai trò
-        </a>
-        <a th:href="@{/admin/districts-list}" class="nav-link-custom"
-           th:classappend="${activeMenu == 'district' ? 'active' : ''}">
-            <i class="bi bi-map"></i> Quận / Huyện
-        </a>
-        <a th:href="@{/admin/wards-list}" class="nav-link-custom"
-           th:classappend="${activeMenu == 'ward' ? 'active' : ''}">
-            <i class="bi bi-geo-alt"></i> Phường / Xã
-        </a>
+        <th:block sec:authorize="hasRole('ADMIN')">
+            <div class="sidebar-heading">Hệ thống</div>
+            <a th:href="@{/admin/roles-list}" class="nav-link-custom"
+               th:classappend="${activeMenu == 'role' ? 'active' : ''}">
+                <i class="bi bi-shield-lock"></i> Vai trò
+            </a>
+            <a th:href="@{/admin/districts-list}" class="nav-link-custom"
+               th:classappend="${activeMenu == 'district' ? 'active' : ''}">
+                <i class="bi bi-map"></i> Quận / Huyện
+            </a>
+            <a th:href="@{/admin/wards-list}" class="nav-link-custom"
+               th:classappend="${activeMenu == 'ward' ? 'active' : ''}">
+                <i class="bi bi-geo-alt"></i> Phường / Xã
+            </a>
+        </th:block>
     </nav>
 </aside>
 

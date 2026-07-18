@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout/base :: head}">
     <title>Quản lý Lịch sử Liên hệ</title>
 </head>
@@ -19,6 +19,59 @@
                style="background-color: #1a2b4c;">
                 <i class="bi bi-plus-lg me-1"></i> Thêm tương tác mới
             </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-funnel-fill me-1"></i> Bộ lọc tìm kiếm nâng cao</h6>
+            <form th:action="@{/admin/interactions-list}" method="get" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Tên tài khoản khách</label>
+                        <input type="text" name="username" th:value="${search.username}" class="form-control rounded-3"
+                               placeholder="Nhập tên đăng nhập...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-medium">Tiêu đề tương tác</label>
+                        <input type="text" name="title" th:value="${search.title}" class="form-control rounded-3"
+                               placeholder="Nhập tiêu đề hoặc nội dung...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-medium">Loại hình</label>
+                        <select name="interactionTypeId" class="form-select rounded-3">
+                            <option value="">-- Tất cả --</option>
+                            <option th:each="type : ${interactionTypes}"
+                                    th:value="${type.id}"
+                                    th:text="${type.name}"
+                                    th:selected="${search.interactionTypeId == String.valueOf(type.id)}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2" sec:authorize="hasRole('ADMIN')">
+                        <label class="form-label small text-muted fw-medium">Nhân viên thực hiện</label>
+                        <select name="staffId" class="form-select rounded-3">
+                            <option value="">-- Chọn nhân viên --</option>
+                            <option th:each="staff : ${staffs}"
+                                    th:value="${staff.id}"
+                                    th:text="${staff.fullname}"
+                                    th:selected="${search.staffId == String.valueOf(staff.id)}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md d-flex align-items-end justify-content-end gap-2">
+                        <button type="submit" class="btn btn-primary rounded-3 py-2 fw-medium shadow-sm w-100"
+                                style="max-width: 130px; background-color: #1a2b4c; border-color: #1a2b4c;">
+                            <i class="bi bi-search"></i> Tìm kiếm
+                        </button>
+                        <a th:href="@{/admin/interactions-list}"
+                           class="btn btn-outline-secondary rounded-3 py-2 fw-medium w-100"
+                           style="max-width: 110px;">
+                            <i class="bi bi-arrow-counterclockwise"></i> Làm mới
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 

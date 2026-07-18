@@ -9,4 +9,6 @@ public interface AssignmentService {
     void createOrUpdateAssignment(AssignmentDTO assignmentDTO);
 
     List<Integer> getAssignedStaffIdsByProperty(Integer propertyId);
+
+    boolean isStaffOfProperty(Integer staffId,Integer id);
 }

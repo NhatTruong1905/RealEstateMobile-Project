@@ -2,11 +2,12 @@ package com.ndnt.services;
 
 import com.ndnt.model.dto.InteractionDTO;
 import com.ndnt.model.dto.PropertyDTO;
+import com.ndnt.model.dto.request.InteractionRequestDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface InteractionService {
-    Page<InteractionDTO> getInteractions(Pageable pageable);
+    Page<InteractionDTO> getInteractions(InteractionRequestDTO searchDTO, Pageable pageable);
 
     InteractionDTO findById(Integer id);
 

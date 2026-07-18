@@ -2,11 +2,13 @@ package com.ndnt.controllers.admin;
 
 import com.ndnt.model.dto.InteractionDTO;
 import com.ndnt.model.dto.PropertyTypeDTO;
+import com.ndnt.model.dto.request.InteractionRequestDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
 import com.ndnt.services.InteractionService;
 import com.ndnt.services.InteractionTypeService;
 import com.ndnt.services.PropertyService;
 import com.ndnt.services.UserService;
+import com.ndnt.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -40,15 +42,25 @@ public class InteractionController {
 
     @GetMapping("/interactions-list")
     public ModelAndView listInteraction(@RequestParam(defaultValue = "1") int page,
-                                        @RequestParam(defaultValue = "8") int size) {
+                                        @RequestParam(defaultValue = "8") int size,
+                                        @ModelAttribute("search") InteractionRequestDTO searchDTO) {
         ModelAndView mav = new ModelAndView("interaction/list");
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
-        Page<InteractionDTO> interactionPage = this.interactionService.getInteractions(pageable);
+
+        if (SecurityUtils.getAuthorities().contains("ROLE_STAFF")) {
+            String username = SecurityUtils.getPrincipal().getUsername();
+            Integer staffId = this.userService.findByUsername(username).getId();
+            searchDTO.setStaffId(staffId);
+        }
+        Page<InteractionDTO> interactionPage = this.interactionService.getInteractions(searchDTO, pageable);
 
         mav.addObject("interactions", interactionPage.getContent());
         mav.addObject("currentPage", page);
         mav.addObject("totalPages", interactionPage.getTotalPages());
         mav.addObject("totalItems", interactionPage.getTotalElements());
+        mav.addObject("interactionTypes", this.interactionTypeService.getInteractionTypes());
+        mav.addObject("staffs", this.userService.getListStaff());
+        mav.addObject("search", searchDTO);
 
         int windowSize = 5;
         int startPage = Math.max(1, page - windowSize / 2);

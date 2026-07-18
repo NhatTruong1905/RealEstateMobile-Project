@@ -9,13 +9,16 @@ import com.ndnt.controlleradvices.exceptions.InvalidUserException;
 import com.ndnt.converter.UserConverter;
 import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
+import com.ndnt.model.dto.request.UserRequestDTO;
 import com.ndnt.model.entity.UserEntity;
 import com.ndnt.repositories.UserRepository;
 import com.ndnt.services.UserService;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -59,15 +62,31 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Page<UserDTO> getUsers(Pageable pageable) {
-        Page<UserEntity> userEntities = this.userRepository.findAllByStatus(1, pageable);
+    public Page<UserDTO> getUsers(UserRequestDTO searchDTO, Pageable pageable) {
+        Specification<UserEntity> spec = (root, query, builder) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-        return userEntities.map(u -> {
+            predicates.add(builder.equal(root.get("status"), 1));
+
+            if (searchDTO != null) {
+                if (searchDTO.getUsername() != null && !searchDTO.getUsername().isBlank())
+                    predicates.add(builder.like(root.get("username"), "%" + searchDTO.getUsername().trim() + "%"));
+                if (searchDTO.getFullname() != null && !searchDTO.getFullname().isBlank())
+                    predicates.add(builder.like(root.get("fullname"), "%" + searchDTO.getFullname().trim() + "%"));
+                if (searchDTO.getEmail() != null && !searchDTO.getEmail().isBlank())
+                    predicates.add(builder.like(root.get("email"), "%" + searchDTO.getEmail().trim() + "%"));
+                if (searchDTO.getPhone() != null && !searchDTO.getPhone().isBlank())
+                    predicates.add(builder.like(root.get("phone"), "%" + searchDTO.getPhone().trim() + "%"));
+            }
+            return builder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return this.userRepository.findAll(spec, pageable).map(u -> {
             UserDTO uDTO = this.userConverter.toUserDTO(u);
             if (u.getRole() != null) {
-                uDTO.setRoleId(u.getRole().getId());
                 uDTO.setRoleCode(u.getRole().getCode());
                 uDTO.setRoleName(u.getRole().getName());
+                uDTO.setRoleId(u.getRole().getId());
             }
             return uDTO;
         });
@@ -91,7 +110,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDTO> getListStaff() {
-        List<UserEntity> userEntities = this.userRepository.findByRole_Code("ROLE_STAFF");
+        List<UserEntity> userEntities = this.userRepository.findAllByStatusAndRole_Code(1, "ROLE_STAFF");
         List<UserDTO> userDTOs = new ArrayList<>();
         for (UserEntity uEntity : userEntities) {
             UserDTO uDTO = this.userConverter.toUserDTO(uEntity);
@@ -162,6 +181,11 @@ public class UserServiceImpl implements UserService {
             }
         }
         this.userRepository.save(userEntity);
+    }
+
+    @Override
+    public UserDTO findByUsername(String username) {
+        return this.userConverter.toUserDTO(this.userRepository.findByUsername(username));
     }
 
 }

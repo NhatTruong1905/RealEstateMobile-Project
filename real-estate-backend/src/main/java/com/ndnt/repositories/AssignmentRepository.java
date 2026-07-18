@@ -11,4 +11,6 @@ public interface AssignmentRepository extends JpaRepository<AssignmentEntity, In
     void deleteAllByProperty_Id(Integer id);
 
     List<AssignmentEntity> findByProperty_Id(Integer propertyId);
+
+    boolean existsByStaff_IdAndProperty_Id(Integer staffId, Integer propertyId);
 }
