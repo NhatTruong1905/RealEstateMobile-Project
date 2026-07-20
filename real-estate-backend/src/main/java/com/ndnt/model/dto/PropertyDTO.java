@@ -27,5 +27,6 @@ public class PropertyDTO extends BaseDTO {
     private String direction;
     private String legal;
     private String status;
+    private String image;
     private List<Integer> assignmentIds = new ArrayList<>();
 }

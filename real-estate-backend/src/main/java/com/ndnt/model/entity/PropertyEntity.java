@@ -80,6 +80,9 @@ public class PropertyEntity extends BaseEntity {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "image")
+    private String image;
+
     @ColumnDefault("0")
     @Column(name = "status")
     private String status = StatusProperty.PENDING.getStatus();
