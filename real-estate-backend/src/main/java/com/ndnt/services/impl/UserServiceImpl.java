@@ -47,6 +47,7 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private Cloudinary cloudinary;
 
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserEntity userEntity = this.userRepository.getUserByUsername(username);
@@ -192,6 +193,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO findByUsername(String username) {
         return this.userConverter.toUserDTO(this.userRepository.findByUsername(username));
+    }
+
+    @Override
+    public boolean authenticate(String username, String password) {
+        UserEntity u = this.userRepository.findByUsername(username);
+        return this.bCryptPasswordEncoder.matches(password, u.getPassword());
     }
 
 }

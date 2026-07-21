@@ -1,6 +1,7 @@
 package com.ndnt.configs;
 
 import com.ndnt.filters.JwtFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -17,6 +18,9 @@ import java.util.List;
 @Configuration
 @Order(1)
 public class ApiSecurityConfig {
+    @Autowired
+    private JwtFilter jwtFilter;
+
     @Bean
     public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
 
@@ -27,7 +31,7 @@ public class ApiSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/secure/**").authenticated()
                         .anyRequest().permitAll()
-                ).addFilterBefore(new JwtFilter(), UsernamePasswordAuthenticationFilter.class);
+                ).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

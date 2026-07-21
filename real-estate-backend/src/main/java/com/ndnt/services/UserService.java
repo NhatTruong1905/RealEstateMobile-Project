@@ -25,4 +25,6 @@ public interface UserService extends UserDetailsService {
     void createOrUpdateUser(UserAdminDTO userDTO);
 
     UserDTO findByUsername(String username);
+
+    boolean authenticate(String username, String password);
 }

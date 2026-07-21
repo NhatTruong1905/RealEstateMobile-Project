@@ -2,10 +2,7 @@ package com.ndnt.utils;
 
 
 import com.ndnt.model.dto.UserDTO;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -13,7 +10,9 @@ import com.nimbusds.jwt.SignedJWT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtUtils {
@@ -26,38 +25,51 @@ public class JwtUtils {
 
     private static final long EXPIRATION_MS = 86400000;
 
-    public static String generateToken(UserDTO userDTO) throws Exception {
-        JWSSigner signer = new MACSigner(secret);
-        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(userDTO.getUsername())
-                .claim("id", userDTO.getId())
-                .claim("role", userDTO.getRoleName())
-                .claim("mail", userDTO.getEmail())
-                .claim("phone", userDTO.getPhone())
-                .expirationTime(new Date(System.currentTimeMillis() + EXPIRATION_MS))
-                .issueTime(new Date())
-                .build();
-
-        SignedJWT signedJWT = new SignedJWT(
-                new JWSHeader(JWSAlgorithm.HS256),
-                claimsSet
-        );
-
-        signedJWT.sign(signer);
-
-        return signedJWT.serialize();
+    private byte[] getSharedKey() {
+        return secret.getBytes(StandardCharsets.UTF_8);
     }
 
-    public static String validateTokenAndGetUsername(String token) throws Exception {
-        SignedJWT signedJWT = SignedJWT.parse(token);
-        JWSVerifier verifier = new MACVerifier(secret);
+    public String generateToken(UserDTO userDTO) throws Exception {
+        try {
+            JWSSigner signer = new MACSigner(getSharedKey());
+            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+                    .jwtID(UUID.randomUUID().toString())
+                    .subject(userDTO.getUsername())
+                    .claim("id", userDTO.getId())
+                    .claim("role", userDTO.getRoleCode())
+                    .claim("mail", userDTO.getEmail())
+                    .claim("phone", userDTO.getPhone())
+                    .expirationTime(new Date(System.currentTimeMillis() + EXPIRATION_MS))
+                    .issueTime(new Date())
+                    .build();
 
-        if (signedJWT.verify(verifier)) {
-            Date expiration = signedJWT.getJWTClaimsSet().getExpirationTime();
-            if (expiration.after(new Date())) {
-                return signedJWT.getJWTClaimsSet().getSubject();
-            }
+            SignedJWT signedJWT = new SignedJWT(
+                    new JWSHeader(JWSAlgorithm.HS256),
+                    claimsSet
+            );
+
+            signedJWT.sign(signer);
+            return signedJWT.serialize();
+        } catch (JOSEException e) {
+            throw new RuntimeException("Lỗi khi tạo JWT Token: " + e.getMessage());
         }
-        return null;
+    }
+
+    public JWTClaimsSet validateTokenAndGetClaims(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            JWSVerifier verifier = new MACVerifier(secret);
+            if (!signedJWT.verify(verifier)) {
+                return null;
+            }
+            JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+            Date expiration = claims.getExpirationTime();
+            if (expiration == null || expiration.before(new Date())) {
+                return null;
+            }
+            return claims;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
