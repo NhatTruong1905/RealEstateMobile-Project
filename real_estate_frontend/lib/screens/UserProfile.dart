@@ -113,7 +113,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
     setState(() => _isLoading = true);
 
-    bool isSuccess = await updateProfile(
+    // BẮT CHUỖI LỖI (errorMessage)
+    String? errorMessage = await updateProfile(
       username: _usernameController.text.trim(),
       fullname: _fullnameController.text.trim(),
       phone: _phoneController.text.trim(),
@@ -121,13 +122,12 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       avatarFile: _selectedImageFile,
     );
 
-    if (isSuccess) {
+    // NẾU errorMessage == null (TỨC LÀ THÀNH CÔNG)
+    if (errorMessage == null) {
       UserDTO? updatedUser = await getProfile();
 
       if (updatedUser != null) {
         final prefs = await SharedPreferences.getInstance();
-
-        // CHỈ CẦN 1 DÒNG NÀY ĐỂ GHI ĐÈ TOÀN BỘ DATA MỚI
         String userJsonString = jsonEncode(updatedUser.toJson());
         await prefs.setString('user_profile', userJsonString);
       }
@@ -141,11 +141,13 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         );
         Navigator.pop(context, true);
       }
-    } else {
+    }
+    // NẾU CÓ LỖI, HIỆN LỖI CHI TIẾT
+    else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cập nhật thất bại, vui lòng thử lại!'),
+          SnackBar(
+            content: Text(errorMessage), // Hiện trực tiếp lỗi từ server
             backgroundColor: Colors.red,
           ),
         );

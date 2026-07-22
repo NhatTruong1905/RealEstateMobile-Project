@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // THÊM IMPORT NÀY
+import 'package:flutter/services.dart';
 import 'package:real_estate_frontend/mixin/api/ApiLoginMixin.dart';
 import 'package:real_estate_frontend/mixin/validation/ValidationMixin.dart';
 
@@ -18,16 +18,21 @@ class _AuthScreenState extends State<AuthScreen>
 
   bool _isLogin = true;
   bool _isLoading = false;
+
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword =
+      true; // THÊM: Trạng thái ẩn/hiện cho Xác nhận mật khẩu
   bool _isAgreedToTerms = false;
 
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  // BỔ SUNG: CONTROLLER CHO EMAIL VÀ SỐ ĐIỆN THOẠI
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+
+  // THÊM: Controller cho trường Xác nhận mật khẩu
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   @override
   void initState() {
@@ -35,8 +40,11 @@ class _AuthScreenState extends State<AuthScreen>
     _fullNameController.addListener(_validateInput);
     _usernameController.addListener(_validateInput);
     _passwordController.addListener(_validateInput);
-    _emailController.addListener(_validateInput); // Lắng nghe Email
-    _phoneController.addListener(_validateInput); // Lắng nghe Phone
+    _emailController.addListener(_validateInput);
+    _phoneController.addListener(_validateInput);
+    _confirmPasswordController.addListener(
+      _validateInput,
+    ); // THÊM: Lắng nghe trường xác nhận MK
   }
 
   void _validateInput() {
@@ -48,12 +56,14 @@ class _AuthScreenState extends State<AuthScreen>
       return _usernameController.text.trim().isNotEmpty &&
           _passwordController.text.isNotEmpty;
     } else {
-      // BỔ SUNG: Nút đăng ký chỉ sáng khi điền đủ cả Email và SĐT
       return _fullNameController.text.trim().isNotEmpty &&
           _usernameController.text.trim().isNotEmpty &&
           _emailController.text.trim().isNotEmpty &&
           _phoneController.text.trim().isNotEmpty &&
           _passwordController.text.isNotEmpty &&
+          _confirmPasswordController
+              .text
+              .isNotEmpty && // THÊM: Nút chỉ sáng khi có điền Xác nhận MK
           _isAgreedToTerms;
     }
   }
@@ -65,6 +75,7 @@ class _AuthScreenState extends State<AuthScreen>
     _passwordController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _confirmPasswordController.dispose(); // THÊM: Giải phóng bộ nhớ
     super.dispose();
   }
 
@@ -77,6 +88,9 @@ class _AuthScreenState extends State<AuthScreen>
     setState(() => _isLoading = true);
 
     if (_isLogin) {
+      // ==========================================
+      // XỬ LÝ ĐĂNG NHẬP
+      // ==========================================
       bool success = await login(username, password);
       setState(() => _isLoading = false);
 
@@ -90,14 +104,43 @@ class _AuthScreenState extends State<AuthScreen>
         _showSnackBar('Mật khẩu hoặc tên đăng nhập không chính xác!');
       }
     } else {
+      // ==========================================
+      // XỬ LÝ ĐĂNG KÝ TÀI KHOẢN MỚI
+      // ==========================================
+      final fullname = _fullNameController.text.trim();
+      final email = _emailController.text.trim();
+      final phone = _phoneController.text.trim();
+
+      // Gọi API đăng ký và nhận về chuỗi báo lỗi (nếu có)
+      String? errorMessage = await registerUser(
+        fullname: fullname,
+        username: username,
+        password: password,
+        email: email,
+        phone: phone,
+      );
+
       setState(() => _isLoading = false);
 
-      // CHỖ NÀY SAU NÀY BẠN GỌI HÀM API ĐĂNG KÝ VÀ TRUYỀN CÁC BIẾN VÀO NHÉ:
-      // final fullname = _fullNameController.text.trim();
-      // final email = _emailController.text.trim();
-      // final phone = _phoneController.text.trim();
+      // NẾU errorMessage == null => Thành công (Không có lỗi)
+      if (errorMessage == null && mounted) {
+        _showSnackBar(
+          'Đăng ký thành công! Vui lòng đăng nhập.',
+          isError: false,
+        );
 
-      _showSnackBar('Tính năng đăng ký đang được cập nhật!');
+        _passwordController.clear();
+        _confirmPasswordController.clear();
+        setState(() {
+          _isLogin = true;
+          _isAgreedToTerms = false;
+        });
+      }
+      // NẾU CÓ LỖI TỪ BACKEND
+      else if (mounted) {
+        // Truyền chính xác câu báo lỗi lấy được từ máy chủ vào Snackbar
+        _showSnackBar(errorMessage ?? 'Đăng ký thất bại!');
+      }
     }
   }
 
@@ -203,6 +246,7 @@ class _AuthScreenState extends State<AuthScreen>
                         ),
                         const SizedBox(height: 32),
 
+                        // Form Thông tin cá nhân (Chỉ hiện khi Đăng ký)
                         if (!_isLogin) ...[
                           _buildFormInputField(
                             controller: _fullNameController,
@@ -211,38 +255,38 @@ class _AuthScreenState extends State<AuthScreen>
                             validator: validateFullName,
                           ),
                           const SizedBox(height: 16),
-
-                          // BỔ SUNG: TRƯỜNG NHẬP EMAIL
                           _buildFormInputField(
                             controller: _emailController,
                             icon: Icons.email_outlined,
                             hintText: 'Email',
                             keyboardType: TextInputType.emailAddress,
                             inputFormatters: [
-                              FilteringTextInputFormatter.deny(RegExp(r'\s')), // Cấm dấu cách
+                              FilteringTextInputFormatter.deny(RegExp(r'\s')),
                             ],
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty) return 'Vui lòng nhập email';
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                              if (value == null || value.trim().isEmpty)
+                                return 'Vui lòng nhập email';
+                              if (!RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              ).hasMatch(value)) {
                                 return 'Email không đúng định dạng';
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 16),
-
-                          // BỔ SUNG: TRƯỜNG NHẬP SỐ ĐIỆN THOẠI
                           _buildFormInputField(
                             controller: _phoneController,
                             icon: Icons.phone_outlined,
                             hintText: 'Số điện thoại',
                             keyboardType: TextInputType.phone,
                             inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly, // Chỉ cho nhập số
-                              LengthLimitingTextInputFormatter(10),   // Tối đa 10 số
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
                             ],
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty) return 'Vui lòng nhập số điện thoại';
+                              if (value == null || value.trim().isEmpty)
+                                return 'Vui lòng nhập số điện thoại';
                               if (!RegExp(r'^0\d{9}$').hasMatch(value)) {
                                 return 'Số điện thoại không hợp lệ (Bắt đầu bằng 0 và đủ 10 số)';
                               }
@@ -252,6 +296,7 @@ class _AuthScreenState extends State<AuthScreen>
                           const SizedBox(height: 16),
                         ],
 
+                        // Username (Dùng chung cho Đăng nhập/Đăng ký)
                         _buildFormInputField(
                           controller: _usernameController,
                           icon: Icons.account_circle_outlined,
@@ -261,6 +306,7 @@ class _AuthScreenState extends State<AuthScreen>
                         ),
                         const SizedBox(height: 16),
 
+                        // Password (Dùng chung cho Đăng nhập/Đăng ký)
                         _buildFormInputField(
                           controller: _passwordController,
                           icon: Icons.lock_outline,
@@ -268,11 +314,38 @@ class _AuthScreenState extends State<AuthScreen>
                           isPassword: true,
                           obscureText: _obscurePassword,
                           onToggleVisibility: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
+                            () => _obscurePassword = !_obscurePassword,
                           ),
                           validator: (value) =>
                               validatePassword(value, isLogin: _isLogin),
                         ),
+
+                        // THÊM: Confirm Password (Chỉ hiện khi Đăng ký)
+                        if (!_isLogin) ...[
+                          const SizedBox(height: 16),
+                          _buildFormInputField(
+                            controller: _confirmPasswordController,
+                            icon: Icons.check_circle_outline,
+                            // Đổi icon cho khác biệt chút
+                            hintText: 'Xác nhận mật khẩu',
+                            isPassword: true,
+                            obscureText: _obscureConfirmPassword,
+                            onToggleVisibility: () => setState(
+                              () => _obscureConfirmPassword =
+                                  !_obscureConfirmPassword,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Vui lòng xác nhận mật khẩu';
+                              }
+                              // Kiểm tra sự trùng khớp
+                              if (value != _passwordController.text) {
+                                return 'Mật khẩu xác nhận không khớp';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
 
                         if (_isLogin)
                           Align(
@@ -285,7 +358,7 @@ class _AuthScreenState extends State<AuthScreen>
                                   padding: EdgeInsets.zero,
                                   minimumSize: Size.zero,
                                   tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: const Text(
                                   'Quên mật khẩu?',
@@ -337,12 +410,12 @@ class _AuthScreenState extends State<AuthScreen>
                                       children: const [
                                         TextSpan(
                                           text:
-                                          'Điều khoản sử dụng, Chính sách bảo mật, Quy chế, Chính sách',
+                                              'Điều khoản sử dụng, Chính sách bảo mật, Quy chế, Chính sách',
                                           style: TextStyle(
                                             color: Color(0xFF1A1918),
                                             fontWeight: FontWeight.bold,
                                             decoration:
-                                            TextDecoration.underline,
+                                                TextDecoration.underline,
                                           ),
                                         ),
                                         TextSpan(text: ' của PropertySumDev.'),
@@ -378,20 +451,20 @@ class _AuthScreenState extends State<AuthScreen>
                             ),
                             child: _isLoading
                                 ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
+                                    color: Colors.white,
+                                  )
                                 : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  _isLogin ? 'Đăng nhập' : 'Đăng ký',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        _isLogin ? 'Đăng nhập' : 'Đăng ký',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -516,12 +589,13 @@ class _AuthScreenState extends State<AuthScreen>
                             GestureDetector(
                               onTap: () {
                                 _formKey.currentState?.reset();
-                                // Xoá sạch dữ liệu cũ khi đổi tab
                                 _fullNameController.clear();
                                 _usernameController.clear();
                                 _passwordController.clear();
-                                _emailController.clear(); // Xoá email
-                                _phoneController.clear(); // Xoá phone
+                                _emailController.clear();
+                                _phoneController.clear();
+                                _confirmPasswordController
+                                    .clear(); // THÊM: Clear khi chuyển tab
                                 setState(() {
                                   _isLogin = !_isLogin;
                                   _isAgreedToTerms = false;
@@ -550,7 +624,6 @@ class _AuthScreenState extends State<AuthScreen>
     );
   }
 
-  // BỔ SUNG: Tham số inputFormatters
   Widget _buildFormInputField({
     required TextEditingController controller,
     required IconData icon,
@@ -566,7 +639,7 @@ class _AuthScreenState extends State<AuthScreen>
       controller: controller,
       obscureText: isPassword ? obscureText : false,
       keyboardType: keyboardType,
-      inputFormatters: inputFormatters, // Truyền bộ lọc vào đây
+      inputFormatters: inputFormatters,
       validator: validator,
       style: const TextStyle(color: Color(0xFF1A1918), fontSize: 15),
       decoration: InputDecoration(
@@ -575,15 +648,15 @@ class _AuthScreenState extends State<AuthScreen>
         prefixIcon: Icon(icon, color: const Color(0xFF78736D), size: 20),
         suffixIcon: isPassword
             ? IconButton(
-          icon: Icon(
-            obscureText
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
-            color: const Color(0xFF78736D),
-            size: 20,
-          ),
-          onPressed: onToggleVisibility,
-        )
+                icon: Icon(
+                  obscureText
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: const Color(0xFF78736D),
+                  size: 20,
+                ),
+                onPressed: onToggleVisibility,
+              )
             : null,
         filled: true,
         fillColor: const Color(0xFFF4EEE6),

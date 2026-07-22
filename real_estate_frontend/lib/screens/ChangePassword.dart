@@ -79,7 +79,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
     final email = userMap['email'] ?? '';
 
     // 3. GỌI API UPDATE
-    bool isSuccess = await updateProfile(
+    String? errorMessage = await updateProfile(
       username: username,
       fullname: fullname,
       phone: phone,
@@ -87,7 +87,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
       password: _newPasswordController.text.trim(),
     );
 
-    if (isSuccess) {
+    // NẾU KHÔNG CÓ LỖI
+    if (errorMessage == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -95,13 +96,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context); // Trở về
+        Navigator.pop(context);
       }
-    } else {
+    }
+    // NẾU SERVER TRẢ VỀ LỖI (Ví dụ: "Mật khẩu quá yếu" từ @Valid)
+    else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Có lỗi xảy ra, vui lòng thử lại!'),
+          SnackBar(
+            content: Text(errorMessage), // In chi tiết lỗi
             backgroundColor: Colors.red,
           ),
         );

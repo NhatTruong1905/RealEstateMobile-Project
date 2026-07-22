@@ -44,31 +44,30 @@ mixin ApiUserMixin {
     }
   }
 
-  Future<bool> updateProfile({
+  // ĐỔI KIỂU TRẢ VỀ TỪ Future<bool> THÀNH Future<String?>
+  Future<String?> updateProfile({
     required String username,
     required String fullname,
     required String phone,
     required String email,
-    String? password, // THÊM THAM SỐ PASSWORD (Có thể null)
+    String? password,
     File? avatarFile,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token');
 
-      if (token == null) return false;
+      if (token == null) return "Lỗi: Không tìm thấy Token xác thực.";
 
       final url = Uri.parse('$baseUrl/secure/update/profile');
       var request = http.MultipartRequest('POST', url);
       request.headers.addAll({'Authorization': 'Bearer $token'});
 
-      // Map đúng tên với UserInfoDTO.java
       request.fields['username'] = username;
       request.fields['fullname'] = fullname;
       request.fields['phone'] = phone;
       request.fields['email'] = email;
 
-      // Nếu có nhập password mới thì mới nhét vào form gửi lên
       if (password != null && password.isNotEmpty) {
         request.fields['password'] = password;
       }
@@ -81,17 +80,43 @@ mixin ApiUserMixin {
         request.files.add(multipartFile);
       }
 
+      // Gửi request
       var response = await request.send();
 
       if (response.statusCode == 200) {
-        return true;
+        return null; // Trả về null nghĩa là THÀNH CÔNG
       } else {
-        debugPrint('Lỗi Cập nhật: ${response.statusCode}');
-        return false;
+        // Đọc dữ liệu stream từ MultipartRequest trả về
+        final responseBody = await response.stream.bytesToString();
+        try {
+          final errorData = jsonDecode(responseBody);
+
+          if (errorData is Map) {
+            // Nếu có lỗi dạng Custom Exception
+            if (errorData.containsKey('message') &&
+                errorData['message'] != null) {
+              return errorData['message'].toString();
+            }
+
+            // Nếu có lỗi từ @Valid (BindingResult)
+            List<String> errorMessages = [];
+            errorData.forEach((key, value) {
+              errorMessages.add("- $value");
+            });
+
+            if (errorMessages.isNotEmpty) {
+              return errorMessages.join('\n');
+            }
+          }
+          return "Đã xảy ra lỗi hệ thống (${response.statusCode})";
+        } catch (e) {
+          debugPrint("Lỗi Parse Error Body Cập nhật: $e");
+          return "Cập nhật thất bại. Trạng thái: ${response.statusCode}";
+        }
       }
     } catch (e) {
       debugPrint('Exception updateProfile: $e');
-      return false;
+      return "Không thể kết nối đến máy chủ!";
     }
   }
 }
