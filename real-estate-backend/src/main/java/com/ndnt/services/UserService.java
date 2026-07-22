@@ -2,6 +2,7 @@ package com.ndnt.services;
 
 import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
+import com.ndnt.model.dto.UserInfoDTO;
 import com.ndnt.model.dto.request.UserRequestDTO;
 import com.ndnt.model.entity.UserEntity;
 import org.springframework.data.domain.Page;
@@ -27,4 +28,6 @@ public interface UserService extends UserDetailsService {
     UserDTO findByUsername(String username);
 
     boolean authenticate(String username, String password);
+
+    void createOrUpdateUser(UserInfoDTO userDTO);
 }

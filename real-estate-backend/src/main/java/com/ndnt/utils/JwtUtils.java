@@ -36,9 +36,10 @@ public class JwtUtils {
                     .jwtID(UUID.randomUUID().toString())
                     .subject(userDTO.getUsername())
                     .claim("id", userDTO.getId())
-                    .claim("role", userDTO.getRoleCode())
-                    .claim("mail", userDTO.getEmail())
+                    .claim("fullname", userDTO.getFullname())
                     .claim("phone", userDTO.getPhone())
+                    .claim("email", userDTO.getEmail())
+                    .claim("role", userDTO.getRoleCode())
                     .expirationTime(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                     .issueTime(new Date())
                     .build();

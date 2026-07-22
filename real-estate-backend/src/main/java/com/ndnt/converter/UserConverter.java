@@ -2,6 +2,7 @@ package com.ndnt.converter;
 
 import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
+import com.ndnt.model.dto.UserInfoDTO;
 import com.ndnt.model.entity.UserEntity;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,10 @@ public class UserConverter {
     }
 
     public UserEntity toUserEntity(UserAdminDTO userDTO) {
+        return modelMapper.map(userDTO, UserEntity.class);
+    }
+
+    public UserEntity toUserEntity(UserInfoDTO userDTO) {
         return modelMapper.map(userDTO, UserEntity.class);
     }
 }

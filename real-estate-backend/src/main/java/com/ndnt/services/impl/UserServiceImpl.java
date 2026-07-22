@@ -9,8 +9,10 @@ import com.ndnt.controlleradvices.exceptions.InvalidUserException;
 import com.ndnt.converter.UserConverter;
 import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
+import com.ndnt.model.dto.UserInfoDTO;
 import com.ndnt.model.dto.request.UserRequestDTO;
 import com.ndnt.model.entity.UserEntity;
+import com.ndnt.repositories.RoleRepository;
 import com.ndnt.repositories.UserRepository;
 import com.ndnt.services.UserService;
 import jakarta.persistence.criteria.Predicate;
@@ -46,6 +48,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private Cloudinary cloudinary;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
 
     @Override
@@ -201,5 +206,67 @@ public class UserServiceImpl implements UserService {
         return this.bCryptPasswordEncoder.matches(password, u.getPassword());
     }
 
+
+    @Override
+    public void createOrUpdateUser(UserInfoDTO userDTO) {
+        if (userDTO.getId() == null) {
+            UserEntity newUser = this.userConverter.toUserEntity(userDTO);
+
+            if (userDTO.getUsername() != null && this.userRepository.existsByUsername(userDTO.getUsername().trim())) {
+                throw new DuplicateUsernameException("Tên đăng nhập đã tồn tại! Thử tên khác!");
+            }
+            if (userDTO.getPhone() != null && this.userRepository.existsByPhone(userDTO.getPhone().trim())) {
+                throw new DuplicatePhoneException("Số điện thoại này đã tồn tại! Thử số khác!");
+            }
+            if (userDTO.getEmail() != null && this.userRepository.existsByEmail(userDTO.getEmail().trim())) {
+                throw new DuplicateEmailException("Email này đã tồn tại! Thử email khác!");
+            }
+
+            newUser.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
+            newUser.setRole(this.roleRepository.getByCode("ROLE_USER"));
+
+            if (userDTO.getFile() != null && !userDTO.getFile().isEmpty()) {
+                try {
+                    Map res = this.cloudinary.uploader().upload(userDTO.getFile().getBytes(), ObjectUtils.asMap("resource_type", "auto"));
+                    newUser.setAvatar(res.get("secure_url").toString());
+                } catch (IOException ex) {
+                    throw new RuntimeException("Lỗi hệ thống: Không thể tải lên ảnh đại diện!", ex);
+                }
+            }
+            this.userRepository.save(newUser);
+        } else {
+            UserEntity existingUser = this.userRepository.findById(userDTO.getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng để cập nhật!"));
+
+            if (userDTO.getFullname() != null) {
+                existingUser.setFullname(userDTO.getFullname());
+            }
+            if (userDTO.getPhone() != null && !userDTO.getPhone().trim().equals(existingUser.getPhone())) {
+                if (this.userRepository.existsByPhone(userDTO.getPhone().trim())) {
+                    throw new DuplicatePhoneException("Số điện thoại này đã được người khác sử dụng!");
+                }
+                existingUser.setPhone(userDTO.getPhone().trim());
+            }
+            if (userDTO.getEmail() != null && !userDTO.getEmail().trim().equals(existingUser.getEmail())) {
+                if (this.userRepository.existsByEmail(userDTO.getEmail().trim())) {
+                    throw new DuplicateEmailException("Email này đã được người khác sử dụng!");
+                }
+                existingUser.setEmail(userDTO.getEmail().trim());
+            }
+            if (userDTO.getPassword() != null && !userDTO.getPassword().trim().isEmpty()) {
+                existingUser.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
+            }
+
+            if (userDTO.getFile() != null && !userDTO.getFile().isEmpty()) {
+                try {
+                    Map res = this.cloudinary.uploader().upload(userDTO.getFile().getBytes(), ObjectUtils.asMap("resource_type", "auto"));
+                    existingUser.setAvatar(res.get("secure_url").toString());
+                } catch (IOException ex) {
+                    throw new RuntimeException("Lỗi hệ thống: Không thể tải lên ảnh đại diện!", ex);
+                }
+            }
+            this.userRepository.save(existingUser);
+        }
+    }
 }
 
