@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:real_estate_frontend/mixin/api/ApiUserMixin.dart';
 import 'package:real_estate_frontend/mixin/api/ApiLoginMixin.dart';
 
-// Tạo một class phụ chỉ để gọi hàm login() check mật khẩu
 class LoginHelper with ApiLoginMixin {}
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -43,17 +42,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
 
     final prefs = await SharedPreferences.getInstance();
 
-    // ĐỌC ĐỐI TƯỢNG TỪ CACHE RA ĐỂ CHUẨN BỊ LẤY DATA
     String? userProfileJson = prefs.getString('user_profile');
     Map<String, dynamic> userMap = {};
     if (userProfileJson != null && userProfileJson.isNotEmpty) {
       userMap = jsonDecode(userProfileJson);
     }
 
-    // Lấy username từ DTO (hoặc dự phòng lấy từ cache rời)
     final username = userMap['username'] ?? prefs.getString('username') ?? '';
 
-    // 1. Gọi API Login ngầm để kiểm tra mật khẩu hiện tại
     final loginHelper = LoginHelper();
     bool isOldPasswordCorrect = await loginHelper.login(
       username,
@@ -73,12 +69,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
       return;
     }
 
-    // 2. NẾU MẬT KHẨU ĐÚNG, LẤY DATA CŨ TỪ ĐỐI TƯỢNG (userMap)
     final fullname = userMap['fullname'] ?? userMap['fullName'] ?? '';
     final phone = userMap['phone'] ?? '';
     final email = userMap['email'] ?? '';
 
-    // 3. GỌI API UPDATE
     String? errorMessage = await updateProfile(
       username: username,
       fullname: fullname,
@@ -87,7 +81,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
       password: _newPasswordController.text.trim(),
     );
 
-    // NẾU KHÔNG CÓ LỖI
     if (errorMessage == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -98,15 +91,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
         );
         Navigator.pop(context);
       }
-    }
-    // NẾU SERVER TRẢ VỀ LỖI (Ví dụ: "Mật khẩu quá yếu" từ @Valid)
-    else {
+    } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage), // In chi tiết lỗi
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     }

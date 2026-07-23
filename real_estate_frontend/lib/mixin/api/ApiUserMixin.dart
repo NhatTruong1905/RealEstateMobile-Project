@@ -44,7 +44,6 @@ mixin ApiUserMixin {
     }
   }
 
-  // ĐỔI KIỂU TRẢ VỀ TỪ Future<bool> THÀNH Future<String?>
   Future<String?> updateProfile({
     required String username,
     required String fullname,
@@ -80,25 +79,21 @@ mixin ApiUserMixin {
         request.files.add(multipartFile);
       }
 
-      // Gửi request
       var response = await request.send();
 
       if (response.statusCode == 200) {
-        return null; // Trả về null nghĩa là THÀNH CÔNG
+        return null;
       } else {
-        // Đọc dữ liệu stream từ MultipartRequest trả về
         final responseBody = await response.stream.bytesToString();
         try {
           final errorData = jsonDecode(responseBody);
 
           if (errorData is Map) {
-            // Nếu có lỗi dạng Custom Exception
             if (errorData.containsKey('message') &&
                 errorData['message'] != null) {
               return errorData['message'].toString();
             }
 
-            // Nếu có lỗi từ @Valid (BindingResult)
             List<String> errorMessages = [];
             errorData.forEach((key, value) {
               errorMessages.add("- $value");

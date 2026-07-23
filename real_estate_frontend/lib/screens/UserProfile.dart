@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // THÊM THƯ VIỆN NÀY ĐỂ DÙNG inputFormatters
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_frontend/mixin/api/ApiUserMixin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -113,7 +113,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
     setState(() => _isLoading = true);
 
-    // BẮT CHUỖI LỖI (errorMessage)
     String? errorMessage = await updateProfile(
       username: _usernameController.text.trim(),
       fullname: _fullnameController.text.trim(),
@@ -122,7 +121,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       avatarFile: _selectedImageFile,
     );
 
-    // NẾU errorMessage == null (TỨC LÀ THÀNH CÔNG)
     if (errorMessage == null) {
       UserDTO? updatedUser = await getProfile();
 
@@ -141,15 +139,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         );
         Navigator.pop(context, true);
       }
-    }
-    // NẾU CÓ LỖI, HIỆN LỖI CHI TIẾT
-    else {
+    } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage), // Hiện trực tiếp lỗi từ server
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     }
@@ -176,7 +169,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Giao diện Avatar
                     Center(
                       child: Stack(
                         children: [
@@ -229,7 +221,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                     ),
                     const SizedBox(height: 40),
 
-                    // Username
                     TextFormField(
                       controller: _usernameController,
                       readOnly: true,
@@ -247,7 +238,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                     ),
                     const SizedBox(height: 20),
 
-                    // Fullname
                     TextFormField(
                       controller: _fullnameController,
                       decoration: InputDecoration(
@@ -265,11 +255,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                     ),
                     const SizedBox(height: 20),
 
-                    // Email
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      // THÊM: Chặn gõ phím khoảng trắng (dấu cách)
                       inputFormatters: [
                         FilteringTextInputFormatter.deny(RegExp(r'\s')),
                       ],
@@ -293,11 +281,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                     ),
                     const SizedBox(height: 20),
 
-                    // Phone
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      // THÊM: Chỉ cho nhập số từ 0-9 và tối đa 10 số
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(10),
@@ -320,7 +306,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                     ),
                     const SizedBox(height: 40),
 
-                    // Nút Lưu thay đổi
                     SizedBox(
                       width: double.infinity,
                       height: 52,

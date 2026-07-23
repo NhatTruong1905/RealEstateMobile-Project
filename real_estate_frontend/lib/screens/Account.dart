@@ -20,12 +20,10 @@ class AccountScreen extends StatefulWidget {
   State<AccountScreen> createState() => _AccountScreenState();
 }
 
-// Bỏ ApiUserMixin đi cho nhẹ vì chúng ta chỉ cần gọi logout() từ ApiLoginMixin
 class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
   bool isLoggedIn = false;
   String currentUsername = '';
 
-  // Biến lưu trữ thông tin Profile lấy từ API/Cache
   UserDTO? currentUserProfile;
   bool isLoadingProfile = false;
 
@@ -40,7 +38,6 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
     bool loggedIn = prefs.getBool('is_logged_in') ?? false;
 
     if (loggedIn) {
-      // 1. LẤY CHUỖI JSON TỪ CACHE
       String? userJsonString = prefs.getString('user_profile');
 
       if (mounted) {
@@ -48,7 +45,6 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
           isLoggedIn = true;
 
           if (userJsonString != null) {
-            // 2. GIẢI MÃ CHUỖI JSON THÀNH ĐỐI TƯỢNG UserDTO
             Map<String, dynamic> userMap = jsonDecode(userJsonString);
             currentUserProfile = UserDTO.fromJson(userMap);
             currentUsername = currentUserProfile?.username ?? '';
@@ -65,7 +61,7 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
   }
 
   Future<void> _handleLogout() async {
-    await logout(); // Hàm từ ApiLoginMixin
+    await logout();
     if (mounted) {
       setState(() {
         isLoggedIn = false;
@@ -173,7 +169,6 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
                                   Icons.settings_outlined,
                                   'Cài đặt tài khoản',
                                   onTap: () async {
-                                    // Truyền currentUserProfile vào màn hình EditProfile
                                     if (currentUserProfile != null) {
                                       final result = await Navigator.push(
                                         context,
@@ -183,8 +178,6 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
                                           ),
                                         ),
                                       );
-
-                                      // Đợi màn hình EditProfile pop() về. Nếu có cập nhật (result == true) thì load lại data.
                                       if (result == true) {
                                         _checkLoginStatus();
                                       }

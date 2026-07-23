@@ -27,9 +27,6 @@ mixin ApiLoginMixin {
           await prefs.setString('username', username);
           await prefs.setBool('is_logged_in', true);
 
-          // ========================================================
-          // BỔ SUNG: GỌI LUÔN API PROFILE VÀ LƯU VÀO SHARE PREFERENCES
-          // ========================================================
           try {
             final profileResponse = await http.get(
               Uri.parse("$baseUrl/secure/profile"),
@@ -44,7 +41,6 @@ mixin ApiLoginMixin {
               final profileData = jsonDecode(decodedBody)['data'];
 
               if (profileData != null) {
-                // Lưu thêm các trường cần thiết để dùng ở AccountScreen
                 UserDTO user = UserDTO.fromJson(profileData);
                 String userJsonString = jsonEncode(user.toJson());
 
@@ -53,10 +49,7 @@ mixin ApiLoginMixin {
             }
           } catch (e) {
             print("Lỗi khi lấy thông tin Profile lúc đăng nhập: $e");
-            // Không return false ở đây vì đăng nhập thực tế đã thành công
           }
-          // ========================================================
-
           return true;
         }
       }
@@ -67,7 +60,6 @@ mixin ApiLoginMixin {
     }
   }
 
-  // THÊM HÀM NÀY VÀO ApiLoginMixin.dart
   Future<String?> registerUser({
     required String fullname,
     required String username,
@@ -90,34 +82,27 @@ mixin ApiLoginMixin {
         }),
       );
 
-      // Status 200 hoặc 201 là thành công
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return null; // Trả về null nghĩa là không có lỗi
+        return null;
       }
 
-      // Xử lý đọc lỗi khi trả về mã khác (400, 403, 409...)
       final decodedBody = utf8.decode(response.bodyBytes);
       final errorData = jsonDecode(decodedBody);
 
       if (errorData is Map) {
-        // Trường hợp 1: Nếu Backend trả về Exception tuỳ chỉnh (có key 'message')
         if (errorData.containsKey('message') && errorData['message'] != null) {
           return errorData['message'].toString();
         }
 
-        // Trường hợp 2: Nếu trả về Map<String, String> từ @Valid (như code Spring Boot của bạn)
-        // Ví dụ: {"username": "Đã tồn tại", "email": "Không hợp lệ"}
         List<String> errorMessages = [];
         errorData.forEach((key, value) {
-          errorMessages.add("- $value"); // Lấy ra cái value (câu báo lỗi)
+          errorMessages.add("- $value");
         });
 
         if (errorMessages.isNotEmpty) {
-          return errorMessages.join('\n'); // Nối các lỗi lại thành nhiều dòng
+          return errorMessages.join('\n');
         }
       }
-
-      // Nếu không parse được chuẩn thì báo lỗi chung kèm status code
       return "Đã xảy ra lỗi hệ thống (${response.statusCode})";
     } catch (e) {
       debugPrint("Lỗi API Đăng ký: $e");
@@ -127,7 +112,7 @@ mixin ApiLoginMixin {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Xoá sạch cả token và thông tin profile đã lưu
+    await prefs.clear();
   }
 
   Future<String?> getToken() async {
@@ -139,14 +124,13 @@ mixin ApiLoginMixin {
     final prefs = await SharedPreferences.getInstance();
 
     String token = prefs.getString('jwt_token') ?? '';
-    String username = prefs.getString('username') ?? ''; // Tên đăng nhập gốc
+    String username = prefs.getString('username') ?? '';
 
     String fullname = '';
     String email = '';
     String avatar = '';
     String phone = '';
 
-    // LẤY VÀ GIẢI MÃ ĐỐI TƯỢNG user_profile TỪ CACHE
     String? userProfileJson = prefs.getString('user_profile');
     if (userProfileJson != null && userProfileJson.isNotEmpty) {
       try {
@@ -155,12 +139,11 @@ mixin ApiLoginMixin {
         email = userMap['email'] ?? '';
         avatar = userMap['avatar'] ?? '';
         phone = userMap['phone'] ?? '';
-        username = userMap['username'] ?? username; // Ghi đè nếu có trong DTO
+        username = userMap['username'] ?? username;
       } catch (e) {
         debugPrint("Lỗi parse user_profile trong getUserInfo: $e");
       }
     }
-
     return {
       'username': username,
       'token': token,

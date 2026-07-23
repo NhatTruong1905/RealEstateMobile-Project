@@ -22,4 +22,24 @@ mixin ValidationMixin {
     }
     return null;
   }
+
+  String? validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Vui lòng nhập email';
+    }
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+      return 'Email không đúng định dạng';
+    }
+    return null;
+  }
+
+  String? validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Vui lòng nhập số điện thoại';
+    }
+    if (!RegExp(r'^0\d{9}$').hasMatch(value)) {
+      return 'Số điện thoại không hợp lệ (Bắt đầu bằng 0 và đủ 10 số)';
+    }
+    return null;
+  }
 }
