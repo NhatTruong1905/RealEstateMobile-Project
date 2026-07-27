@@ -1,12 +1,14 @@
 package com.ndnt.services.impl;
 
 import com.ndnt.converter.PropertyConverter;
+import com.ndnt.model.dto.FavoritePropertyDTO;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.dto.request.PropertyRequestDTO;
 import com.ndnt.model.entity.AssignmentPropertyEntity;
 import com.ndnt.model.entity.PropertyEntity;
 import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.repositories.PropertyRepository;
+import com.ndnt.services.FavoritePropertyService;
 import com.ndnt.services.PropertyService;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,9 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Autowired
     private PropertyConverter propertyConverter;
+
+    @Autowired
+    private FavoritePropertyService favoritePropertyService;
 
     @Override
     public List<PropertyDTO> getProperties() {
@@ -130,5 +135,43 @@ public class PropertyServiceImpl implements PropertyService {
         PropertyEntity propertyEntity = this.propertyRepository.findById(id).get();
         propertyEntity.setStatus(StatusProperty.DELETED.getStatus());
         this.propertyRepository.save(propertyEntity);
+    }
+
+    @Override
+    public List<PropertyDTO> getPublishedProperties() {
+        List<PropertyEntity> propertyEntities = this.propertyRepository.findByStatus("Đang mở bán");
+
+        List<PropertyDTO> propertyDTOs = new ArrayList<>();
+        for (PropertyEntity pEntity : propertyEntities) {
+            PropertyDTO pDTO = this.propertyConverter.toPropertyDTO(pEntity);
+            pDTO.setAddressDetail(pEntity.getAddress() + "," + pEntity.getWard().getName() + "," + pEntity.getWard().getDistrict().getName() + ", " + pEntity.getCity());
+            if (!pEntity.getAssignments().isEmpty()) {
+                for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
+                    pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
+                }
+            }
+            propertyDTOs.add(pDTO);
+        }
+        return propertyDTOs;
+    }
+
+    @Override
+    public List<PropertyDTO> getFavoritePropertiesByUser(Integer id) {
+        List<Integer> favoritePropertyDTOS = this.favoritePropertyService.getFavoritePropertyIdsByUserId(id);
+
+        List<PropertyEntity> propertyEntities = this.propertyRepository.findById_In(favoritePropertyDTOS);
+
+        List<PropertyDTO> propertyDTOs = new ArrayList<>();
+        for (PropertyEntity pEntity : propertyEntities) {
+            PropertyDTO pDTO = this.propertyConverter.toPropertyDTO(pEntity);
+            pDTO.setAddressDetail(pEntity.getAddress() + "," + pEntity.getWard().getName() + "," + pEntity.getWard().getDistrict().getName() + ", " + pEntity.getCity());
+            if (!pEntity.getAssignments().isEmpty()) {
+                for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
+                    pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
+                }
+            }
+            propertyDTOs.add(pDTO);
+        }
+        return propertyDTOs;
     }
 }

@@ -17,4 +17,8 @@ public interface PropertyService {
     void createOrUpdateProperty(PropertyDTO propertyDTO);
 
     void deleteProperty(Integer id);
+
+    List<PropertyDTO> getPublishedProperties();
+
+    List<PropertyDTO> getFavoritePropertiesByUser(Integer id);
 }

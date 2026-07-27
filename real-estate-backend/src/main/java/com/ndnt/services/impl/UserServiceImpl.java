@@ -197,7 +197,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDTO findByUsername(String username) {
-        return this.userConverter.toUserDTO(this.userRepository.findByUsername(username));
+        UserEntity userEntity = this.userRepository.findByUsernameAndStatus(username, 1);
+        if (userEntity == null) {
+            return null;
+        }
+
+        return this.userConverter.toUserDTO(userEntity);
     }
 
     @Override

@@ -32,9 +32,13 @@ public class APILoginController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserDTO userDTO) {
+        UserDTO fullUserDTO = this.userService.findByUsername(userDTO.getUsername());
+        if (fullUserDTO == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tài khoản không tồn tại! Vui lòng đăng ký để thực hiện đăng nhập!");
+        }
+
         if (this.userService.authenticate(userDTO.getUsername(), userDTO.getPassword())) {
             try {
-                UserDTO fullUserDTO = this.userService.findByUsername(userDTO.getUsername());
                 String token = this.jwtUtils.generateToken(fullUserDTO);
                 return ResponseEntity.ok().body(Collections.singletonMap("token", token));
             } catch (Exception e) {

@@ -22,7 +22,7 @@ public class UserDTO extends BaseDTO {
     @NotBlank(message = "Số điện thoại không được để trống!")
     @Pattern(regexp = "^0\\d{9}$", message = "Số điện thoại không hợp lệ (Phải bắt đầu bằng 0 và đủ 10 số)!")
     private String phone;
-    private Integer status = 1;
+    private Integer status;
     private String avatar;
     private MultipartFile file;
 }
