@@ -3,16 +3,23 @@ package com.ndnt.controllers.api;
 import com.ndnt.model.dto.FavoritePropertyDTO;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.dto.UserDTO;
+import com.ndnt.model.dto.request.PropertyRequestDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
+import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.services.FavoritePropertyService;
 import com.ndnt.services.PropertyService;
 import com.ndnt.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -25,11 +32,24 @@ public class APIPropertyController {
     private UserService userService;
 
     @GetMapping("/properties")
-    public ResponseEntity<?> getProperties() {
-        List<PropertyDTO> propertyDTOList = this.propertyService.getPublishedProperties();
+    public ResponseEntity<?> getProperties(@ModelAttribute PropertyRequestDTO propertyRequestDTO,
+                                           @RequestParam(defaultValue = "1") int page,
+                                           @RequestParam(defaultValue = "6") int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+
+        propertyRequestDTO.setStatus(StatusProperty.PUBLISHED.getStatus());
+        Page<PropertyDTO> propertyPage = this.propertyService.getProperties(propertyRequestDTO, pageable);
+
+        Map<String, Object> pageData = new HashMap<>();
+        pageData.put("content", propertyPage.getContent());
+        pageData.put("currentPage", propertyPage.getNumber() + 1);
+        pageData.put("totalItems", propertyPage.getTotalElements());
+        pageData.put("totalPages", propertyPage.getTotalPages());
+
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setMessage("success");
-        responseDTO.setData(propertyDTOList);
+        responseDTO.setData(pageData);
+
         return ResponseEntity.ok().body(responseDTO);
     }
 

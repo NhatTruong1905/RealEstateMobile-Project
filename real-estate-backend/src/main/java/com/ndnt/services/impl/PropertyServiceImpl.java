@@ -95,6 +95,15 @@ public class PropertyServiceImpl implements PropertyService {
                 if (searchDTO.getStaffId() != null) {
                     predicates.add(builder.equal(root.join("assignments").join("staff").get("id"), searchDTO.getStaffId()));
                 }
+                if (searchDTO.getCategoryId() != null) {
+                    predicates.add(builder.equal(root.join("category").get("id"), searchDTO.getCategoryId()));
+                }
+                if (searchDTO.getTypeId() != null) {
+                    predicates.add(builder.equal(root.join("type").get("id"), searchDTO.getTypeId()));
+                }
+                if (searchDTO.getStatus() != null && !searchDTO.getStatus().isBlank()) {
+                    predicates.add(builder.like(root.get("status"), "%" + searchDTO.getStatus().trim() + "%"));
+                }
             }
 
             return builder.and(predicates.toArray(new Predicate[0]));

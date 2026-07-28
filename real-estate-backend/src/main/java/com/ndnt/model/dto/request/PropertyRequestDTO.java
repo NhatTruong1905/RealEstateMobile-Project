@@ -21,4 +21,7 @@ public class PropertyRequestDTO {
     private String direction;
     private String legal;
     private Integer staffId;
+    private Integer categoryId;
+    private Integer typeId;
+    private String status;
 }
