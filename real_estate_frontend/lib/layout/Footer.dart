@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:real_estate_frontend/screens/Account.dart';
-import 'package:real_estate_frontend/screens/Home.dart';
-import 'package:real_estate_frontend/screens/SaveNews.dart';
 
 class Footer extends StatelessWidget {
   final int currentIndex;
+  final ValueChanged<int>? onTap;
 
-  const Footer({super.key, required this.currentIndex});
+  const Footer({
+    super.key,
+    required this.currentIndex,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,26 +29,8 @@ class Footer extends StatelessWidget {
       ),
       onTap: (index) {
         if (index == currentIndex) return;
-
-        switch (index) {
-          case 0:
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-            );
-            break;
-          case 1:
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const SavedNewsScreen()),
-            );
-            break;
-          case 2:
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const AccountScreen()),
-            );
-            break;
+        if (onTap != null) {
+          onTap!(index);
         }
       },
       items: const [
@@ -69,5 +53,6 @@ class Footer extends StatelessWidget {
     );
   }
 }
+
 
 

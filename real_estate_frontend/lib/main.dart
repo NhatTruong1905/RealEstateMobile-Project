@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:real_estate_frontend/screens/Home.dart';
+import 'package:real_estate_frontend/screens/MainScreen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE03C3C)),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const MainScreen(),
     );
   }
 }

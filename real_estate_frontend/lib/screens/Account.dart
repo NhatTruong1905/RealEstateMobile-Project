@@ -6,12 +6,12 @@ import 'package:real_estate_frontend/mixin/api/ApiLoginMixin.dart';
 import 'package:real_estate_frontend/screens/Auth.dart';
 import 'package:real_estate_frontend/screens/ChangePassword.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:real_estate_frontend/layout/Footer.dart';
 import 'package:real_estate_frontend/screens/FAQ.dart';
 import 'package:real_estate_frontend/screens/PrivacyPolicy.dart';
 import 'package:real_estate_frontend/screens/Terms.dart';
 
 import 'package:real_estate_frontend/screens/UserProfile.dart';
+import 'package:real_estate_frontend/screens/Home.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -62,6 +62,9 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
 
   Future<void> _handleLogout() async {
     await logout();
+    for (var p in globalProperties) {
+      p.isSaved = false;
+    }
     if (mounted) {
       setState(() {
         isLoggedIn = false;
@@ -350,7 +353,6 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
           ],
         ),
       ),
-      bottomNavigationBar: const Footer(currentIndex: 2),
     );
   }
 
