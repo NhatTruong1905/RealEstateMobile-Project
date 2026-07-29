@@ -66,7 +66,6 @@ mixin ApiPropertyMixin {
           List<PropertyDTO> favList =
               dataList.map((json) => PropertyDTO.fromJson(json)).toList();
 
-          // Cập nhật tập hợp userFavoriteIds toàn cục
           userFavoriteIds =
               favList.map((e) => e.id!).whereType<int>().toSet();
           return favList;
@@ -97,5 +96,37 @@ mixin ApiPropertyMixin {
     } catch (e) {
       debugPrint('Lỗi syncFavoriteProperties: $e');
     }
+  }
+
+  Future<PropertyDTO?> fetchPropertyById(int id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/secure/properties/$id'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> responseData = jsonDecode(decodedBody);
+
+        if (responseData['data'] != null &&
+            responseData['data'] is Map<String, dynamic>) {
+          PropertyDTO dto = PropertyDTO.fromJson(responseData['data']);
+          if (dto.id != null) {
+            dto.isSaved = userFavoriteIds.contains(dto.id);
+          }
+          return dto;
+        }
+      }
+    } catch (e) {
+      debugPrint('Lỗi fetchPropertyById: $e');
+    }
+    return null;
   }
 }

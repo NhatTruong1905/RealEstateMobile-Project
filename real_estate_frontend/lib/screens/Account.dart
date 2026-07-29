@@ -14,7 +14,14 @@ import 'package:real_estate_frontend/screens/UserProfile.dart';
 import 'package:real_estate_frontend/screens/Home.dart';
 
 class AccountScreen extends StatefulWidget {
-  const AccountScreen({super.key});
+  final bool isSellerMode;
+  final Function(bool isSellerMode)? onSwitchMode;
+
+  const AccountScreen({
+    super.key,
+    this.isSellerMode = false,
+    this.onSwitchMode,
+  });
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -299,18 +306,9 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
                         ),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text(
-                            'Tính năng Đăng tin đang được phát triển!',
-                          ),
-                          backgroundColor: const Color(0xFF945331),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      );
+                      if (widget.onSwitchMode != null) {
+                        widget.onSwitchMode!(!widget.isSellerMode);
+                      }
                     }
                   },
                   borderRadius: BorderRadius.circular(30),
@@ -330,14 +328,20 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.swap_horiz, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
+                        Icon(
+                          widget.isSellerMode ? Icons.home_outlined : Icons.swap_horiz,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
-                          'Chuyển sang đăng tin',
-                          style: TextStyle(
+                          widget.isSellerMode
+                              ? 'Chuyển sang tìm kiếm'
+                              : 'Chuyển sang đăng tin',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.bold,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:real_estate_frontend/dto/PropertyPageResponseDTO.dart';
 import 'package:real_estate_frontend/mixin/api/APIPropertyMixin.dart';
+import 'package:real_estate_frontend/screens/PropertyDetail.dart';
+import 'package:real_estate_frontend/screens/PropertyList.dart';
+import 'package:real_estate_frontend/utils/PriceFormatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:real_estate_frontend/screens/Auth.dart';
 import '../../dto/PropertyDTO.dart';
@@ -600,9 +603,10 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(height: 24),
 
-                    // Buttons Đặt lại & Áp dụng
+                    // NÚT ĐẶT LẠI & ÁP DỤNG
                     Row(
                       children: [
+                        // NÚT ĐẶT LẠI (RESET CÁC FIELD VÀ BỘ LỌC)
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
@@ -624,7 +628,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                 activeCategory = "Tất cả";
                                 _searchController.clear();
                               });
-                              Navigator.pop(context);
                               _loadData(isReset: true);
                             },
                             style: OutlinedButton.styleFrom(
@@ -634,10 +637,14 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                   borderRadius: BorderRadius.circular(16)),
                             ),
                             child: const Text('Đặt lại',
-                                style: TextStyle(color: Color(0xFF1A1918))),
+                                style: TextStyle(
+                                    color: Color(0xFF1A1918),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14)),
                           ),
                         ),
                         const SizedBox(width: 12),
+                        // NÚT ÁP DỤNG
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
@@ -684,7 +691,10 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                   borderRadius: BorderRadius.circular(16)),
                             ),
                             child: const Text('Áp dụng',
-                                style: TextStyle(color: Colors.white)),
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14)),
                           ),
                         ),
                       ],
@@ -806,8 +816,9 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                             Expanded(
                               child: Container(
                                 height: 56,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                                padding: const EdgeInsets.only(
+                                  left: 16,
+                                  right: 6,
                                 ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF4EEE6),
@@ -815,19 +826,17 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(
-                                      Icons.search,
-                                      color: Color(0xFF78736D),
-                                      size: 22,
-                                    ),
-                                    const SizedBox(width: 12),
                                     Expanded(
                                       child: TextField(
                                         controller: _searchController,
                                         onSubmitted: (value) {
-                                          _filterRequest.title = value.trim();
+                                          _filterRequest.title =
+                                              value.trim().isNotEmpty
+                                                  ? value.trim()
+                                                  : null;
                                           _loadData(isReset: true);
                                         },
+                                        textInputAction: TextInputAction.search,
                                         style: const TextStyle(
                                           fontFamily: 'Plus Jakarta Sans',
                                           fontSize: 15,
@@ -840,6 +849,41 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                             color: Color(0xFF78736D),
                                             fontSize: 15,
                                           ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (_searchController.text.isNotEmpty)
+                                      IconButton(
+                                        icon: const Icon(Icons.cancel,
+                                            size: 18,
+                                            color: Color(0xFF78736D)),
+                                        onPressed: () {
+                                          setState(() {
+                                            _searchController.clear();
+                                            _filterRequest.title = null;
+                                          });
+                                          _loadData(isReset: true);
+                                        },
+                                      ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        String val =
+                                            _searchController.text.trim();
+                                        _filterRequest.title =
+                                            val.isNotEmpty ? val : null;
+                                        _loadData(isReset: true);
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF945331),
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                        ),
+                                        child: const Icon(
+                                          Icons.search,
+                                          color: Colors.white,
+                                          size: 20,
                                         ),
                                       ),
                                     ),
@@ -861,6 +905,105 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                   Icons.tune_rounded,
                                   color: Colors.white,
                                   size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // 2.1 THANH CHỌN LOẠI BĐS (CHO BÁN & CHO THUÊ)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const PropertyListScreen(
+                                        pageTitle: 'Bất động sản Mua Bán',
+                                        initialTypeId: 1,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 14, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF4EEE6),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: const Color(0xFFE8E3DC)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.house_outlined,
+                                          color: Color(0xFF945331), size: 22),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Cho Bán',
+                                        style: TextStyle(
+                                          color: Color(0xFF1A1918),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          fontFamily: 'Plus Jakarta Sans',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const PropertyListScreen(
+                                        pageTitle: 'Bất động sản Cho Thuê',
+                                        initialTypeId: 2,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 14, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF4EEE6),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: const Color(0xFFE8E3DC)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.key_outlined,
+                                          color: Color(0xFF945331), size: 22),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Cho Thuê',
+                                        style: TextStyle(
+                                          color: Color(0xFF1A1918),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          fontFamily: 'Plus Jakarta Sans',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -939,7 +1082,18 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                 ),
                               ),
                               InkWell(
-                                onTap: () {},
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const PropertyListScreen(
+                                        pageTitle: 'Tất cả Bất động sản',
+                                        initialTypeId: null,
+                                      ),
+                                    ),
+                                  );
+                                },
                                 child: const Text(
                                   'Xem tất cả',
                                   style: TextStyle(
@@ -1057,9 +1211,11 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
   }
 
   Widget _buildHorizontalCard(PropertyDTO property) {
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 18),
+    return GestureDetector(
+      onTap: () => openPropertyDetail(context, property),
+      child: Container(
+        width: 280,
+        margin: const EdgeInsets.only(right: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1150,7 +1306,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
           ),
           const SizedBox(height: 2),
           Text(
-            "${property.price ?? 'Thỏa thuận'} VNĐ",
+            formatPropertyPrice(property.price),
             style: const TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.bold,
@@ -1201,7 +1357,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     fontSize: 13,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 const Icon(
                   Icons.bathtub_outlined,
                   size: 17,
@@ -1216,7 +1372,22 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     fontSize: 13,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
+                const Icon(
+                  Icons.layers_outlined,
+                  size: 16,
+                  color: Color(0xFF78736D),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '${property.floorCount ?? 1}T',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 const Icon(Icons.crop_free, size: 15, color: Color(0xFF78736D)),
                 const SizedBox(width: 6),
                 Text(
@@ -1234,12 +1405,15 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
           ),
         ],
       ),
+    ),
     );
   }
 
   Widget _buildVerticalCard(PropertyDTO property) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+    return GestureDetector(
+      onTap: () => openPropertyDetail(context, property),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 24),
       child: Row(
         children: [
           ClipRRect(
@@ -1298,16 +1472,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${property.price ?? 'Thỏa thuận'} VNĐ",
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF945331),
-                    fontFamily: 'Georgia',
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
                   property.title ?? "Chưa có tiêu đề",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1316,6 +1480,18 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1A1918),
                     fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  formatPropertyPrice(property.price),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: property.typeId == 2
+                        ? const Color(0xFF2E7D32)
+                        : const Color(0xFF945331),
+                    fontFamily: 'Georgia',
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1353,7 +1529,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${property.bedroomCount ?? 0}',
+                      '${property.bedroomCount ?? 0} PN',
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF78736D),
@@ -1361,7 +1537,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 8),
                     const Icon(
                       Icons.bathtub_outlined,
                       size: 15,
@@ -1369,7 +1545,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${property.bathroomCount ?? 0}',
+                      '${property.bathroomCount ?? 0} PT',
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF78736D),
@@ -1377,7 +1553,23 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.layers_outlined,
+                      size: 14,
+                      color: Color(0xFF78736D),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${property.floorCount ?? 1} Tầng',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF78736D),
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     const Icon(Icons.crop_free, size: 13, color: Color(0xFF78736D)),
                     const SizedBox(width: 4),
                     Text(
@@ -1398,6 +1590,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
           ),
         ],
       ),
+    ),
     );
   }
 }

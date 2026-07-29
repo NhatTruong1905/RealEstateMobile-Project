@@ -26,6 +26,9 @@ PropertyDTO _$PropertyDTOFromJson(Map<String, dynamic> json) => PropertyDTO(
   legal: json['legal'] as String?,
   status: json['status'] as String?,
   image: json['image'] as String?,
+  userPhone: json['userPhone'] as String?,
+  userFullname: json['userFullname'] as String?,
+  userEmail: json['userEmail'] as String?,
 );
 
 Map<String, dynamic> _$PropertyDTOToJson(PropertyDTO instance) =>
@@ -49,4 +52,7 @@ Map<String, dynamic> _$PropertyDTOToJson(PropertyDTO instance) =>
       'legal': instance.legal,
       'status': instance.status,
       'image': instance.image,
+      'userPhone': instance.userPhone,
+      'userFullname': instance.userFullname,
+      'userEmail': instance.userEmail,
     };

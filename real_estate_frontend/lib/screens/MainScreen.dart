@@ -3,6 +3,10 @@ import 'package:real_estate_frontend/layout/Footer.dart';
 import 'package:real_estate_frontend/screens/Account.dart';
 import 'package:real_estate_frontend/screens/Home.dart';
 import 'package:real_estate_frontend/screens/SaveNews.dart';
+import 'package:real_estate_frontend/screens/seller/PostProperty.dart';
+import 'package:real_estate_frontend/screens/seller/SellerCustomers.dart';
+import 'package:real_estate_frontend/screens/seller/SellerOverview.dart';
+import 'package:real_estate_frontend/screens/seller/SellerProperties.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -12,26 +16,100 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
+  bool _isSellerMode = false;
+  int _buyerIndex = 0;
+  int _sellerIndex = 0;
+
+  void _openPostModal() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PostPropertyScreen(),
+      ),
+    );
+  }
+
+  void _toggleMode(bool isSeller) {
+    setState(() {
+      _isSellerMode = isSeller;
+      if (isSeller) {
+        _sellerIndex = 0;
+      } else {
+        _buyerIndex = 0;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!_isSellerMode) {
+      // GIAO DIỆN NGƯỜI TÌM NHÀ (BUYER MODE)
+      return Scaffold(
+        body: IndexedStack(
+          index: _buyerIndex,
+          children: [
+            HomeScreen(key: ValueKey('home_$_buyerIndex')),
+            SavedNewsScreen(key: ValueKey('saved_$_buyerIndex')),
+            AccountScreen(
+              key: ValueKey('account_$_buyerIndex'),
+              isSellerMode: false,
+              onSwitchMode: _toggleMode,
+            ),
+          ],
+        ),
+        bottomNavigationBar: Footer(
+          currentIndex: _buyerIndex,
+          isSellerMode: false,
+          onTap: (index) {
+            setState(() {
+              _buyerIndex = index;
+            });
+          },
+        ),
+      );
+    }
+
+    // GIAO DIỆN CHỦ ĐĂNG TIN / BÁN NHÀ (SELLER MODE)
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
+        index: _sellerIndex,
         children: [
-          HomeScreen(key: ValueKey('home_$_currentIndex')),
-          SavedNewsScreen(key: ValueKey('saved_$_currentIndex')),
-          AccountScreen(key: ValueKey('account_$_currentIndex')),
+          SellerOverviewScreen(
+            key: ValueKey('seller_overview_$_sellerIndex'),
+            onPostNewProperty: _openPostModal,
+            onManageProperties: () => setState(() => _sellerIndex = 1),
+            onManageCustomers: () => setState(() => _sellerIndex = 3),
+          ),
+          SellerPropertiesScreen(
+            key: ValueKey('seller_properties_$_sellerIndex'),
+            onPostNewProperty: _openPostModal,
+          ),
+          // Placeholder index 2 cho nút (+) Đăng tin
+          SellerOverviewScreen(
+            key: ValueKey('seller_dummy_$_sellerIndex'),
+            onPostNewProperty: _openPostModal,
+            onManageProperties: () => setState(() => _sellerIndex = 1),
+            onManageCustomers: () => setState(() => _sellerIndex = 3),
+          ),
+          SellerCustomersScreen(
+            key: ValueKey('seller_customers_$_sellerIndex'),
+          ),
+          AccountScreen(
+            key: ValueKey('seller_account_$_sellerIndex'),
+            isSellerMode: true,
+            onSwitchMode: _toggleMode,
+          ),
         ],
       ),
       bottomNavigationBar: Footer(
-        currentIndex: _currentIndex,
+        currentIndex: _sellerIndex,
+        isSellerMode: true,
         onTap: (index) {
           setState(() {
-            _currentIndex = index;
+            _sellerIndex = index;
           });
         },
+        onPostTap: _openPostModal,
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:real_estate_frontend/dto/PropertyDTO.dart';
 import 'package:real_estate_frontend/mixin/api/APIPropertyMixin.dart';
+import 'package:real_estate_frontend/screens/PropertyDetail.dart';
+import 'package:real_estate_frontend/utils/PriceFormatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:real_estate_frontend/screens/Home.dart';
@@ -192,11 +194,13 @@ class _SavedNewsScreenState extends State<SavedNewsScreen> with ApiPropertyMixin
   }
 
   Widget _buildVerticalCard(PropertyDTO property) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Row(
-        children: [
-          ClipRRect(
+    return GestureDetector(
+      onTap: () => openPropertyDetail(context, property),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 24),
+        child: Row(
+          children: [
+            ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: Stack(
               children: [
@@ -251,7 +255,7 @@ class _SavedNewsScreenState extends State<SavedNewsScreen> with ApiPropertyMixin
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${property.price ?? 'Thỏa thuận'} VNĐ",
+                  formatPropertyPrice(property.price),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -289,13 +293,17 @@ class _SavedNewsScreenState extends State<SavedNewsScreen> with ApiPropertyMixin
                   children: [
                     const Icon(Icons.bed_outlined, size: 14, color: Color(0xFF78736D)),
                     const SizedBox(width: 4),
-                    Text('${property.bedroomCount ?? 0}', style: const TextStyle(fontSize: 12, color: Color(0xFF78736D))),
-                    const SizedBox(width: 12),
+                    Text('${property.bedroomCount ?? 0} PN', style: const TextStyle(fontSize: 12, color: Color(0xFF78736D))),
+                    const SizedBox(width: 8),
                     const Icon(Icons.bathtub_outlined, size: 14, color: Color(0xFF78736D)),
                     const SizedBox(width: 4),
-                    Text('${property.bathroomCount ?? 0}', style: const TextStyle(fontSize: 12, color: Color(0xFF78736D))),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.fullscreen, size: 14, color: Color(0xFF78736D)),
+                    Text('${property.bathroomCount ?? 0} PT', style: const TextStyle(fontSize: 12, color: Color(0xFF78736D))),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.layers_outlined, size: 14, color: Color(0xFF78736D)),
+                    const SizedBox(width: 4),
+                    Text('${property.floorCount ?? 1} Tầng', style: const TextStyle(fontSize: 12, color: Color(0xFF78736D))),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.crop_free, size: 13, color: Color(0xFF78736D)),
                     const SizedBox(width: 4),
                     Text(
                       property.area != null ? '${property.area!.toStringAsFixed(0)}m²' : 'N/A',
@@ -308,6 +316,7 @@ class _SavedNewsScreenState extends State<SavedNewsScreen> with ApiPropertyMixin
           ),
         ],
       ),
+    ),
     );
   }
 }

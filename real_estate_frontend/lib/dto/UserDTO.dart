@@ -28,6 +28,7 @@ class UserDTO {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'username': username,
       'fullname': fullname,
       'email': email,
