@@ -13,4 +13,6 @@ public interface InteractionTypeService {
     void createOrUpdateInteractionType(InteractionTypeDTO interactionTypeDTO);
 
     void deleteInteractionType(int id);
+
+    String getNameInteractionTypeByCode(String code);
 }

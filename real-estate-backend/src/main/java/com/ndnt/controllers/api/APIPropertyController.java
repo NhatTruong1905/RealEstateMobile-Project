@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,6 +51,21 @@ public class APIPropertyController {
         responseDTO.setMessage("success");
         responseDTO.setData(pageData);
 
+        return ResponseEntity.ok().body(responseDTO);
+    }
+
+    @GetMapping("/secure/properties/{id}")
+    public ResponseEntity<?> getDetailProperty(@PathVariable Integer id) {
+        PropertyDTO propertyDTO = this.propertyService.findById(id);
+
+        ResponseDTO responseDTO = new ResponseDTO();
+        if (propertyDTO == null) {
+            responseDTO.setMessage("Fail");
+            return ResponseEntity.badRequest().body(responseDTO);
+        }
+
+        responseDTO.setMessage("success");
+        responseDTO.setData(propertyDTO);
         return ResponseEntity.ok().body(responseDTO);
     }
 

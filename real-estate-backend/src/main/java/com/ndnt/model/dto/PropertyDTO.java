@@ -11,8 +11,15 @@ import java.util.List;
 @Getter
 public class PropertyDTO extends BaseDTO {
     private Integer userId;
+    private String userFullname;
+    private String userEmail;
+    private String userPhone;
     private Integer typeId;
+    private String typeName;
+    private String typeCode;
     private Integer categoryId;
+    private String categoryName;
+    private String categoryCode;
     private String title;
     private String description;
     private String address;

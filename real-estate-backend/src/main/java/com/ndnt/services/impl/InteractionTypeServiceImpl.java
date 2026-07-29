@@ -54,4 +54,9 @@ public class InteractionTypeServiceImpl implements InteractionTypeService {
     public void deleteInteractionType(int id) {
         this.interactionTypeRepository.deleteById(id);
     }
+
+    @Override
+    public String getNameInteractionTypeByCode(String code) {
+        return this.interactionTypeRepository.findFirstByCode(code).getName();
+    }
 }

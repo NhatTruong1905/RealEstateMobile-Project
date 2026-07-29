@@ -81,6 +81,15 @@ public class InteractionServiceImpl implements InteractionService {
 
     @Override
     public void createOrUpdateInteraction(InteractionDTO interactionDTO) {
+        InteractionTypeEntity iTypeEntity = this.interactionTypeRepository.findFirstByCode(interactionDTO.getInteractionTypeCode());
+        if (interactionDTO.getInteractionTypeId() == null) {
+            interactionDTO.setInteractionTypeId(iTypeEntity.getId());
+        }
+        if (interactionDTO.getMessage() == null) {
+            if (interactionDTO.getInteractionTypeCode() != null) {
+                interactionDTO.setMessage(iTypeEntity.getName());
+            }
+        }
         InteractionEntity interactionEntity = this.interactionConverter.toInteractionEntity(interactionDTO);
         this.interactionRepository.save(interactionEntity);
     }
@@ -90,5 +99,16 @@ public class InteractionServiceImpl implements InteractionService {
         InteractionEntity interactionEntity = this.interactionRepository.findById(id).get();
         interactionEntity.setStatus(0);
         this.interactionRepository.save(interactionEntity);
+    }
+
+    @Override
+    public List<InteractionDTO> getInteractionOfSender(Integer propertyId, Integer senderId) {
+        List<InteractionEntity> interactionEntities = this.interactionRepository.findByProperty_IdAndSender_Id(propertyId, senderId);
+
+        List<InteractionDTO> interactionDTOs = new ArrayList<>();
+        for (InteractionEntity interactionEntity : interactionEntities) {
+            interactionDTOs.add(this.interactionConverter.toInteractionDTO(interactionEntity));
+        }
+        return interactionDTOs;
     }
 }

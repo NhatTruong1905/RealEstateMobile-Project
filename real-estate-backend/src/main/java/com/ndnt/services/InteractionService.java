@@ -6,6 +6,8 @@ import com.ndnt.model.dto.request.InteractionRequestDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface InteractionService {
     Page<InteractionDTO> getInteractions(InteractionRequestDTO searchDTO, Pageable pageable);
 
@@ -14,4 +16,6 @@ public interface InteractionService {
     void createOrUpdateInteraction(InteractionDTO interactionDTO);
 
     void deleteInteraction(Integer id);
+
+    List<InteractionDTO> getInteractionOfSender(Integer propertyId, Integer senderId);
 }

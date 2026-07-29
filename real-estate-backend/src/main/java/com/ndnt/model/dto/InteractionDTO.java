@@ -14,6 +14,7 @@ public class InteractionDTO extends BaseDTO {
     private String senderUsername;
     private String receiverUsername;
     private String interactionTypeName;
+    private String interactionTypeCode;
     private String message;
     private Integer status = 1;
 }

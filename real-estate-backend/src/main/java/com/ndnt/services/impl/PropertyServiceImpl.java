@@ -39,7 +39,7 @@ public class PropertyServiceImpl implements PropertyService {
         List<PropertyDTO> propertyDTOs = new ArrayList<>();
         for (PropertyEntity pEntity : propertyEntities) {
             PropertyDTO pDTO = this.propertyConverter.toPropertyDTO(pEntity);
-            pDTO.setAddressDetail(pEntity.getAddress() + "," + pEntity.getWard().getName() + "," + pEntity.getWard().getDistrict().getName() + ", " + pEntity.getCity());
+            pDTO.setAddressDetail(pEntity.getAddress() + ", " + pEntity.getWard().getName() + ", " + pEntity.getWard().getDistrict().getName() + ", " + pEntity.getCity());
             if (!pEntity.getAssignments().isEmpty()) {
                 for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
                     pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
@@ -129,7 +129,11 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public PropertyDTO findById(Integer id) {
-        return this.propertyConverter.toPropertyDTO(this.propertyRepository.findById(id).get());
+        PropertyEntity propertyEntity = this.propertyRepository.findById(id).get();
+        PropertyDTO propertyDTO = this.propertyConverter.toPropertyDTO(propertyEntity);
+        propertyDTO.setAddressDetail(propertyEntity.getAddress() + ", " + propertyEntity.getWard().getName() + ", " + propertyEntity.getWard().getDistrict().getName() + ", " + propertyEntity.getCity());
+
+        return propertyDTO;
     }
 
     @Override
