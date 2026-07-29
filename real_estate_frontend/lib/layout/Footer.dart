@@ -17,7 +17,6 @@ class Footer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!isSellerMode) {
-      // MÀN HÌNH NGƯỜI TÌM NHÀ (TRANG CHỦ - ĐÃ LƯU - TÀI KHOẢN)
       return BottomNavigationBar(
         currentIndex: currentIndex,
         selectedItemColor: const Color(0xFF945331),
@@ -59,7 +58,6 @@ class Footer extends StatelessWidget {
       );
     }
 
-    // MÀN HÌNH CHỦ ĐĂNG TIN (TỔNG QUAN - TIN ĐĂNG - (+) ĐĂNG TIN - KHÁCH HÀNG - TÀI KHOẢN)
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,

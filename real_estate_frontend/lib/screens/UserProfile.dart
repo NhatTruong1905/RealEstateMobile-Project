@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_frontend/mixin/api/ApiUserMixin.dart';
+import 'package:real_estate_frontend/mixin/validation/ValidationMixin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../dto/UserDTO.dart';
@@ -19,7 +20,7 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen>
-    with ApiUserMixin {
+    with ApiUserMixin, ValidationMixin {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _usernameController;
@@ -247,11 +248,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                         ),
                         prefixIcon: const Icon(Icons.badge_outlined),
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty)
-                          return 'Vui lòng nhập họ và tên';
-                        return null;
-                      },
+                      validator: validateFullName,
                     ),
                     const SizedBox(height: 20),
 
@@ -268,16 +265,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                         ),
                         prefixIcon: const Icon(Icons.email_outlined),
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty)
-                          return 'Vui lòng nhập email';
-                        if (!RegExp(
-                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                        ).hasMatch(value)) {
-                          return 'Email không đúng định dạng';
-                        }
-                        return null;
-                      },
+                      validator: validateEmail,
                     ),
                     const SizedBox(height: 20),
 
@@ -295,14 +283,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                         ),
                         prefixIcon: const Icon(Icons.phone_outlined),
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty)
-                          return 'Vui lòng nhập số điện thoại';
-                        if (!RegExp(r'^0\d{9}$').hasMatch(value)) {
-                          return 'Số điện thoại không hợp lệ (Bắt đầu bằng 0 và đủ 10 số)';
-                        }
-                        return null;
-                      },
+                      validator: validatePhone,
                     ),
                     const SizedBox(height: 40),
 

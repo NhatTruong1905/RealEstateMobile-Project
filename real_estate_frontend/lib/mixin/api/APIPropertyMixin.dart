@@ -6,19 +6,20 @@ import 'package:real_estate_frontend/dto/PropertyPageResponseDTO.dart';
 import 'package:real_estate_frontend/dto/PropertyRequestDTO.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Biến toàn cục lưu trữ tất cả các ID bất động sản đã thả tim của user đăng nhập
 Set<int> userFavoriteIds = {};
 
 mixin ApiPropertyMixin {
   final String baseUrl = "http://10.0.2.2:8080/api";
 
-  Future<PropertyPageResponseDTO?> fetchPropertiesPage(
-      {PropertyRequestDTO? request}) async {
+  Future<PropertyPageResponseDTO?> fetchPropertiesPage({
+    PropertyRequestDTO? request,
+  }) async {
     try {
       final queryParams =
           request?.toQueryParams() ?? {'page': '1', 'limit': '6'};
-      final uri =
-          Uri.parse('$baseUrl/properties').replace(queryParameters: queryParams);
+      final uri = Uri.parse(
+        '$baseUrl/properties',
+      ).replace(queryParameters: queryParams);
 
       final response = await http.get(uri);
       if (response.statusCode == 200) {
@@ -35,8 +36,9 @@ mixin ApiPropertyMixin {
     return null;
   }
 
-  Future<List<PropertyDTO>> fetchProperties(
-      {PropertyRequestDTO? request}) async {
+  Future<List<PropertyDTO>> fetchProperties({
+    PropertyRequestDTO? request,
+  }) async {
     final pageResponse = await fetchPropertiesPage(request: request);
     return pageResponse?.content ?? [];
   }
@@ -63,11 +65,11 @@ mixin ApiPropertyMixin {
         final Map<String, dynamic> responseData = jsonDecode(decodedBody);
         if (responseData['data'] != null) {
           List<dynamic> dataList = responseData['data'];
-          List<PropertyDTO> favList =
-              dataList.map((json) => PropertyDTO.fromJson(json)).toList();
+          List<PropertyDTO> favList = dataList
+              .map((json) => PropertyDTO.fromJson(json))
+              .toList();
 
-          userFavoriteIds =
-              favList.map((e) => e.id!).whereType<int>().toSet();
+          userFavoriteIds = favList.map((e) => e.id!).whereType<int>().toSet();
           return favList;
         }
       }

@@ -6,15 +6,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 mixin ApiInteractionMixin {
   final String baseUrl = "http://10.0.2.2:8080/api";
 
-  /// Lấy danh sách tương tác của user hiện tại đối với bất động sản [propertyId]
-  Future<List<Map<String, dynamic>>> fetchPropertyInteractions(int propertyId) async {
+  Future<List<Map<String, dynamic>>> fetchPropertyInteractions(
+    int propertyId,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token');
 
-      // 1. Gọi trực tiếp endpoint secure /secure/interactions/property/{propertyId} khi có token
-      var uri = Uri.parse('$baseUrl/secure/interactions/property/$propertyId');
-      var response = await http.get(
+      final uri = Uri.parse(
+        '$baseUrl/secure/interactions/property/$propertyId',
+      );
+      final response = await http.get(
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
@@ -22,35 +24,24 @@ mixin ApiInteractionMixin {
         },
       );
 
-      // 2. Thử sang endpoint public nếu secure 404/401
-      if (response.statusCode != 200) {
-        uri = Uri.parse('$baseUrl/interactions/property/$propertyId');
-        response = await http.get(
-          uri,
-          headers: {
-            'Content-Type': 'application/json; charset=UTF-8',
-            if (token != null) 'Authorization': 'Bearer $token',
-          },
-        );
-      }
-
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         final responseData = jsonDecode(decodedBody);
-        dynamic data = responseData['data'] ?? responseData;
-
-        // Giải nén nếu Backend trả về dạng phân trang { "data": { "content": [...] } }
-        if (data is Map<String, dynamic> && data['content'] is List) {
-          data = data['content'];
-        }
+        final dynamic data = responseData['data'] ?? responseData;
 
         if (data is List) {
-          debugPrint('fetchPropertyInteractions thành công: ${data.length} items');
+          debugPrint(
+            'fetchPropertyInteractions thành công: ${data.length} items',
+          );
           return List<Map<String, dynamic>>.from(data);
         } else if (data is Map<String, dynamic>) {
           debugPrint('fetchPropertyInteractions thành công: 1 item object');
           return [data];
         }
+      } else {
+        debugPrint(
+          'fetchPropertyInteractions thất bại: status ${response.statusCode}',
+        );
       }
     } catch (e) {
       debugPrint('Lỗi fetchPropertyInteractions: $e');
@@ -58,7 +49,6 @@ mixin ApiInteractionMixin {
     return [];
   }
 
-  /// Lấy senderId từ cache hoặc gọi /secure/profile nếu chưa có
   Future<int?> _getSenderId(String token) async {
     final prefs = await SharedPreferences.getInstance();
     final userProfileStr = prefs.getString('user_profile');
@@ -72,7 +62,6 @@ mixin ApiInteractionMixin {
       }
     }
 
-    // Nếu không tìm thấy id trong cache, gọi API lấy profile trực tiếp
     try {
       final res = await http.get(
         Uri.parse('$baseUrl/secure/profile'),
@@ -96,7 +85,6 @@ mixin ApiInteractionMixin {
     return null;
   }
 
-  /// Tạo interaction với CODE ('CALL', 'VIEWING', 'MESSAGE') kèm message
   Future<bool> createInteraction({
     required int propertyId,
     required int receiverId,
@@ -107,7 +95,9 @@ mixin ApiInteractionMixin {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token');
       if (token == null) {
-        debugPrint('createInteraction thất bại: jwt_token null (chưa đăng nhập)');
+        debugPrint(
+          'createInteraction thất bại: jwt_token null (chưa đăng nhập)',
+        );
         return false;
       }
 
@@ -138,7 +128,9 @@ mixin ApiInteractionMixin {
         body: body,
       );
 
-      debugPrint('Response createInteraction status: ${response.statusCode}, body: ${response.body}');
+      debugPrint(
+        'Response createInteraction status: ${response.statusCode}, body: ${response.body}',
+      );
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('Lỗi createInteraction: $e');
