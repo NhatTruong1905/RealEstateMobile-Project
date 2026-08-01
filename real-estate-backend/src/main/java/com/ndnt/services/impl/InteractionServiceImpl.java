@@ -1,6 +1,7 @@
 package com.ndnt.services.impl;
 
 import com.ndnt.converter.InteractionConverter;
+import com.ndnt.model.dto.ChatMessageDTO;
 import com.ndnt.model.dto.InteractionDTO;
 import com.ndnt.model.dto.request.InteractionRequestDTO;
 import com.ndnt.model.entity.InteractionEntity;
@@ -20,11 +21,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class InteractionServiceImpl implements InteractionService {
     @Autowired
     private InteractionRepository interactionRepository;
@@ -81,16 +86,49 @@ public class InteractionServiceImpl implements InteractionService {
 
     @Override
     public void createOrUpdateInteraction(InteractionDTO interactionDTO) {
-        InteractionTypeEntity iTypeEntity = this.interactionTypeRepository.findFirstByCode(interactionDTO.getInteractionTypeCode());
-        if (interactionDTO.getInteractionTypeId() == null) {
-            interactionDTO.setInteractionTypeId(iTypeEntity.getId());
+        InteractionEntity interactionEntity = new InteractionEntity();
+
+        if (interactionDTO.getId() != null) {
+            interactionEntity = this.interactionRepository.findById(interactionDTO.getId()).orElse(new InteractionEntity());
         }
-        if (interactionDTO.getMessage() == null) {
-            if (interactionDTO.getInteractionTypeCode() != null) {
-                interactionDTO.setMessage(iTypeEntity.getName());
-            }
+
+        if (interactionDTO.getPropertyId() != null) {
+            PropertyEntity property = this.propertyRepository.findById(interactionDTO.getPropertyId()).orElse(null);
+            interactionEntity.setProperty(property);
         }
-        InteractionEntity interactionEntity = this.interactionConverter.toInteractionEntity(interactionDTO);
+
+        if (interactionDTO.getSenderId() != null) {
+            UserEntity sender = this.userRepository.findById(interactionDTO.getSenderId()).orElse(null);
+            interactionEntity.setSender(sender);
+        }
+
+        if (interactionDTO.getReceiverId() != null) {
+            UserEntity receiver = this.userRepository.findById(interactionDTO.getReceiverId()).orElse(null);
+            interactionEntity.setReceiver(receiver);
+        }
+
+        InteractionTypeEntity iTypeEntity = null;
+        if (interactionDTO.getInteractionTypeCode() != null && !interactionDTO.getInteractionTypeCode().isEmpty()) {
+            iTypeEntity = this.interactionTypeRepository.findFirstByCode(interactionDTO.getInteractionTypeCode());
+        }
+        if (iTypeEntity == null && interactionDTO.getInteractionTypeId() != null) {
+            iTypeEntity = this.interactionTypeRepository.findById(interactionDTO.getInteractionTypeId()).orElse(null);
+        }
+        if (iTypeEntity == null) {
+            iTypeEntity = this.interactionTypeRepository.findById(1).orElse(null);
+        }
+        interactionEntity.setInteractionType(iTypeEntity);
+
+        if (interactionDTO.getMessage() != null && !interactionDTO.getMessage().isEmpty()) {
+            interactionEntity.setMessage(interactionDTO.getMessage());
+        } else if (iTypeEntity != null) {
+            interactionEntity.setMessage(iTypeEntity.getName());
+        }
+
+        if (interactionDTO.getStatus() != null) {
+            interactionEntity.setStatus(interactionDTO.getStatus());
+        }
+
         this.interactionRepository.save(interactionEntity);
     }
 
@@ -110,5 +148,51 @@ public class InteractionServiceImpl implements InteractionService {
             interactionDTOs.add(this.interactionConverter.toInteractionDTO(interactionEntity));
         }
         return interactionDTOs;
+    }
+
+    @Override
+    public List<InteractionDTO> getInteractionsOfReiver(Integer receiverId) {
+        List<InteractionEntity> interactionEntities = this.interactionRepository.findByReceiver_IdOrderByIdDesc(receiverId);
+
+        List<InteractionDTO> interactionDTOs = new ArrayList<>();
+        for (InteractionEntity interactionEntity : interactionEntities) {
+            interactionDTOs.add(this.interactionConverter.toInteractionDTO(interactionEntity));
+        }
+        return interactionDTOs;
+    }
+
+    @Override
+    public void saveMessage(ChatMessageDTO chatMessageDTO) {
+        if (chatMessageDTO.getPropertyId() == null || chatMessageDTO.getSenderId() == null) {
+            return;
+        }
+
+        InteractionDTO iDTO = new InteractionDTO();
+        iDTO.setMessage(chatMessageDTO.getMessage());
+        iDTO.setPropertyId(chatMessageDTO.getPropertyId());
+        iDTO.setSenderId(chatMessageDTO.getSenderId());
+        iDTO.setReceiverId(chatMessageDTO.getReceiverId());
+        iDTO.setInteractionTypeCode("MESSAGE");
+        iDTO.setInteractionTypeId(2);
+
+        this.createOrUpdateInteraction(iDTO);
+    }
+
+    @Override
+    public void viewingCompleted(List<InteractionDTO> interactionDTOs) {
+        List<InteractionTypeEntity> types = this.interactionTypeRepository.findByCodeIn(Arrays.asList("MESSAGE", "VIEWING"));
+
+        List<Integer> targetTypeIds = types.stream()
+                .map(InteractionTypeEntity::getId)
+                .collect(Collectors.toList());
+
+        for (InteractionDTO dto : interactionDTOs) {
+            this.interactionRepository.updateStatusToZeroForSpecificTypes(
+                    dto.getPropertyId(),
+                    dto.getSenderId(),
+                    dto.getReceiverId(),
+                    targetTypeIds
+            );
+        }
     }
 }

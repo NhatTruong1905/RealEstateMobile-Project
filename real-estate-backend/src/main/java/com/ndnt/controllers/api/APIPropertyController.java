@@ -54,6 +54,20 @@ public class APIPropertyController {
         return ResponseEntity.ok().body(responseDTO);
     }
 
+//    @GetMapping("/secure/properties")
+//    public ResponseEntity<?> getPropertyOfUser(Principal principal) {
+//        UserDTO currentUser = this.userService.findByUsername(principal.getName());
+//        if (currentUser == null) {
+//            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+//        } else {
+//            List<PropertyDTO> propertyDTOS = this.propertyService.getPropertyOfUser(currentUser.getId());
+//            ResponseDTO responseDTO = new ResponseDTO();
+//            responseDTO.setMessage("success");
+//            responseDTO.setData(propertyDTOS);
+//            return ResponseEntity.ok().body(responseDTO);
+//        }
+//    }
+
     @GetMapping("/secure/properties/{id}")
     public ResponseEntity<?> getDetailProperty(@PathVariable Integer id) {
         PropertyDTO propertyDTO = this.propertyService.findById(id);

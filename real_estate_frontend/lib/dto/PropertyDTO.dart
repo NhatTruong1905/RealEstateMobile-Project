@@ -53,7 +53,12 @@ class PropertyDTO {
   factory PropertyDTO.fromJson(Map<String, dynamic> json) {
     return PropertyDTO(
       id: (json['id'] as num?)?.toInt(),
-      userId: (json['userId'] as num?)?.toInt(),
+      userId: (json['userId'] as num?)?.toInt() ??
+          (json['user_id'] as num?)?.toInt() ??
+          (json['sellerId'] as num?)?.toInt() ??
+          (json['user'] is num
+              ? (json['user'] as num).toInt()
+              : (json['user'] is Map ? (json['user']['id'] as num?)?.toInt() : null)),
       typeId: (json['typeId'] as num?)?.toInt(),
       categoryId: (json['categoryId'] as num?)?.toInt(),
       title: json['title'] as String?,

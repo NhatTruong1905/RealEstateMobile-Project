@@ -18,7 +18,7 @@ public interface PropertyService {
 
     void deleteProperty(Integer id);
 
-    List<PropertyDTO> getPublishedProperties();
+    List<PropertyDTO> getPropertyOfUser(Integer userId);
 
     List<PropertyDTO> getFavoritePropertiesByUser(Integer id);
 }

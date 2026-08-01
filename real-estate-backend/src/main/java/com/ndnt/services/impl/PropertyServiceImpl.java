@@ -151,8 +151,8 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public List<PropertyDTO> getPublishedProperties() {
-        List<PropertyEntity> propertyEntities = this.propertyRepository.findByStatus("Đang mở bán");
+    public List<PropertyDTO> getPropertyOfUser(Integer userId) {
+        List<PropertyEntity> propertyEntities = this.propertyRepository.findByUser_Id(userId);
 
         List<PropertyDTO> propertyDTOs = new ArrayList<>();
         for (PropertyEntity pEntity : propertyEntities) {

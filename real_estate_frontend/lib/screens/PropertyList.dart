@@ -1114,69 +1114,91 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      const Icon(
-                        Icons.bed_outlined,
-                        size: 15,
-                        color: Color(0xFF78736D),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.bed_outlined,
+                            size: 14,
+                            color: Color(0xFF78736D),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${property.bedroomCount ?? 0} PN',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF78736D),
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${property.bedroomCount ?? 0} PN',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF78736D),
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.bathtub_outlined,
+                            size: 14,
+                            color: Color(0xFF78736D),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${property.bathroomCount ?? 0} PT',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF78736D),
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      const Icon(
-                        Icons.bathtub_outlined,
-                        size: 14,
-                        color: Color(0xFF78736D),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.layers_outlined,
+                            size: 14,
+                            color: Color(0xFF78736D),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${property.floorCount ?? 1} Tầng',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF78736D),
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${property.bathroomCount ?? 0} PT',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF78736D),
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.layers_outlined,
-                        size: 14,
-                        color: Color(0xFF78736D),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${property.floorCount ?? 1} Tầng',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF78736D),
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.crop_free,
-                          size: 13, color: Color(0xFF78736D)),
-                      const SizedBox(width: 4),
-                      Text(
-                        property.area != null
-                            ? '${property.area!.toStringAsFixed(0)}m²'
-                            : 'N/A',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF78736D),
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.crop_free,
+                            size: 13,
+                            color: Color(0xFF78736D),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            property.area != null
+                                ? '${property.area!.toStringAsFixed(0)}m²'
+                                : 'N/A',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF78736D),
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

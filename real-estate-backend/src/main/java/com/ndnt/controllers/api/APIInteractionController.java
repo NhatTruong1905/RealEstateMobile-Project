@@ -39,9 +39,33 @@ public class APIInteractionController {
             responseDTO.setMessage("Success");
             responseDTO.setData(interactionDTO);
             return ResponseEntity.ok().body(responseDTO);
+        } else {
+            responseDTO.setMessage("Error");
+            return ResponseEntity.badRequest().body(responseDTO);
         }
+    }
 
-        responseDTO.setMessage("Error");
-        return ResponseEntity.badRequest().body(responseDTO);
+    @GetMapping("/interactions-receiver")
+    public ResponseEntity<?> getInteractionsOfReceiver(Principal principal) {
+        ResponseDTO responseDTO = new ResponseDTO();
+
+        UserDTO userDTO = this.userService.findByUsername(principal.getName());
+        if (userDTO != null) {
+            List<InteractionDTO> interactionDTOs = this.interactionService.getInteractionsOfReiver(userDTO.getId());
+            responseDTO.setData(interactionDTOs);
+            responseDTO.setMessage("Success");
+            return ResponseEntity.ok().body(responseDTO);
+        } else {
+            responseDTO.setMessage("Error");
+            return ResponseEntity.badRequest().body(responseDTO);
+        }
+    }
+
+    @PostMapping("/interactions/completed")
+    public ResponseEntity<?> viewingCompleted(@RequestBody List<InteractionDTO> interactionDTOs) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        this.interactionService.viewingCompleted(interactionDTOs);
+        responseDTO.setMessage("Success");
+        return ResponseEntity.ok().body(responseDTO);
     }
 }

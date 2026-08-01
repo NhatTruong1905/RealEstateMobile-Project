@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:real_estate_frontend/dto/UserDTO.dart';
+import 'package:real_estate_frontend/services/ChatService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
@@ -82,18 +83,101 @@ class _SellerOverviewScreenState extends State<SellerOverviewScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: const Color(0xFFF4EEE6),
-                    backgroundImage: (_userProfile?.avatar != null &&
-                            _userProfile!.avatar!.isNotEmpty)
-                        ? NetworkImage(_userProfile!.avatar!)
-                        : null,
-                    child: (_userProfile?.avatar == null ||
-                            _userProfile!.avatar!.isEmpty)
-                        ? const Icon(Icons.person, color: Color(0xFF945331))
-                        : null,
+                  Row(
+                    children: [
+                      ValueListenableBuilder<bool>(
+                        valueListenable: ChatService.hasUnreadNotification,
+                        builder: (context, hasUnread, child) {
+                          return InkWell(
+                            onTap: () {
+                              ChatService.hasUnreadNotification.value = false;
+                              widget.onManageCustomers();
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (hasUnread) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDC2626),
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Color(0x29DC2626),
+                                          blurRadius: 6,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 12),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Bạn có 1 tin nhắn mới',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                ],
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.notifications_none_outlined,
+                                        color: Color(0xFF1A1918),
+                                        size: 26,
+                                      ),
+                                      onPressed: () {
+                                        ChatService.hasUnreadNotification.value = false;
+                                        widget.onManageCustomers();
+                                      },
+                                    ),
+                                    if (hasUnread)
+                                      Positioned(
+                                        top: 10,
+                                        right: 10,
+                                        child: Container(
+                                          width: 9,
+                                          height: 9,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFDC2626),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 1.5),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 6),
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: const Color(0xFFF4EEE6),
+                        backgroundImage: (_userProfile?.avatar != null &&
+                                _userProfile!.avatar!.isNotEmpty)
+                            ? NetworkImage(_userProfile!.avatar!)
+                            : null,
+                        child: (_userProfile?.avatar == null ||
+                                _userProfile!.avatar!.isEmpty)
+                            ? const Icon(Icons.person, color: Color(0xFF945331))
+                            : null,
+                      ),
+                    ],
                   ),
                 ],
               ),

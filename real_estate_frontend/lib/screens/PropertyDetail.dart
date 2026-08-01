@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:real_estate_frontend/dto/ChatMessageDTO.dart';
 import 'package:real_estate_frontend/dto/PropertyDTO.dart';
 import 'package:real_estate_frontend/mixin/api/APIInteractionMixin.dart';
 import 'package:real_estate_frontend/mixin/api/APIPropertyMixin.dart';
 import 'package:real_estate_frontend/screens/Auth.dart';
+import 'package:real_estate_frontend/screens/ChatScreen.dart';
+import 'package:real_estate_frontend/services/ChatService.dart';
 import 'package:real_estate_frontend/utils/PriceFormatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -66,6 +71,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
   bool _isCallLoading = false;
   bool _alreadyBookedViewing = false;
   bool _isViewingLoading = false;
+  bool _hasUnreadFromSeller = false;
 
   // Chat
   final List<Map<String, dynamic>> _chatMessages = [];
@@ -120,66 +126,216 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
 
     if (_isViewingLoading) return;
 
-    // 1. Chọn ngày xem nhà
-    final pickedDate = await showDatePicker(
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay selectedTime = const TimeOfDay(hour: 9, minute: 0);
+    final TextEditingController noteController = TextEditingController();
+
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
-      helpText: 'CHỌN NGÀY HẸN XEM NHÀ',
-      confirmText: 'TIẾP TỤC',
-      cancelText: 'HỦY',
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF945331),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF1A1918),
-            ),
-          ),
-          child: child!,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final dayStr = selectedDate.day.toString().padLeft(2, '0');
+            final monthStr = selectedDate.month.toString().padLeft(2, '0');
+            final yearStr = selectedDate.year.toString();
+            final hourStr = selectedTime.hour.toString().padLeft(2, '0');
+            final minuteStr = selectedTime.minute.toString().padLeft(2, '0');
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Đặt lịch hẹn xem nhà',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1918),
+                          fontFamily: 'Georgia',
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context, false),
+                      ),
+                    ],
+                  ),
+                  const Divider(color: Color(0xFFE8E3DC)),
+                  const SizedBox(height: 12),
+
+                  // NÚT CHỌN NGÀY VÀ GIỜ
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 90)),
+                            );
+                            if (picked != null) {
+                              setModalState(() => selectedDate = picked);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4EEE6),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFE8E3DC)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Nguyện vọng ngày:', style: TextStyle(fontSize: 11, color: Color(0xFF78736D))),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today, size: 16, color: Color(0xFF945331)),
+                                    const SizedBox(width: 6),
+                                    Text('$dayStr/$monthStr/$yearStr', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: selectedTime,
+                            );
+                            if (picked != null) {
+                              setModalState(() => selectedTime = picked);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4EEE6),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFE8E3DC)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Nguyện vọng giờ:', style: TextStyle(fontSize: 11, color: Color(0xFF78736D))),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.access_time, size: 16, color: Color(0xFF945331)),
+                                    const SizedBox(width: 6),
+                                    Text('$hourStr:$minuteStr', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Ô NHẬP MESSAGE LỜI NHẮN
+                  const Text(
+                    'Lời nhắn cho chủ nhà (không bắt buộc):',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1918),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: noteController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Nhập ghi chú yêu cầu thêm cho chủ nhà...',
+                      filled: true,
+                      fillColor: const Color(0xFFF4EEE6),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // NÚT ĐẶT LỊCH HẸN
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF945331),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'Xác nhận đặt lịch xem',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
 
-    if (pickedDate == null || !mounted) return;
+    if (result != true || !mounted) return;
 
-    // 2. Chọn giờ xem nhà
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 9, minute: 0),
-      helpText: 'CHỌN GIỜ HẸN XEM NHÀ',
-      confirmText: 'ĐẶT LỊCH',
-      cancelText: 'HỦY',
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF945331),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF1A1918),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
+    final hourStr = selectedTime.hour.toString().padLeft(2, '0');
+    final minuteStr = selectedTime.minute.toString().padLeft(2, '0');
+    final dayStr = selectedDate.day.toString().padLeft(2, '0');
+    final monthStr = selectedDate.month.toString().padLeft(2, '0');
+    final yearStr = selectedDate.year.toString();
+    final dateTimeStr = '$hourStr:$minuteStr - Ngày $dayStr/$monthStr/$yearStr';
 
-    if (pickedTime == null) return;
+    final userNote = noteController.text.trim();
+    final String appointmentMessage;
 
-    final hourStr = pickedTime.hour.toString().padLeft(2, '0');
-    final minuteStr = pickedTime.minute.toString().padLeft(2, '0');
-    final dayStr = pickedDate.day.toString().padLeft(2, '0');
-    final monthStr = pickedDate.month.toString().padLeft(2, '0');
-    final yearStr = pickedDate.year.toString();
-
-    final appointmentMessage =
-        'Lịch hẹn xem nhà: $hourStr:$minuteStr - Ngày $dayStr/$monthStr/$yearStr';
+    if (userNote.isNotEmpty) {
+      appointmentMessage = '$userNote (Lịch hẹn: $dateTimeStr)';
+    } else {
+      appointmentMessage = 'Lịch hẹn xem nhà: $dateTimeStr';
+    }
 
     setState(() => _isViewingLoading = true);
 
-    // 3. Ghi interaction VIEWING vào backend với message chứa lịch hẹn
     if (property.id != null && property.userId != null) {
       debugPrint('Tạo interaction VIEWING: $appointmentMessage');
       await createInteraction(
@@ -188,34 +344,94 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
         code: 'VIEWING',
         message: appointmentMessage,
       );
+
+      // Gửi tín hiệu STOMP Realtime tới Seller ngay tức thì
+      try {
+        final chatService = ChatService();
+        final prefs = await SharedPreferences.getInstance();
+        int? senderId = chatService.currentUserId;
+        String senderName = 'Khách hàng';
+
+        final profileStr = prefs.getString('user_profile');
+        if (profileStr != null) {
+          try {
+            final userMap = jsonDecode(profileStr);
+            senderId ??= (userMap['id'] as num?)?.toInt();
+            senderName = userMap['fullname'] ?? userMap['username'] ?? 'Khách hàng';
+          } catch (_) {}
+        }
+
+        final sysMsg = ChatMessageDTO(
+          id: DateTime.now().millisecondsSinceEpoch % 1000000000,
+          propertyId: property.id,
+          senderId: senderId,
+          receiverId: property.userId,
+          message: appointmentMessage,
+          timestamp: DateTime.now().toIso8601String(),
+          senderName: senderName,
+        );
+
+        await chatService.sendMessage(sysMsg);
+        await chatService.sendAcceptanceSignal(
+          propertyId: property.id!,
+          senderId: senderId ?? 0,
+          receiverId: property.userId!,
+        );
+      } catch (e) {
+        debugPrint('Lỗi gửi tín hiệu STOMP hẹn xem nhà: $e');
+      }
     }
 
     if (mounted) {
+      await _loadDetail();
+      if (!mounted) return;
       setState(() {
-        _alreadyBookedViewing = true;
         _isViewingLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Đã đặt lịch xem nhà lúc $hourStr:$minuteStr ngày $dayStr/$monthStr/$yearStr thành công!'),
+          content: Text('Đã gửi đặt lịch xem nhà lúc $dateTimeStr!'),
           backgroundColor: const Color(0xFF2E7D32),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
   }
 
+  StreamSubscription<ChatMessageDTO>? _msgSub;
+
   @override
   void initState() {
     super.initState();
     _loadDetail();
+
+    _msgSub = ChatService().messageStream.listen((msg) {
+      if (!mounted) return;
+      if (msg.propertyId == widget.propertyId) {
+        if (msg.text == '__SYS_COMPLETE_VIEWING__' || msg.text == '__SYS_CANCEL_APPOINTMENT__') {
+          setState(() {
+            _alreadyBookedViewing = false;
+          });
+        } else if (msg.text == '__SYS_ACCEPT_APPOINTMENT__' || msg.text.contains('Lịch hẹn')) {
+          setState(() {
+            _alreadyBookedViewing = true;
+          });
+        } else {
+          final myId = ChatService().currentUserId;
+          if (myId != null && msg.getSenderId != myId) {
+            setState(() {
+              _hasUnreadFromSeller = true;
+            });
+          }
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _msgSub?.cancel();
     _chatInputController.dispose();
     super.dispose();
   }
@@ -232,9 +448,12 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     final detail = results[0] as PropertyDTO?;
     final interactions = results[1] as List<Map<String, dynamic>>;
 
-    // Kiểm tra linh hoạt xem user đã có tương tác VIEWING cho BĐS này chưa
+    // Chỉ tính đã đặt lịch nếu tương tác còn Active (status == 1)
     bool hasViewing = false;
     for (final item in interactions) {
+      final status = (item['status'] as num?)?.toInt() ?? 1;
+      if (status != 1) continue;
+
       final codeStr = (
         item['code'] ??
         item['interactionTypeCode'] ??
@@ -244,12 +463,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
         ''
       ).toString().toUpperCase();
 
-      final messageStr = (item['message'] ?? '').toString().toLowerCase();
-
-      if (codeStr == 'VIEWING' ||
-          codeStr.contains('VIEW') ||
-          messageStr.contains('lịch hẹn') ||
-          messageStr.contains('hẹn xem')) {
+      if (codeStr == 'VIEWING' || codeStr == 'MESSAGE' || codeStr == 'CHAT') {
         hasViewing = true;
         break;
       }
@@ -422,179 +636,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
   }
 
   void _showChatBottomSheet(BuildContext context, PropertyDTO property) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(property: property),
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            void sendMessage() {
-              final text = _chatInputController.text.trim();
-              if (text.isEmpty) return;
-
-              setModalState(() {
-                _chatMessages.add({
-                  'sender': 'user',
-                  'text': text,
-                  'time': 'Vừa xong',
-                });
-                _chatInputController.clear();
-              });
-
-              Future.delayed(const Duration(milliseconds: 1000), () {
-                if (mounted) {
-                  setModalState(() {
-                    _chatMessages.add({
-                      'sender': 'seller',
-                      'text':
-                          'Cảm ơn bạn! Tôi đã nhận được tin nhắn và sẽ phản hồi bạn ngay lập tức.',
-                      'time': 'Vừa xong',
-                    });
-                  });
-                }
-              });
-            }
-
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Container(
-                height: 520,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // CHAT HEADER
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: const Color(0xFFF4EEE6),
-                          child: Text(
-                            (property.userFullname ?? 'C')
-                                .substring(0, 1)
-                                .toUpperCase(),
-                            style: const TextStyle(
-                              color: Color(0xFF945331),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                property.userFullname ?? 'Chủ bất động sản',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Color(0xFF1A1918),
-                                ),
-                              ),
-                              Row(
-                                children: const [
-                                  CircleAvatar(
-                                      radius: 4, backgroundColor: Color(0xFF2E7D32)),
-                                  SizedBox(width: 4),
-                                  Text('Đang trực tuyến',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF2E7D32))),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    const Divider(color: Color(0xFFE8E3DC)),
-
-                    // CHAT MESSAGES LIST
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _chatMessages.length,
-                        itemBuilder: (context, index) {
-                          final msg = _chatMessages[index];
-                          final isUser = msg['sender'] == 'user';
-                          return Align(
-                            alignment: isUser
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(
-                                  vertical: 4, horizontal: 8),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: isUser
-                                    ? const Color(0xFF945331)
-                                    : const Color(0xFFF4EEE6),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                msg['text'],
-                                style: TextStyle(
-                                  color: isUser
-                                      ? Colors.white
-                                      : const Color(0xFF1A1918),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    // CHAT INPUT BOX
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _chatInputController,
-                            decoration: InputDecoration(
-                              hintText: 'Nhập tin nhắn tư vấn...',
-                              filled: true,
-                              fillColor: const Color(0xFFF4EEE6),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            onSubmitted: (_) => sendMessage(),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        CircleAvatar(
-                          backgroundColor: const Color(0xFF945331),
-                          child: IconButton(
-                            icon: const Icon(Icons.send,
-                                color: Colors.white, size: 18),
-                            onPressed: sendMessage,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -1033,31 +1079,62 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                       ),
                     ),
 
-                    // 4. NÚT TRÒN MESSAGE (FAB góc dưới phải)
+                    // 4. NÚT TRÒN MESSAGE (FAB góc dưới phải) - Hiển thị chấm đỏ & sáng lên khi Seller nhắn tin
                     Positioned(
                       bottom: 90,
                       right: 16,
                       child: GestureDetector(
-                        onTap: () => _showChatBottomSheet(context, property),
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF945331),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF945331).withValues(alpha: 0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
+                        onTap: () {
+                          if (mounted) {
+                            setState(() => _hasUnreadFromSeller = false);
+                          }
+                          _showChatBottomSheet(context, property);
+                        },
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: _hasUnreadFromSeller
+                                    ? const Color(0xFFDC2626)
+                                    : const Color(0xFF945331),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (_hasUnreadFromSeller
+                                            ? const Color(0xFFDC2626)
+                                            : const Color(0xFF945331))
+                                        .withValues(alpha: 0.5),
+                                    blurRadius: _hasUnreadFromSeller ? 16 : 12,
+                                    spreadRadius: _hasUnreadFromSeller ? 3 : 0,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.chat_bubble_outline,
-                            color: Colors.white,
-                            size: 24,
-                          ),
+                              child: const Icon(
+                                Icons.chat_bubble_outline,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            if (_hasUnreadFromSeller)
+                              Positioned(
+                                top: -2,
+                                right: -2,
+                                child: Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),

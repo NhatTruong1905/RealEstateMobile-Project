@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:real_estate_frontend/dto/UserDTO.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:real_estate_frontend/services/ChatService.dart';
 
 mixin ApiLoginMixin {
   final String baseUrl = "http://10.0.2.2:8080/api";
@@ -45,6 +46,7 @@ mixin ApiLoginMixin {
                 String userJsonString = jsonEncode(user.toJson());
 
                 await prefs.setString('user_profile', userJsonString);
+                await ChatService().initGlobalConnection();
               }
             }
           } catch (e) {
@@ -111,6 +113,7 @@ mixin ApiLoginMixin {
   }
 
   Future<void> logout() async {
+    await ChatService().disconnect();
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }

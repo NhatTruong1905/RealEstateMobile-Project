@@ -11,4 +11,6 @@ public interface PropertyRepository extends JpaRepository<PropertyEntity, Intege
     List<PropertyEntity> findByStatus(String status);
 
     List<PropertyEntity> findById_In(Collection<Integer> ids);
+
+    List<PropertyEntity> findByUser_Id(Integer userId);
 }

@@ -15,4 +15,6 @@ public interface InteractionTypeService {
     void deleteInteractionType(int id);
 
     String getNameInteractionTypeByCode(String code);
+
+
 }

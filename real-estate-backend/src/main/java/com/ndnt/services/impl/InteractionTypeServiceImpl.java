@@ -59,4 +59,7 @@ public class InteractionTypeServiceImpl implements InteractionTypeService {
     public String getNameInteractionTypeByCode(String code) {
         return this.interactionTypeRepository.findFirstByCode(code).getName();
     }
+
+
+
 }

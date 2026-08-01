@@ -6,6 +6,7 @@ import 'package:real_estate_frontend/screens/PropertyList.dart';
 import 'package:real_estate_frontend/utils/PriceFormatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:real_estate_frontend/screens/Auth.dart';
+import 'package:real_estate_frontend/services/ChatService.dart';
 import '../../dto/PropertyDTO.dart';
 import '../../dto/PropertyRequestDTO.dart';
 
@@ -738,68 +739,124 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Vị trí hiện tại',
-                                  style: TextStyle(
-                                    color: Color(0xFF78736D),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Plus Jakarta Sans',
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: const [
-                                    Icon(
-                                      Icons.location_on_outlined,
-                                      color: Color(0xFF945331),
-                                      size: 20,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Vị trí hiện tại',
+                                    style: TextStyle(
+                                      color: Color(0xFF78736D),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Plus Jakarta Sans',
                                     ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'TP. Hồ Chí Minh',
-                                      style: TextStyle(
-                                        color: Color(0xFF1A1918),
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Georgia',
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: const [
+                                      Icon(
+                                        Icons.location_on_outlined,
+                                        color: Color(0xFF945331),
+                                        size: 18,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                      SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          'TP. Hồ Chí Minh',
+                                          style: TextStyle(
+                                            color: Color(0xFF1A1918),
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            fontFamily: 'Georgia',
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                            Stack(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF4EEE6),
-                                    shape: BoxShape.circle,
+                            const SizedBox(width: 8),
+                            ValueListenableBuilder<bool>(
+                              valueListenable: ChatService.hasUnreadNotification,
+                              builder: (context, hasUnread, child) {
+                                return InkWell(
+                                  onTap: () {
+                                    ChatService.hasUnreadNotification.value = false;
+                                  },
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (hasUnread) ...[
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFDC2626),
+                                            borderRadius: BorderRadius.circular(14),
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                color: Color(0x29DC2626),
+                                                blurRadius: 6,
+                                                offset: Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 11),
+                                              SizedBox(width: 3),
+                                              Text(
+                                                'Tin nhắn mới',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                      ],
+                                      Stack(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFF4EEE6),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.notifications_none_outlined,
+                                              color: Color(0xFF1A1918),
+                                              size: 20,
+                                            ),
+                                          ),
+                                          if (hasUnread)
+                                            Positioned(
+                                              top: 6,
+                                              right: 8,
+                                              child: Container(
+                                                width: 8,
+                                                height: 8,
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFFDC2626),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  child: const Icon(
-                                    Icons.notifications_none_outlined,
-                                    color: Color(0xFF1A1918),
-                                    size: 22,
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 13,
-                                  right: 14,
-                                  child: Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF945331),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ],
                         ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:real_estate_frontend/services/ChatService.dart';
 
 mixin ApiInteractionMixin {
   final String baseUrl = "http://10.0.2.2:8080/api";
@@ -47,6 +48,111 @@ mixin ApiInteractionMixin {
       debugPrint('Lỗi fetchPropertyInteractions: $e');
     }
     return [];
+  }
+
+  Future<List<Map<String, dynamic>>> fetchUserInteractions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+      if (token == null || token.isEmpty) {
+        debugPrint('fetchUserInteractions thất bại: jwt_token null (chưa đăng nhập)');
+        return [];
+      }
+
+      final uri = Uri.parse('$baseUrl/secure/interactions-receiver');
+      debugPrint('Gửi API fetchUserInteractions: $uri');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      debugPrint('Response fetchUserInteractions status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final responseData = jsonDecode(decodedBody);
+        final dynamic data = responseData['data'] ?? responseData;
+
+        if (data is List) {
+          debugPrint('fetchUserInteractions thành công: ${data.length} items');
+          return List<Map<String, dynamic>>.from(data);
+        } else if (data is Map<String, dynamic>) {
+          return [data];
+        }
+      } else {
+        debugPrint('fetchUserInteractions thất bại: status ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Lỗi fetchUserInteractions: $e');
+    }
+    return [];
+  }
+
+  Future<bool> markInteractionCompleted({
+    required int propertyId,
+    required int senderId,
+    required int receiverId,
+    int interactionTypeId = 2,
+    String interactionTypeCode = 'MESSAGE',
+    bool completeBoth = false,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+
+      final uri = Uri.parse('$baseUrl/secure/interactions/completed');
+      debugPrint('Gửi API markInteractionCompleted: $uri (completeBoth=$completeBoth)');
+
+      final List<Map<String, dynamic>> bodyList = [
+        {
+          'propertyId': propertyId,
+          'senderId': senderId,
+          'receiverId': receiverId,
+          'interactionTypeId': interactionTypeId,
+          'interactionTypeCode': interactionTypeCode,
+        },
+      ];
+
+      if (completeBoth) {
+        bodyList.add({
+          'propertyId': propertyId,
+          'senderId': senderId,
+          'receiverId': receiverId,
+          'interactionTypeId': 3,
+          'interactionTypeCode': 'VIEWING',
+        });
+      }
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(bodyList),
+      );
+
+      debugPrint('Response markInteractionCompleted status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        try {
+          final chatService = ChatService();
+          await chatService.sendCompleteViewingSignal(
+            propertyId: propertyId,
+            senderId: senderId,
+            receiverId: receiverId,
+          );
+        } catch (_) {}
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Lỗi markInteractionCompleted: $e');
+      return false;
+    }
   }
 
   Future<int?> _getSenderId(String token) async {

@@ -78,6 +78,7 @@ class _AccountScreenState extends State<AccountScreen> with ApiLoginMixin {
         currentUsername = '';
         currentUserProfile = null;
       });
+      widget.onSwitchMode?.call(false);
     }
   }
 

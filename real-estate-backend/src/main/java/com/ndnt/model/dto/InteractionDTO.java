@@ -12,6 +12,9 @@ public class InteractionDTO extends BaseDTO {
     private Integer interactionTypeId;
     private String propertyTitle;
     private String senderUsername;
+    private String senderPhone;
+    private String senderEmail;
+    private String senderFullname;
     private String receiverUsername;
     private String interactionTypeName;
     private String interactionTypeCode;
