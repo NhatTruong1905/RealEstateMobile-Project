@@ -13,4 +13,6 @@ public interface PropertyRepository extends JpaRepository<PropertyEntity, Intege
     List<PropertyEntity> findById_In(Collection<Integer> ids);
 
     List<PropertyEntity> findByUser_Id(Integer userId);
+
+    List<PropertyEntity> findByUser_IdOrderByIdDesc(Integer userId);
 }

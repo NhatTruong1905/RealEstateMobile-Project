@@ -80,13 +80,12 @@ public class PropertyEntity extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "image")
-    private String image;
-
-    @ColumnDefault("0")
     @Column(name = "status")
     private String status = StatusProperty.PENDING.getStatus();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "property")
     private List<AssignmentPropertyEntity> assignments = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PropertyImageEntity> images = new ArrayList<>();
 }

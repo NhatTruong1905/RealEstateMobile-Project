@@ -9,18 +9,23 @@ import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.services.FavoritePropertyService;
 import com.ndnt.services.PropertyService;
 import com.ndnt.services.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -54,19 +59,43 @@ public class APIPropertyController {
         return ResponseEntity.ok().body(responseDTO);
     }
 
-//    @GetMapping("/secure/properties")
-//    public ResponseEntity<?> getPropertyOfUser(Principal principal) {
-//        UserDTO currentUser = this.userService.findByUsername(principal.getName());
-//        if (currentUser == null) {
-//            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-//        } else {
-//            List<PropertyDTO> propertyDTOS = this.propertyService.getPropertyOfUser(currentUser.getId());
-//            ResponseDTO responseDTO = new ResponseDTO();
-//            responseDTO.setMessage("success");
-//            responseDTO.setData(propertyDTOS);
-//            return ResponseEntity.ok().body(responseDTO);
-//        }
-//    }
+    @GetMapping("/secure/properties")
+    public ResponseEntity<?> getPropertyOfUser(Principal principal) {
+        UserDTO currentUser = this.userService.findByUsername(principal.getName());
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } else {
+            List<PropertyDTO> propertyDTOS = this.propertyService.getPropertyOfUser(currentUser.getId());
+            ResponseDTO responseDTO = new ResponseDTO();
+            responseDTO.setMessage("success");
+            responseDTO.setData(propertyDTOS);
+            return ResponseEntity.ok().body(responseDTO);
+        }
+    }
+
+    @PostMapping(path = "/secure/properties", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateOrCreateProperty(@Valid @ModelAttribute PropertyDTO propertyDTO, BindingResult bindingResult, Principal principal) {
+        if (bindingResult.hasErrors()) {
+            List<String> errors = bindingResult.getFieldErrors()
+                    .stream()
+                    .map(FieldError::getDefaultMessage)
+                    .collect(Collectors.toList());
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        UserDTO currentUser = this.userService.findByUsername(principal.getName());
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } else {
+            propertyDTO.setUserId(currentUser.getId());
+            ResponseDTO responseDTO = new ResponseDTO();
+            this.propertyService.createOrUpdateProperty(propertyDTO);
+            responseDTO.setMessage("success");
+            responseDTO.setData(propertyDTO);
+            return ResponseEntity.ok().body(responseDTO);
+        }
+    }
 
     @GetMapping("/secure/properties/{id}")
     public ResponseEntity<?> getDetailProperty(@PathVariable Integer id) {
@@ -108,4 +137,5 @@ public class APIPropertyController {
         responseDTO.setData(favoritePropertyDTO);
         return ResponseEntity.ok().body(responseDTO);
     }
+
 }

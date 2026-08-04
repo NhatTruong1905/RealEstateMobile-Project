@@ -14,9 +14,6 @@ public class APIChatController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    @Autowired
-    private InteractionService interactionService;
-
     /* /app/chat */
     @MessageMapping("/chat")
     public void processMessage(@Payload ChatMessageDTO messageDTO) {

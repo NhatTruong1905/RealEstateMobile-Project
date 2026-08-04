@@ -1,13 +1,20 @@
 package com.ndnt.services.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.ndnt.converter.PropertyConverter;
+import com.ndnt.model.dto.AddressParseResult;
 import com.ndnt.model.dto.FavoritePropertyDTO;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.dto.request.PropertyRequestDTO;
 import com.ndnt.model.entity.AssignmentPropertyEntity;
 import com.ndnt.model.entity.PropertyEntity;
+import com.ndnt.model.entity.PropertyImageEntity;
+import com.ndnt.model.entity.WardEntity;
 import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.repositories.PropertyRepository;
+import com.ndnt.repositories.WardRepository;
+import com.ndnt.services.ChatService;
 import com.ndnt.services.FavoritePropertyService;
 import com.ndnt.services.PropertyService;
 import jakarta.persistence.criteria.Predicate;
@@ -17,11 +24,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
+@Transactional
 public class PropertyServiceImpl implements PropertyService {
     @Autowired
     private PropertyRepository propertyRepository;
@@ -31,6 +46,15 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Autowired
     private FavoritePropertyService favoritePropertyService;
+
+    @Autowired
+    private Cloudinary cloudinary;
+
+    @Autowired
+    private ChatService chatService;
+
+    @Autowired
+    private WardRepository wardRepository;
 
     @Override
     public List<PropertyDTO> getProperties() {
@@ -138,8 +162,103 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public void createOrUpdateProperty(PropertyDTO propertyDTO) {
+        String rawAddress = (propertyDTO.getAddressDetail() != null && !propertyDTO.getAddressDetail().isBlank())
+                ? propertyDTO.getAddressDetail()
+                : propertyDTO.getAddress();
+
+        if (rawAddress != null && !rawAddress.isBlank()) {
+            try {
+                AddressParseResult parseResult = this.chatService.parseAddress(rawAddress);
+                if (parseResult != null) {
+                    if (parseResult.addressDetail() != null && !parseResult.addressDetail().isBlank()) {
+                        propertyDTO.setAddress(parseResult.addressDetail());
+                    }
+
+                    if (parseResult.wardName() != null && !parseResult.wardName().isBlank()) {
+                        Optional<WardEntity> wardOpt = this.wardRepository.findFirstByMatchingName(parseResult.wardName().trim());
+                        wardOpt.ifPresent(wardEntity -> propertyDTO.setWardId(wardEntity.getId()));
+                    }
+
+                    if (parseResult.cityName() != null && !parseResult.cityName().isBlank()) {
+                        propertyDTO.setCity(parseResult.cityName());
+                    }
+                }
+            } catch (Exception ex) {
+                Logger.getLogger(PropertyServiceImpl.class.getName()).log(Level.WARNING, "Không thể phân tích địa chỉ bằng AI, sử dụng dữ liệu mặc định.", ex);
+            }
+        }
+
         PropertyEntity pEntity = this.propertyConverter.toPropertyEntity(propertyDTO);
-        pEntity.setCity("Hồ Chí Minh");
+
+        if (pEntity.getWard() == null && propertyDTO.getWardId() != null) {
+            pEntity.setWard(this.wardRepository.findById(propertyDTO.getWardId()).orElse(null));
+        }
+        if (pEntity.getCity() == null || pEntity.getCity().isBlank()) {
+            pEntity.setCity("Hồ Chí Minh");
+        }
+        if (propertyDTO.getImages() == null) {
+            propertyDTO.setImages(new ArrayList<>());
+        }
+
+        List<PropertyImageEntity> finalImages = new ArrayList<>();
+        boolean hasNewFiles = propertyDTO.getFiles() != null
+                && !propertyDTO.getFiles().isEmpty()
+                && !propertyDTO.getFiles().get(0).isEmpty();
+        if (propertyDTO.getId() != null) {
+            if (propertyDTO.getStatus() != null) {
+                pEntity.setStatus(propertyDTO.getStatus());
+            }
+            PropertyEntity oldProperty = this.propertyRepository.findById(propertyDTO.getId()).orElse(null);
+            if (oldProperty != null) {
+                pEntity.setAssignments(oldProperty.getAssignments());
+                if (pEntity.getUser() == null) pEntity.setUser(oldProperty.getUser());
+                if (pEntity.getWard() == null) pEntity.setWard(oldProperty.getWard());
+                if (pEntity.getType() == null) pEntity.setType(oldProperty.getType());
+                if (pEntity.getCategory() == null) pEntity.setCategory(oldProperty.getCategory());
+
+                List<String> keptImageUrls = propertyDTO.getImages();
+                if (keptImageUrls != null && !keptImageUrls.isEmpty()) {
+                    for (PropertyImageEntity oldImg : oldProperty.getImages()) {
+                        if (keptImageUrls.contains(oldImg.getUrlImage())) {
+                            oldImg.setProperty(pEntity);
+                            finalImages.add(oldImg);
+                        }
+                    }
+                } else if (!hasNewFiles && oldProperty.getImages() != null) {
+                    for (PropertyImageEntity oldImg : oldProperty.getImages()) {
+                        oldImg.setProperty(pEntity);
+                        finalImages.add(oldImg);
+                    }
+                }
+            }
+        } else {
+            pEntity.setStatus(StatusProperty.PENDING.getStatus());
+        }
+
+        if (hasNewFiles) {
+            for (MultipartFile file : propertyDTO.getFiles()) {
+                try {
+                    Map res = this.cloudinary.uploader().upload(file.getBytes(),
+                            ObjectUtils.asMap("resource_type", "auto"));
+                    String imgUrl = res.get("secure_url").toString();
+
+                    PropertyImageEntity newImage = new PropertyImageEntity();
+                    newImage.setUrlImage(imgUrl);
+                    newImage.setProperty(pEntity);
+
+                    finalImages.add(newImage);
+
+                    if (!propertyDTO.getImages().contains(imgUrl)) {
+                        propertyDTO.getImages().add(imgUrl);
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(PropertyServiceImpl.class.getName()).log(Level.SEVERE, "Lỗi upload image", ex);
+                    throw new RuntimeException("Lỗi hệ thống: Không thể tải lên ảnh!", ex);
+                }
+            }
+        }
+
+        pEntity.setImages(finalImages);
         this.propertyRepository.save(pEntity);
     }
 
@@ -152,7 +271,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public List<PropertyDTO> getPropertyOfUser(Integer userId) {
-        List<PropertyEntity> propertyEntities = this.propertyRepository.findByUser_Id(userId);
+        List<PropertyEntity> propertyEntities = this.propertyRepository.findByUser_IdOrderByIdDesc(userId);
 
         List<PropertyDTO> propertyDTOs = new ArrayList<>();
         for (PropertyEntity pEntity : propertyEntities) {
