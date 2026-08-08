@@ -18,11 +18,7 @@ Trong các bài toán tra cứu BĐS, nếu dùng chunk quá to thì vector sear
 
 ## 📝 TỔNG HỢP TOÀN BỘ CÁC THAY ĐỔI VÀ TỐI ƯU TRONG HỆ THỐNG RAG (`rag/pipeline.py`)
 
-### 1. Sửa lỗi khởi động & Tải mô hình Embedding
-- **Vấn đề**: Khởi động `main.py` bị lỗi 404 do Ollama chưa có mô hình `bge-m3`.
-- **Giải pháp**: Tải mô hình embedding `bge-m3` vào Ollama local (`ollama pull bge-m3`).
-
-### 2. Sửa lỗi sai số Mức Giá (Price Precision Optimization)
+### 1. Sửa lỗi sai số Mức Giá (Price Precision Optimization)
 - **Vấn đề**: Đôi khi giá bán/giá thuê trả về bị sai khác hoặc nhầm lẫn giữa các BĐS.
 - **Nguyên nhân**:
   1. `parent_splitter` có `chunk_size=1200` dồn nhiều BĐS vào 1 chunk làm LLM bị nhầm giá của căn này sang căn khác.
