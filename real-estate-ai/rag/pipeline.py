@@ -38,13 +38,13 @@ class RAGPipeline:
         raw_docs = loader.load()
         cleaned_docs = []
 
-        for doc in raw_docs: #hcm_properties
+        for doc in raw_docs:
             source = doc.metadata.get("source", "")
             if "hcm_properties" in source:
                 content = doc.page_content
                 blocks = re.split(r"(\n\n- \*\*Property ID|\n- \*\*Property ID)", content)
 
-                valid_parts = [blocks[0]]  # Header của file markdown
+                valid_parts = [blocks[0]]
                 for i in range(1, len(blocks), 2):
                     header_prefix = blocks[i]
                     body = blocks[i + 1] if i + 1 < len(blocks) else ""
@@ -98,14 +98,11 @@ class RAGPipeline:
             chunk_overlap=30
         )
 
-        # 4. In-Memory Store chứa Parent Documents
         docstore = InMemoryStore()
 
-        # 5. Khởi tạo FAISS Vector Store rỗng cho Child Chunks
         initial_child_splits = child_splitter.split_documents(parent_splitter.split_documents(docs[:1]))
         vectorstore = FAISS.from_documents(initial_child_splits, embedding)
 
-        # 6. Khởi tạo ParentDocumentRetriever
         retriever = ParentDocumentRetriever(
             vectorstore=vectorstore,
             docstore=docstore,
