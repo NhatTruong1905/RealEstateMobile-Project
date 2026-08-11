@@ -12,7 +12,7 @@ def chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Câu hỏi không được để trống.")
 
     try:
-        answer = rag_service.query(request.question)
+        answer = rag_service.query(request.question, history=request.history)
         return ChatResponse(answer=answer)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi hệ thống RAG: {str(e)}")
@@ -25,7 +25,7 @@ async def chat_stream_endpoint(request: ChatRequest):
 
     async def token_generator():
         try:
-            async for token in rag_service.query_astream(request.question):
+            async for token in rag_service.query_astream(request.question, history=request.history):
                 yield token
         except Exception as e:
             yield f"\n[Lỗi hệ thống RAG: {str(e)}]"
