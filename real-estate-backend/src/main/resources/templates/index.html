@@ -10,91 +10,350 @@
 
     <div class="d-flex justify-content-between align-items-end mb-4">
         <div>
-            <p class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">Thứ Hai · Tháng 11 2025</p>
-            <h2 class="fw-bold mb-0 text-dark">Chào mừng trở lại, <span style="color: #1a2b4c;">Quản trị viên</span></h2>
-            <p class="text-muted mt-2 mb-0" style="font-size: 0.9rem;">Tổng số lượt truy cập tăng <span class="text-success fw-medium">+10%</span> so với tuần trước.</p>
-        </div>
-        <div class="d-none d-sm-block">
-            <button class="btn btn-light bg-white border shadow-sm me-2 fw-medium"><i class="bi bi-download me-1"></i> Xuất dữ liệu</button>
-            <button class="btn text-white fw-medium shadow-sm" style="background-color: #1a2b4c;"><i class="bi bi-plus-lg me-1"></i> Báo cáo mới</button>
+            <p class="text-uppercase text-muted fw-bold mb-1" id="current-date-display"
+               style="font-size: 0.75rem; letter-spacing: 1px;">
+                Loading...
+            </p>
+            <h2 class="fw-bold mb-0 text-dark">Chào mừng trở lại, <span style="color: #1a2b4c;">Quản trị viên</span>
+            </h2>
+            <p class="text-muted mt-2 mb-0" style="font-size: 0.9rem;">Tổng số lượt truy cập tăng <span
+                    class="text-success fw-medium">+10%</span> so với tuần trước.</p>
         </div>
     </div>
 
     <div class="row g-4 mb-4">
-
         <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 position-relative"
+                 style="cursor: pointer; transition: transform 0.2s;"
+                 onmouseover="this.style.transform='scale(1.02)'"
+                 onmouseout="this.style.transform='scale(1)'"
+                 data-bs-toggle="modal"
+                 data-bs-target="#propertyChartModal">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div class="d-flex align-items-center text-muted fw-medium">
-                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
-                            <i class="bi bi-eye"></i>
-                        </div>
-                        Lượt truy cập
-                    </div>
-                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1"><i class="bi bi-arrow-up-right me-1"></i>+10%</span>
-                </div>
-                <h2 class="fw-bold mb-3">1.24<span class="text-muted fs-5 fw-normal">M</span></h2>
-                <div class="text-muted" style="font-size: 0.85rem;">
-                    <i class="bi bi-arrow-up text-success"></i> Tăng từ 1.12M tuần trước
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="d-flex align-items-center text-muted fw-medium">
-                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
+                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex justify-content-center align-items-center me-2"
+                             style="width: 32px; height: 32px;">
                             <i class="bi bi-file-earmark-text"></i>
                         </div>
                         Tin đăng mới
                     </div>
-                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-1"><i class="bi bi-arrow-down-right me-1"></i>-7%</span>
+                    <span class="badge bg-light text-danger border rounded-pill px-2 py-1">
+                <i class="bi bi-bar-chart-line me-1"></i>Xem biểu đồ
+            </span>
                 </div>
-                <h2 class="fw-bold mb-3">408</h2>
+                <h2 class="fw-bold mb-2" th:text="${totalProperties}">0</h2>
                 <div class="text-muted" style="font-size: 0.85rem;">
-                    <i class="bi bi-arrow-down text-danger"></i> Giảm từ 439 tuần trước
+                    Nhấp vào để xem thống kê theo Quý & Năm
                 </div>
             </div>
         </div>
 
         <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 position-relative"
+                 style="cursor: pointer; transition: transform 0.2s;"
+                 onmouseover="this.style.transform='scale(1.02)'"
+                 onmouseout="this.style.transform='scale(1)'"
+                 data-bs-toggle="modal"
+                 data-bs-target="#userChartModal">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div class="d-flex align-items-center text-muted fw-medium">
-                        <div class="bg-purple bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px; color: #805ad5; background-color: rgba(128, 90, 213, 0.1);">
+                        <div class="bg-purple bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-2"
+                             style="width: 32px; height: 32px; color: #805ad5; background-color: rgba(128, 90, 213, 0.1);">
                             <i class="bi bi-person"></i>
                         </div>
-                        Tài khoản mới
+                        Tài khoản
                     </div>
-                    <span class="badge rounded-pill px-2 py-1" style="color: #805ad5; background-color: rgba(128, 90, 213, 0.1);">- ~12%</span>
+                    <span class="badge bg-light text-primary border rounded-pill px-2 py-1">
+                        <i class="bi bi-bar-chart-line me-1"></i>Xem biểu đồ
+                    </span>
                 </div>
-                <h2 class="fw-bold mb-3">842</h2>
+                <h2 class="fw-bold mb-2" th:text="${totalUsers}">0</h2>
                 <div class="text-muted" style="font-size: 0.85rem;">
-                    Ổn định quanh mức 835 tuần trước
+                    Nhấp vào để xem thống kê theo Quý & Năm
                 </div>
             </div>
         </div>
 
         <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 position-relative"
+                 style="cursor: pointer; transition: transform 0.2s;"
+                 onmouseover="this.style.transform='scale(1.02)'"
+                 onmouseout="this.style.transform='scale(1)'"
+                 data-bs-toggle="modal"
+                 data-bs-target="#interactionChartModal">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div class="d-flex align-items-center text-muted fw-medium">
-                        <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
+                        <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex justify-content-center align-items-center me-2"
+                             style="width: 32px; height: 32px;">
                             <i class="bi bi-bar-chart"></i>
                         </div>
                         Giao dịch
                     </div>
-                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-2 py-1">- steady</span>
+                    <span class="badge bg-light text-info border rounded-pill px-2 py-1">
+                <i class="bi bi-bar-chart-line me-1"></i>Xem biểu đồ
+            </span>
                 </div>
-                <h2 class="fw-bold mb-3">33<span class="text-muted fs-5 fw-normal">%</span></h2>
+                <h2 class="fw-bold mb-2" th:text="${totalInteractions}">0</h2>
                 <div class="text-muted" style="font-size: 0.85rem;">
-                    Bằng với mức 33% tuần trước
+                    Nhấp vào để xem thống kê theo Quý & Năm
                 </div>
             </div>
         </div>
-
     </div>
+
+    <div class="modal fade" id="propertyChartModal" tabindex="-1" aria-labelledby="propertyChartModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="propertyChartModalLabel">Thống kê Tin đăng mới theo Quý</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <label for="selectPropertyYear" class="me-2 fw-medium text-muted">Chọn năm:</label>
+                        <select id="selectPropertyYear" class="form-select w-auto shadow-sm">
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                    </div>
+                    <div style="position: relative; height: 320px;">
+                        <canvas id="propertyBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="userChartModal" tabindex="-1" aria-labelledby="userChartModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="userChartModalLabel">Thống kê Tài khoản đăng ký theo Quý</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <label for="selectYear" class="me-2 fw-medium text-muted">Chọn năm:</label>
+                        <select id="selectYear" class="form-select w-auto shadow-sm">
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                    </div>
+                    <div style="position: relative; height: 320px;">
+                        <canvas id="userBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="interactionChartModal" tabindex="-1" aria-labelledby="interactionChartModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="interactionChartModalLabel">Thống kê Giao dịch / Tương tác theo
+                        Quý</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <label for="selectInteractionYear" class="me-2 fw-medium text-muted">Chọn năm:</label>
+                        <select id="selectInteractionYear" class="form-select w-auto shadow-sm">
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                    </div>
+                    <div style="position: relative; height: 320px;">
+                        <canvas id="interactionBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const el = document.getElementById('current-date-display');
+            if (el) {
+                const now = new Date();
+                const options = {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'};
+                const formatted = now.toLocaleDateString('vi-VN', options);
+                el.innerText = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+            }
+
+            let propertyChart = null;
+            const propertyCtx = document.getElementById('propertyBarChart').getContext('2d');
+            const selectPropertyYear = document.getElementById('selectPropertyYear');
+            const propertyChartModal = document.getElementById('propertyChartModal');
+
+            function loadPropertyChartData(year) {
+                fetch(`/admin/api/property-stats?year=${year}`)
+                    .then(response => response.json())
+                    .then(res => {
+                        const dataConfig = {
+                            labels: res.labels,
+                            datasets: [{
+                                label: `Số lượng tin đăng mới năm ${res.year}`,
+                                data: res.data,
+                                backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                                borderColor: '#dc3545',
+                                borderWidth: 1.5,
+                                borderRadius: 8
+                            }]
+                        };
+
+                        if (propertyChart) {
+                            propertyChart.data = dataConfig;
+                            propertyChart.update();
+                        } else {
+                            propertyChart = new Chart(propertyCtx, {
+                                type: 'bar',
+                                data: dataConfig,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {display: true, position: 'top'}
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            ticks: {precision: 0}
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    })
+                    .catch(err => console.error("Lỗi tải dữ liệu biểu đồ tin đăng:", err));
+            }
+
+            propertyChartModal.addEventListener('shown.bs.modal', function () {
+                loadPropertyChartData(selectPropertyYear.value);
+            });
+
+            selectPropertyYear.addEventListener('change', function () {
+                loadPropertyChartData(this.value);
+            });
+
+            let userChart = null;
+            const ctx = document.getElementById('userBarChart').getContext('2d');
+            const selectYear = document.getElementById('selectYear');
+            const userChartModal = document.getElementById('userChartModal');
+
+            function loadChartData(year) {
+                fetch(`/admin/api/user-stats?year=${year}`)
+                    .then(response => response.json())
+                    .then(res => {
+                        const dataConfig = {
+                            labels: res.labels,
+                            datasets: [{
+                                label: `Số lượng tài khoản mới năm ${res.year}`,
+                                data: res.data,
+                                backgroundColor: 'rgba(128, 90, 213, 0.7)',
+                                borderColor: '#805ad5',
+                                borderWidth: 1.5,
+                                borderRadius: 8
+                            }]
+                        };
+
+                        if (userChart) {
+                            userChart.data = dataConfig;
+                            userChart.update();
+                        } else {
+                            userChart = new Chart(ctx, {
+                                type: 'bar',
+                                data: dataConfig,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {display: true, position: 'top'}
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            ticks: {precision: 0}
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    })
+                    .catch(err => console.error("Lỗi tải dữ liệu biểu đồ:", err));
+            }
+
+            userChartModal.addEventListener('shown.bs.modal', function () {
+                loadChartData(selectYear.value);
+            });
+
+            selectYear.addEventListener('change', function () {
+                loadChartData(this.value);
+            });
+        });
+
+        let interactionChart = null;
+        const interactionCtx = document.getElementById('interactionBarChart').getContext('2d');
+        const selectInteractionYear = document.getElementById('selectInteractionYear');
+        const interactionChartModal = document.getElementById('interactionChartModal');
+
+        function loadInteractionChartData(year) {
+            fetch(`/admin/api/interaction-stats?year=${year}`)
+                .then(response => response.json())
+                .then(res => {
+                    const dataConfig = {
+                        labels: res.labels,
+                        datasets: [{
+                            label: `Số lượng giao dịch năm ${res.year}`,
+                            data: res.data,
+                            backgroundColor: 'rgba(13, 202, 240, 0.7)',
+                            borderColor: '#0dcaf0',
+                            borderWidth: 1.5,
+                            borderRadius: 8
+                        }]
+                    };
+
+                    if (interactionChart) {
+                        interactionChart.data = dataConfig;
+                        interactionChart.update();
+                    } else {
+                        interactionChart = new Chart(interactionCtx, {
+                            type: 'bar',
+                            data: dataConfig,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {display: true, position: 'top'}
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {precision: 0}
+                                    }
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(err => console.error("Lỗi tải dữ liệu biểu đồ giao dịch:", err));
+        }
+
+        interactionChartModal.addEventListener('shown.bs.modal', function () {
+            loadInteractionChartData(selectInteractionYear.value);
+        });
+
+        selectInteractionYear.addEventListener('change', function () {
+            loadInteractionChartData(this.value);
+        });
+    </script>
 </div>
 
 </body>

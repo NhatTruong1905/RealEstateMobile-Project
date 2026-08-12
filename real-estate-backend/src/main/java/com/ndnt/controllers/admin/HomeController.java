@@ -1,22 +1,60 @@
 package com.ndnt.controllers.admin;
 
+import com.ndnt.services.DashboardService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
-@Controller
+import java.time.LocalDate;
+import java.util.Map;
+
+@RestController
 @RequestMapping("/admin")
 public class HomeController {
+    @Autowired
+    private DashboardService dashboardService;
+
     @GetMapping("/")
     public ModelAndView home() {
-        return new ModelAndView("index");
+        ModelAndView mav = new ModelAndView("index");
+        mav.addObject("totalUsers", dashboardService.getTotalActiveUsers());
+        mav.addObject("totalProperties", dashboardService.getTotalProperties());
+        mav.addObject("totalInteractions", dashboardService.getTotalInteractions());
+        return mav;
+    }
+
+    @GetMapping("/api/user-stats")
+    public Map<String, Object> getUserStatsApi(@RequestParam(defaultValue = "0") int year) {
+        if (year == 0) {
+            year = LocalDate.now().getYear();
+        }
+        return dashboardService.getUserStatsByQuarter(year);
+    }
+
+    @GetMapping("/api/property-stats")
+    public Map<String, Object> getPropertyStatsApi(@RequestParam(defaultValue = "0") int year) {
+        if (year == 0) {
+            year = LocalDate.now().getYear();
+        }
+        return dashboardService.getPropertyStatsByQuarter(year);
+    }
+
+    @GetMapping("/api/interaction-stats")
+    public Map<String, Object> getInteractionStatsApi(@RequestParam(defaultValue = "0") int year) {
+        if (year == 0) {
+            year = LocalDate.now().getYear();
+        }
+        return dashboardService.getInteractionStatsByQuarter(year);
     }
 
     @GetMapping("/login")

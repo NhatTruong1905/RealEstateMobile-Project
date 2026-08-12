@@ -36,4 +36,11 @@ public interface InteractionRepository extends JpaRepository<InteractionEntity, 
             @Param("receiverId") Integer receiverId,
             @Param("typeIds") List<Integer> typeIds
     );
+
+    @Query("SELECT QUARTER(i.createdDate) AS quarter, COUNT(i) AS count " +
+            "FROM InteractionEntity i " +
+            "WHERE YEAR(i.createdDate) = :year " +
+            "GROUP BY QUARTER(i.createdDate) " +
+            "ORDER BY QUARTER(i.createdDate)")
+    List<Object[]> countInteractionsByQuarterInYear(@Param("year") int year);
 }
