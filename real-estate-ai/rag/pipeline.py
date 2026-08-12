@@ -14,6 +14,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
+from api.schemas import RealEstateIntentSummary
+
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
 
@@ -36,26 +38,57 @@ def is_pure_greeting(question: str) -> bool:
 
 def extract_budget(question: str) -> float:
     q_lower = question.lower()
-    ty_match = re.search(r"(\d+(?:[.,]\d+)?)\s*tỷ", q_lower)
-    trieu_match = re.search(r"(\d+(?:[.,]\d+)?)\s*triệu", q_lower)
 
+    ty_match = re.search(r"(\d+(?:[.,]\d+)?)\s*tỷ", q_lower)
     if ty_match:
         val_str = ty_match.group(1).replace(",", ".")
         return float(val_str) * 1_000_000_000
-    elif trieu_match:
+
+    trieu_match = re.search(r"(\d+(?:[.,]\d+)?)\s*triệu", q_lower)
+    if trieu_match:
         val_str = trieu_match.group(1).replace(",", ".")
         return float(val_str) * 1_000_000
+
+    raw_vnd_match = re.search(r"(\d[\d.,]*)\s*(?:vnđ|đ|dong)", q_lower)
+    if raw_vnd_match:
+        val_str = raw_vnd_match.group(1).replace(".", "").replace(",", "")
+        try:
+            val = float(val_str)
+            if val >= 100_000:
+                return val
+        except ValueError:
+            pass
+
     return None
 
 
 def extract_price(content: str) -> float:
-    price_match = re.search(r"mức giá:\s*([\d,.]+)", content.lower())
-    if price_match:
-        price_raw = price_match.group(1).replace(",", "").replace(".", "")
+    content_lower = content.lower()
+
+    price_match = re.search(r"(?:mức giá|giá):\s*([^\n]+)", content_lower)
+    if not price_match:
+        return None
+
+    price_str = price_match.group(1)
+
+    ty_match = re.search(r"(\d+(?:[.,]\d+)?)\s*tỷ", price_str)
+    if ty_match:
+        val_str = ty_match.group(1).replace(",", ".")
+        return float(val_str) * 1_000_000_000
+
+    trieu_match = re.search(r"(\d+(?:[.,]\d+)?)\s*triệu", price_str)
+    if trieu_match:
+        val_str = trieu_match.group(1).replace(",", ".")
+        return float(val_str) * 1_000_000
+
+    raw_match = re.search(r"(\d[\d.,]*)", price_str)
+    if raw_match:
+        raw_str = raw_match.group(1).replace(".", "").replace(",", "")
         try:
-            return float(price_raw)
+            return float(raw_str)
         except ValueError:
             pass
+
     return None
 
 
@@ -116,14 +149,11 @@ def format_docs_with_greeting_check(inputs: dict) -> str:
                 continue
             seen_ids.add(pid)
 
-        if "đang mở bán" not in content_lower:
-            continue
-
         if is_buy:
-            if "loại giao dịch: bán" not in content_lower and "bán (sale)" not in content_lower:
+            if "cho thuê" in content_lower and "bán" not in content_lower:
                 continue
         elif is_rent:
-            if "loại giao dịch: cho thuê" not in content_lower and "cho thuê (rent)" not in content_lower:
+            if "bán" in content_lower and "cho thuê" not in content_lower and "thuê" not in content_lower:
                 continue
 
         if budget is not None:
@@ -185,12 +215,50 @@ def add_documents_safely(retriever, docs, batch_size=5, sleep_sec=3.5):
             time.sleep(sleep_sec)
 
 
+def sanitize_and_budget_history(history: list, max_assistant_chars: int = 150, max_total_chars: int = 1200) -> list:
+    if not history:
+        return []
+
+    cleaned_items = []
+    for item in history:
+        role = item.role if hasattr(item, "role") else item.get("role", "user")
+        content = item.content if hasattr(item, "content") else item.get("content", "")
+        content = content.strip()
+
+        if role == "assistant" and len(content) > max_assistant_chars:
+            content = content[:max_assistant_chars] + "... [đã ẩn chi tiết BĐS]"
+
+        cleaned_items.append({"role": role, "content": content})
+
+    selected = []
+    current_chars = 0
+    for item in reversed(cleaned_items):
+        item_len = len(item["content"])
+        if current_chars + item_len > max_total_chars and selected:
+            break
+        selected.append(item)
+        current_chars += item_len
+
+    return list(reversed(selected))
+
+
+def extract_user_queries_only(history: list) -> list:
+    user_queries = []
+    for item in history:
+        role = item.role if hasattr(item, "role") else item.get("role", "")
+        content = item.content if hasattr(item, "content") else item.get("content", "")
+        if role == "user" and content and content.strip():
+            user_queries.append(content.strip())
+    return user_queries
+
+
 class RAGPipeline:
     def __init__(self, papers_dir: str = "./papers", db_dir: str = "./vector_database"):
         self.papers_dir = papers_dir
         self.db_dir = db_dir
         self.rag_chain = None
         self.retriever = None
+        self.summary_chain = None
 
     def initialize(self):
         if not GEMINI_API_KEY:
@@ -207,6 +275,12 @@ class RAGPipeline:
             google_api_key=GEMINI_API_KEY,
             temperature=0.0
         )
+        summary_llm = ChatGoogleGenerativeAI(
+            model="gemini-3.1-flash-lite",
+            google_api_key=GEMINI_API_KEY,
+            temperature=0.0
+        )
+        self.summary_chain = summary_llm.with_structured_output(RealEstateIntentSummary)
 
         MARKDOWN_SEPARATORS = [
             r"\n- \*\*Property ID ",
@@ -295,52 +369,54 @@ class RAGPipeline:
         self.retriever = retriever
 
         template = """Bạn là một Chuyên viên Tư vấn Bất động sản AI chuyên nghiệp, uy tín tại TP. Hồ Chí Minh.
-Nhiệm vụ của bạn là tư vấn thông tin bất động sản cho khách hàng một cách chính xác, lịch sự và trung thực nhất dựa duy nhất trên dữ liệu danh mục được cung cấp.
+        Nhiệm vụ của bạn là tư vấn thông tin bất động sản cho khách hàng một cách chính xác, lịch sự và trung thực nhất dựa duy nhất trên dữ liệu danh mục được cung cấp.
+        
+        BỘ QUY TẮC VÀ RÀNG BUỘC NGHIÊM NGẶT:
+        1. XỬ LÝ KHI KHÔNG CÓ BĐS PHÙ HỢP HOẶC GIÁ > NGÂN SÁCH:
+           - NẾU DỮ LIỆU GHI "KHÔNG_CÓ_BĐS_PHÙ_HỢP_VỚI_NGÂN_SÁCH" HOẶC KHÔNG CÓ BĐS NÀO CÓ GIÁ <= NGÂN SÁCH:
+             + LỊCH SỰ VÀ THÂN THIỆN THÔNG BÁO: "Rất tiếc, hiện tại hệ thống chưa có bất động sản nào đáp ứng mức giá nhỏ hơn hoặc bằng ngân sách của bạn. Bạn có thể cân nhắc điều chỉnh mức ngân sách hoặc tiêu chí tìm kiếm."
+             + TUYỆT ĐỐI KHÔNG LIỆT KÊ BẤT KỲ BẤT ĐỘNG SẢN NÀO CÓ GIÁ LỚN HƠN NGÂN SÁCH KHÁCH HÀNG.
+        
+        2. XỬ LÝ CÂU CHÀO HỎI / XÃ GIAO (STRICT GREETING RULE):
+           - NẾU DỮ LIỆU GHI "CHỈ_CHÀO_HỎI_KHÔNG_CÓ_NHU_CẦU_BĐS" HOẶC KHÁCH HÀNG CHỈ CHÀO HỎI (Ví dụ: "Chào bạn", "Xin chào", "Hi"):
+             + CHỈ ĐÁP LẠI LỊCH SỰ, THÂN THIỆN VÀ ẤM ÁP: "Xin chào bạn! Tôi là Chuyên viên Tư vấn Bất động sản AI tại TP.HCM. Tôi có thể hỗ trợ gì cho bạn hôm nay?"
+             + TUYỆT ĐỐI KHÔNG LIỆT KÊ, KHÔNG GỢI Ý BẤT KỲ BẤT ĐỘNG SẢN NÀO khi khách hàng chưa đưa ra yêu cầu tìm kiếm cụ thể.
+        
+        3. TRUNG THỰC & CHỐNG BỊA ĐẶT (ZERO HALLUCINATION):
+           - CHỈ tư vấn các bất động sản có trong "Dữ liệu danh mục Bất động sản hệ thống" bên dưới.
+           - TUYỆT ĐỐI KHÔNG tự sáng tạo, suy đoán hoặc giới thiệu bất kỳ bất động sản nào KHÔNG CÓ trong dữ liệu.
+        
+        4. LỌC LOẠI GIAO DỊCH CHÍNH XÁC (STRICT TRANSACTION TYPE FILTER - BÁN VS. CHO THUÊ):
+           - Khi khách hàng muốn "MUA" (hoặc tìm nhà để bán, tài chính mua nhà): CHỈ ĐỀ XUẤT các bất động sản có Loại giao dịch là "Bán (Sale)". TUYỆT ĐỐI KHÔNG đề xuất bất động sản "Cho thuê (Rent)".
+           - Khi khách hàng muốn "THUÊ" (hoặc tìm nhà cho thuê): CHỈ ĐỀ XUẤT các bất động sản có Loại giao dịch là "Cho thuê (Rent)". TUYỆT ĐỐI KHÔNG đề xuất bất động sản "Bán (Sale)".
+        
+        5. LỌC SỐ PHÒNG NGỦ CHÍNH XÁC (STRICT ROOM COUNT FILTER):
+           - Khi khách hàng chỉ định rõ số phòng ngủ (Ví dụ: "2 phòng ngủ", "3 phòng ngủ"): CHỈ ĐỀ XUẤT các bất động sản có ĐÚNG số phòng ngủ mà khách hàng đã yêu cầu.
+        
+        6. ĐÚNG TRỌNG TÂM & TUYỆT ĐỐI KHÔNG THÊM CÂU XÃ GIAO / GỢI Ý THỪA Ó CUỐI:
+           - DỪNG CÂU TRẢ LỜI NGAY LẬP TỨC sau khi liệt kê xong danh sách bất động sản.
+           - TUYỆT ĐỐI KHÔNG thêm bất kỳ câu xã giao, câu kết hay gợi ý thừa nào ở cuối như: "Nếu bạn quan tâm đến bất động sản nào...", "Vui lòng cho tôi biết...", "Tôi có thể giúp gì thêm...".
+        
+        7. HIỂN THỊ ĐẦY ĐỦ TIÊU ĐỀ & KHÔNG DÙNG DẤU SAO (*):
+           - Khi giới thiệu bất kỳ bất động sản nào, BẮT BUỘC phải hiển thị đầy đủ Mã BĐS kèm Tiêu đề BĐS chính xác từ dữ liệu theo dạng: "Property ID [Số]: [Tiêu đề BĐS]".
+           - Trình bày đầy đủ thông tin: Địa chỉ, Mức giá, Diện tích, Quy mô/Số phòng ngủ, Pháp lý, Mô tả.
+           - TUYỆT ĐỐI KHÔNG DÙNG DẤU SAO (*) trong toàn bộ câu trả lời (không dùng in đậm/in nghiêng markdown).
+           - TUYỆT ĐỐI KHÔNG HIỂN THỊ MÃ ID KHU VỰC NHƯ '(Ward ID: ..., District ID: ...)' HOẶC 'Ward ID', 'District ID' TRONG PHẦN ĐỊA CHỈ.
 
-BỘ QUY TẮC VÀ RÀNG BUỘC NGHIÊM NGẶT:
-1. XỬ LÝ KHI KHÔNG CÓ BĐS PHÙ HỢP HOẶC GIÁ > NGÂN SÁCH:
-   - NẾU DỮ LIỆU GHI "KHÔNG_CÓ_BĐS_PHÙ_HỢP_VỚI_NGÂN_SÁCH" HOẶC KHÔNG CÓ BĐS NÀO CÓ GIÁ <= NGÂN SÁCH:
-     + LỊCH SỰ VÀ THÂN THIỆN THÔNG BÁO: "Rất tiếc, hiện tại hệ thống chưa có bất động sản nào đáp ứng mức giá nhỏ hơn hoặc bằng ngân sách của bạn. Bạn có thể cân nhắc điều chỉnh mức ngân sách hoặc tiêu chí tìm kiếm."
-     + TUYỆT ĐỐI KHÔNG LIỆT KÊ BẤT KỲ BẤT ĐỘNG SẢN NÀO CÓ GIÁ LỚN HƠN NGÂN SÁCH KHÁCH HÀNG.
-
-2. XỬ LÝ CÂU CHÀO HỎI / XÃ GIAO (STRICT GREETING RULE):
-   - NẾU DỮ LIỆU GHI "CHỈ_CHÀO_HỎI_KHÔNG_CÓ_NHU_CẦU_BĐS" HOẶC KHÁCH HÀNG CHỈ CHÀO HỎI (Ví dụ: "Chào bạn", "Xin chào", "Hi"):
-     + CHỈ ĐÁP LẠI LỊCH SỰ, THÂN THIỆN VÀ ẤM ÁP: "Xin chào bạn! Tôi là Chuyên viên Tư vấn Bất động sản AI tại TP.HCM. Tôi có thể hỗ trợ gì cho bạn hôm nay?"
-     + TUYỆT ĐỐI KHÔNG LIỆT KÊ, KHÔNG GỢI Ý BẤT KỲ BẤT ĐỘNG SẢN NÀO khi khách hàng chưa đưa ra yêu cầu tìm kiếm cụ thể.
-
-3. TRUNG THỰC & CHỐNG BỊA ĐẶT (ZERO HALLUCINATION):
-   - CHỈ tư vấn các bất động sản có trong "Dữ liệu danh mục Bất động sản hệ thống" bên dưới.
-   - TUYỆT ĐỐI KHÔNG tự sáng tạo, suy đoán hoặc giới thiệu bất kỳ bất động sản nào KHÔNG CÓ trong dữ liệu.
-
-4. LỌC LOẠI GIAO DỊCH CHÍNH XÁC (STRICT TRANSACTION TYPE FILTER - BÁN VS. CHO THUÊ):
-   - Khi khách hàng muốn "MUA" (hoặc tìm nhà để bán, tài chính mua nhà): CHỈ ĐỀ XUẤT các bất động sản có Loại giao dịch là "Bán (Sale)". TUYỆT ĐỐI KHÔNG đề xuất bất động sản "Cho thuê (Rent)".
-   - Khi khách hàng muốn "THUÊ" (hoặc tìm nhà cho thuê): CHỈ ĐỀ XUẤT các bất động sản có Loại giao dịch là "Cho thuê (Rent)". TUYỆT ĐỐI KHÔNG đề xuất bất động sản "Bán (Sale)".
-
-5. LỌC SỐ PHÒNG NGỦ CHÍNH XÁC (STRICT ROOM COUNT FILTER):
-   - Khi khách hàng chỉ định rõ số phòng ngủ (Ví dụ: "2 phòng ngủ", "3 phòng ngủ"): CHỈ ĐỀ XUẤT các bất động sản có ĐÚNG số phòng ngủ mà khách hàng đã yêu cầu.
-
-6. ĐÚNG TRỌNG TÂM & TUYỆT ĐỐI KHÔNG THÊM CÂU XÃ GIAO / GỢI Ý THỪA Ó CUỐI:
-   - DỪNG CÂU TRẢ LỜI NGAY LẬP TỨC sau khi liệt kê xong danh sách bất động sản.
-   - TUYỆT ĐỐI KHÔNG thêm bất kỳ câu xã giao, câu kết hay gợi ý thừa nào ở cuối như: "Nếu bạn quan tâm đến bất động sản nào...", "Vui lòng cho tôi biết...", "Tôi có thể giúp gì thêm...".
-
-7. HIỂN THỊ ĐẦY ĐỦ TIÊU ĐỀ & KHÔNG DÙNG DẤU SAO (*):
-   - Khi giới thiệu bất kỳ bất động sản nào, BẮT BUỘC phải hiển thị đầy đủ Mã BĐS kèm Tiêu đề BĐS chính xác từ dữ liệu theo dạng: "Property ID [Số]: [Tiêu đề BĐS]".
-   - Trình bày đầy đủ thông tin: Địa chỉ, Mức giá, Diện tích, Quy mô/Số phòng ngủ, Pháp lý, Mô tả.
-   - TUYỆT ĐỐI KHÔNG DÙNG DẤU SAO (*) trong toàn bộ câu trả lời (không dùng in đậm/in nghiêng markdown).
-
-8. DUY TRÌ NGỮ CẢNH HỘI THOẠI (CHAT CONTEXT & HISTORY):
-   - Dựa vào 'Lịch sử hội thoại trước đó' và 'Câu hỏi hiện tại' để hiểu mạch hội thoại liên tục của khách hàng.
-   - Nếu câu hỏi trước khách hàng hỏi tìm mua nhà Quận 7 dưới 3 tỷ, và câu sau hỏi 'Căn nào 2 phòng ngủ?', hãy tự hiểu khách hàng vẫn muốn tìm nhà Quận 7 dưới 3 tỷ có 2 phòng ngủ.
-
-Lịch sử hội thoại trước đó:
-{history}
-
-Dữ liệu danh mục Bất động sản hệ thống:
-{context}
-
-Câu hỏi / Yêu cầu tư vấn hiện tại của khách hàng: {question}
-
-Lời tư vấn chuyên nghiệp của bạn:"""
+        8. DUY TRÌ NGỮ CẢNH HỘI THOẠI (CHAT CONTEXT & HISTORY):
+           - Dựa vào 'Lịch sử hội thoại trước đó' và 'Câu hỏi hiện tại' để hiểu mạch hội thoại liên tục của khách hàng.
+           - Nếu câu hỏi trước khách hàng hỏi tìm mua nhà Quận 7 dưới 3 tỷ, và câu sau hỏi 'Căn nào 2 phòng ngủ?', hãy tự hiểu khách hàng vẫn muốn tìm nhà Quận 7 dưới 3 tỷ có 2 phòng ngủ.
+        
+        Lịch sử hội thoại trước đó:
+        {history}
+        
+        Dữ liệu danh mục Bất động sản hệ thống:
+        {context}
+        
+        Câu hỏi / Yêu cầu tư vấn hiện tại của khách hàng: {question}
+        
+        Lời tư vấn chuyên nghiệp của bạn:
+        """
 
         prompt = ChatPromptTemplate.from_template(template)
 
@@ -364,19 +440,84 @@ Lời tư vấn chuyên nghiệp của bạn:"""
                 | StrOutputParser()
         )
 
+    def _extract_intent_from_history(self, history_list: list) -> RealEstateIntentSummary:
+        if not history_list:
+            return RealEstateIntentSummary()
+
+        formatted_raw = format_history_text(history_list)
+        summary_prompt = f"""Đọc đoạn chat dưới đây và trích xuất các tiêu chí BĐS mà khách hàng tìm kiếm:
+        - CHỈ lấy thông tin có trong đoạn chat.
+        - Nếu khách đổi ý (vd từ Q1 sang Q7), CHỈ LẤY TIÊU CHÍ MỚI NHẤT.
+        
+        Lịch sử trò chuyện:
+        {formatted_raw}
+        """
+
+        try:
+            intent: RealEstateIntentSummary = self.summary_chain.invoke(summary_prompt)
+            return intent
+        except Exception as e:
+            print(f"[RAGPipeline Error] Lỗi khi tóm tắt lịch sử: {e}")
+            return RealEstateIntentSummary()
+
     def _prepare_inputs(self, question: str, history: list = None) -> dict:
         history_list = history or []
-        history_str = format_history_text(history_list)
 
-        user_texts = []
-        for item in history_list:
-            role = item.role if hasattr(item, "role") else (item.get("role") if isinstance(item, dict) else "")
-            content = item.content if hasattr(item, "content") else (
-                item.get("content") if isinstance(item, dict) else "")
-            if role == "user" and content and content.strip():
-                user_texts.append(content.strip())
+        budgeted_history = sanitize_and_budget_history(history_list, max_assistant_chars=150, max_total_chars=1200)
 
-        search_query = " ".join(user_texts + [question.strip()]) if user_texts else question.strip()
+        if len(budgeted_history) <= 4:
+            history_str = format_history_text(budgeted_history)
+
+            user_queries = extract_user_queries_only(budgeted_history)
+            search_query = " ".join(user_queries + [question.strip()]) if user_queries else question.strip()
+
+        else:
+            older_history = budgeted_history[:-2] # Lấy từ đầu danh sách(vị trí 0) đến trước 2 phần tử cuối cùng (Lấy đầu bỏ 2 cuối)
+            recent_history = budgeted_history[-2:] # Lấy tới vị trí thứ 2 từ dưới đếm lên (Lấy 2 cuối bỏ đầu)
+
+            intent = self._extract_intent_from_history(older_history)
+
+            query_parts = []
+            if intent.transaction_type:
+                query_parts.append(f"Cần {intent.transaction_type}")
+            if intent.property_type:
+                query_parts.append(f"loại {intent.property_type}")
+            if intent.location:
+                query_parts.append(f"tại {intent.location}")
+            if intent.budget_vnd:
+                query_parts.append(f"giá {int(intent.budget_vnd)} VNĐ")
+            if intent.bedrooms:
+                query_parts.append(f"{intent.bedrooms} phòng ngủ")
+            if intent.bathrooms:
+                query_parts.append(f"{intent.bathrooms} phòng vệ sinh")
+            if intent.direction:
+                query_parts.append(f"hướng {intent.direction}")
+            if intent.legal:
+                query_parts.append(f"pháp lý {intent.legal}")
+            if intent.special_requirements:
+                query_parts.append(" ".join(intent.special_requirements))
+
+            recent_user_queries = extract_user_queries_only(recent_history)
+            query_parts.extend(recent_user_queries)
+            query_parts.append(question.strip())
+
+            search_query = " ".join(query_parts)
+
+            recent_history_str = format_history_text(recent_history)
+            summary_parts = []
+            if intent.transaction_type: summary_parts.append(f"Giao dịch: {intent.transaction_type}")
+            if intent.property_type: summary_parts.append(f"Loại: {intent.property_type}")
+            if intent.location: summary_parts.append(f"Vị trí: {intent.location}")
+            if intent.budget_vnd: summary_parts.append(f"Ngân sách: <= {int(intent.budget_vnd)} VNĐ")
+            if intent.bedrooms: summary_parts.append(f"{intent.bedrooms}PN")
+            if intent.bathrooms: summary_parts.append(f"{intent.bathrooms}WC")
+            if intent.direction: summary_parts.append(f"Hướng: {intent.direction}")
+            if intent.legal: summary_parts.append(f"Pháp lý: {intent.legal}")
+            if intent.special_requirements: summary_parts.append(
+                f"Yêu cầu khác: {', '.join(intent.special_requirements)}")
+
+            summary_label = " | ".join(summary_parts) if summary_parts else "Chưa rõ tiêu chí"
+            history_str = f"[Tiêu chí BĐS tổng hợp từ lịch sử cũ: {summary_label}]\n\n{recent_history_str}"
 
         return {
             "question": question.strip(),
@@ -384,19 +525,28 @@ Lời tư vấn chuyên nghiệp của bạn:"""
             "history_str": history_str,
         }
 
+    def _clean_output_text(self, text: str) -> str:
+        if not text:
+            return ""
+        cleaned = text.replace("*", "")
+        cleaned = re.sub(r'\(\s*Ward\s*ID:\s*\d+\s*,\s*District\s*ID:\s*\d+\s*\)', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\(\s*(?:Ward|District)\s*ID:\s*\d+\s*\)', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\b(?:Ward|District|wardId|districtId)\s*ID?\s*[:=]?\s*\d+\b', '', cleaned, flags=re.IGNORECASE)
+        return cleaned
+
     def query(self, question: str, history: list = None) -> str:
         if not self.rag_chain:
             raise RuntimeError("RAG Pipeline chưa được khởi tạo!")
         inputs = self._prepare_inputs(question, history)
         raw_answer = self.rag_chain.invoke(inputs)
-        return raw_answer.replace("*", "")
+        return self._clean_output_text(raw_answer)
 
     async def query_astream(self, question: str, history: list = None):
         if not self.rag_chain:
             raise RuntimeError("RAG Pipeline chưa được khởi tạo!")
         inputs = self._prepare_inputs(question, history)
         async for chunk in self.rag_chain.astream(inputs):
-            yield chunk.replace("*", "")
+            yield self._clean_output_text(chunk)
 
 
 rag_service = RAGPipeline()
