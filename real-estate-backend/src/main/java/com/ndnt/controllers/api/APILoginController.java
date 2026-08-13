@@ -99,22 +99,32 @@ public class APILoginController {
             if (idToken != null) {
                 GoogleIdToken.Payload payload = idToken.getPayload();
 
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
                 String pictureUrl = (String) payload.get("picture");
 
-                UserInfoDTO userDTO = new UserInfoDTO();
-                userDTO.setEmail(payload.getEmail());
-                userDTO.setFullname((String) payload.get("name"));
-                userDTO.setUsername(payload.getEmail());
-                userDTO.setAvatar(pictureUrl);
-                String randomPassword = java.util.UUID.randomUUID().toString();
-                userDTO.setPassword(randomPassword);
-                userService.createOrUpdateUser(userDTO);
-                String jwtToken = this.jwtUtils.generateToken(userDTO);
+                UserDTO existingUser = userService.findByUsername(email);
+
+                if (existingUser == null) {
+                    UserInfoDTO userDTO = new UserInfoDTO();
+                    userDTO.setEmail(email);
+                    userDTO.setFullname(name != null ? name : email);
+                    userDTO.setUsername(email);
+                    userDTO.setAvatar(pictureUrl);
+                    userDTO.setPhone("gg_" + (System.currentTimeMillis() % 100000000000L));
+                    String randomPassword = java.util.UUID.randomUUID().toString();
+                    userDTO.setPassword(randomPassword);
+
+                    userService.createOrUpdateUser(userDTO);
+                    existingUser = userService.findByUsername(email);
+                }
+
+                String jwtToken = this.jwtUtils.generateToken(existingUser);
 
                 response.put("status", "SUCCESS");
                 response.put("message", "Đăng nhập Google thành công");
                 response.put("token", jwtToken);
-                response.put("user", userDTO);
+                response.put("user", existingUser);
                 return ResponseEntity.ok(response);
             } else {
                 response.put("status", "FAIL");
@@ -124,7 +134,7 @@ public class APILoginController {
         } catch (Exception e) {
             e.printStackTrace();
             response.put("status", "ERROR");
-            response.put("message", "Lỗi server: " + e.toString());
+            response.put("message", "Lỗi server: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
@@ -191,29 +201,45 @@ public class APILoginController {
                 String facebookId = jsonObject.get("id").getAsString();
                 String name = jsonObject.has("name") ? jsonObject.get("name").getAsString() : "fb_" + facebookId;
 
-                String pictureUrl = "";
+                String pictureUrl = "https://graph.facebook.com/" + facebookId + "/picture?type=large";
                 if (jsonObject.has("picture")) {
                     com.google.gson.JsonObject pictureObj = jsonObject.getAsJsonObject("picture");
                     if (pictureObj.has("data")) {
                         com.google.gson.JsonObject dataObj = pictureObj.getAsJsonObject("data");
-                        pictureUrl = dataObj.has("url") ? dataObj.get("url").getAsString() : "";
+                        String rawUrl = dataObj.has("url") ? dataObj.get("url").getAsString() : "";
+                        if (!rawUrl.isEmpty() && rawUrl.length() <= 250) {
+                            pictureUrl = rawUrl;
+                        }
                     }
                 }
                 String email = jsonObject.has("email") ? jsonObject.get("email").getAsString() : facebookId + "@facebook.com";
 
-                UserInfoDTO userDTO = new UserInfoDTO();
-                userDTO.setUsername(name);
-                userDTO.setAvatar(pictureUrl);
-                userDTO.setEmail(email);
-                userDTO.setPhone(null);
+                UserDTO existingUser = userService.findByUsername(name);
 
-                userService.createOrUpdateUser(userDTO);
-                String jwtToken = this.jwtUtils.generateToken(userDTO);
+                if (existingUser == null) {
+                    UserInfoDTO userDTO = new UserInfoDTO();
+                    userDTO.setUsername(name);
+                    userDTO.setFullname(name);
+                    userDTO.setAvatar(pictureUrl);
+                    userDTO.setEmail(email);
+                    String phoneVal = "fb_" + facebookId;
+                    if (phoneVal.length() > 20) {
+                        phoneVal = phoneVal.substring(0, 20);
+                    }
+                    userDTO.setPhone(phoneVal);
+                    String randomPassword = java.util.UUID.randomUUID().toString();
+                    userDTO.setPassword(randomPassword);
+
+                    userService.createOrUpdateUser(userDTO);
+                    existingUser = userService.findByUsername(name);
+                }
+
+                String jwtToken = this.jwtUtils.generateToken(existingUser);
 
                 response.put("status", "SUCCESS");
                 response.put("message", "Đăng nhập Facebook thành công");
                 response.put("token", jwtToken);
-                response.put("user", userDTO);
+                response.put("user", existingUser);
                 return ResponseEntity.ok(response);
             } else {
                 response.put("status", "FAIL");

@@ -46,7 +46,7 @@ public class UserEntity extends BaseEntity {
     @Column(name = "status")
     private Integer status = 1;
 
-    @Column(name = "avatar")
+    @Column(name = "avatar", columnDefinition = "TEXT")
     private String avatar;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "staff")
