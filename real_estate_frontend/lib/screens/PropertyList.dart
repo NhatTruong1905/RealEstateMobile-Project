@@ -32,6 +32,7 @@ class _PropertyListScreenState extends State<PropertyListScreen>
   bool _isLoadingMore = false;
   bool _hasMore = true;
   bool _isLoggedIn = false;
+  bool _showScrollToTop = false;
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalItems = 0;
@@ -73,11 +74,26 @@ class _PropertyListScreenState extends State<PropertyListScreen>
   }
 
   void _onScroll() {
+    final showTop = _scrollController.hasClients && _scrollController.offset > 300;
+    if (showTop != _showScrollToTop) {
+      setState(() => _showScrollToTop = showTop);
+    }
+
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       if (!_isLoading && !_isLoadingMore && _hasMore) {
         _loadMoreData();
       }
+    }
+  }
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
@@ -717,6 +733,41 @@ class _PropertyListScreenState extends State<PropertyListScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFBFA),
+      floatingActionButton: AnimatedOpacity(
+        duration: const Duration(milliseconds: 250),
+        opacity: _showScrollToTop ? 1.0 : 0.0,
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 250),
+          scale: _showScrollToTop ? 1.0 : 0.0,
+          child: GestureDetector(
+            onTap: _showScrollToTop ? _scrollToTop : null,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.35),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.arrow_upward_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFCFBFA),
         elevation: 0,

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Real Estate</string>
+    <string name="facebook_app_id">919394881202868</string>
+    <string name="fb_login_protocol_scheme">fb919394881202868</string>
+    <string name="facebook_client_token">dec60710c42442ec6478921db84232f4</string>
+</resources>

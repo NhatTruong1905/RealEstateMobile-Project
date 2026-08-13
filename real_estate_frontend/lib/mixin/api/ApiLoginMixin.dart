@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:real_estate_frontend/dto/UserDTO.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,6 +64,152 @@ mixin ApiLoginMixin {
     }
   }
 
+  Future<Map<String, dynamic>> loginWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId:
+            '776756757728-95h65i4coqrsdenn5poopd16nabphkp2.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      );
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        return {'success': false, 'message': 'Đã hủy đăng nhập Google'};
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null || idToken.isEmpty) {
+        return {'success': false, 'message': 'Không lấy được Google ID Token'};
+      }
+
+      final url = Uri.parse("$baseUrl/auth/google");
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"idToken": idToken}),
+      );
+
+      return await _handleOAuthResponse(response, googleUser.email);
+    } catch (e, stack) {
+      debugPrint("Lỗi loginWithGoogle: $e\n$stack");
+      return {
+        'success': false,
+        'message': 'Lỗi kết nối Google Sign-In: ${e.toString()}',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> loginWithFacebook() async {
+    try {
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: ['email', 'public_profile'],
+      );
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        final String tokenString = accessToken.tokenString;
+
+        final url = Uri.parse("$baseUrl/auth/facebook");
+        final response = await http.post(
+          url,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({"accessToken": tokenString}),
+        );
+
+        return await _handleOAuthResponse(response, null);
+      } else if (result.status == LoginStatus.cancelled) {
+        return {'success': false, 'message': 'Đã hủy đăng nhập Facebook'};
+      } else {
+        return {
+          'success': false,
+          'message': result.message ?? 'Đăng nhập Facebook thất bại',
+        };
+      }
+    } catch (e) {
+      debugPrint("Lỗi loginWithFacebook: $e");
+      return {
+        'success': false,
+        'message': 'Lỗi kết nối Facebook Login: ${e.toString()}',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> _handleOAuthResponse(
+    http.Response response,
+    String? fallbackUsername,
+  ) async {
+    try {
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final Map<String, dynamic> data = jsonDecode(decodedBody);
+
+      if (response.statusCode == 200 && data['status'] == 'SUCCESS') {
+        final String? token = data['token'];
+        final userObj = data['user'];
+
+        if (token != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('jwt_token', token);
+
+          String username = fallbackUsername ?? '';
+          if (userObj != null && userObj is Map && userObj['username'] != null) {
+            username = userObj['username'].toString();
+          }
+          await prefs.setString('username', username);
+          await prefs.setBool('is_logged_in', true);
+
+          if (userObj != null) {
+            await prefs.setString('user_profile', jsonEncode(userObj));
+          }
+
+          // Đồng bộ Profile ngầm ở background, không làm tắc nghẽn luồng Đăng nhập
+          http.get(
+            Uri.parse("$baseUrl/secure/profile"),
+            headers: {
+              "Content-Type": "application/json; charset=UTF-8",
+              "Authorization": "Bearer $token",
+            },
+          ).then((profileResponse) async {
+            if (profileResponse.statusCode == 200) {
+              final profileDecoded = utf8.decode(profileResponse.bodyBytes);
+              final profileData = jsonDecode(profileDecoded)['data'];
+              if (profileData != null) {
+                UserDTO user = UserDTO.fromJson(profileData);
+                await prefs.setString(
+                  'user_profile',
+                  jsonEncode(user.toJson()),
+                );
+              }
+            }
+          }).catchError((e) {
+            debugPrint("Lỗi sync profile ngầm: $e");
+          });
+
+          try {
+            ChatService().initGlobalConnection();
+          } catch (e) {
+            debugPrint("Lỗi kết nối ChatService khi OAuth login: $e");
+          }
+          return {
+            'success': true,
+            'message': data['message'] ?? 'Đăng nhập thành công',
+          };
+        }
+      }
+
+      String errorMsg =
+          data['message'] ?? 'Đăng nhập thất bại (${response.statusCode})';
+      return {'success': false, 'message': errorMsg};
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Lỗi xử lý dữ liệu phản hồi từ máy chủ',
+      };
+    }
+  }
+
   Future<String?> registerUser({
     required String fullname,
     required String username,
@@ -113,6 +261,12 @@ mixin ApiLoginMixin {
   }
 
   Future<void> logout() async {
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {}
+    try {
+      await FacebookAuth.instance.logOut();
+    } catch (_) {}
     await ChatService().disconnect();
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -157,5 +311,6 @@ mixin ApiLoginMixin {
     };
   }
 }
+
 
 

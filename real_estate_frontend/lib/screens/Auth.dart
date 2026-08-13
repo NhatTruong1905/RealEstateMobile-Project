@@ -126,6 +126,54 @@ class _AuthScreenState extends State<AuthScreen>
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    final res = await loginWithGoogle();
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (res['success'] == true) {
+      _showSnackBar(
+        res['message'] ?? 'Đăng nhập Google thành công!',
+        isError: false,
+      );
+      Navigator.pop(context);
+      if (widget.onLoginSuccess != null) {
+        widget.onLoginSuccess!();
+      }
+    } else {
+      _showSnackBar(res['message'] ?? 'Đăng nhập Google thất bại!');
+    }
+  }
+
+  Future<void> _handleFacebookLogin() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    final res = await loginWithFacebook();
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (res['success'] == true) {
+      _showSnackBar(
+        res['message'] ?? 'Đăng nhập Facebook thành công!',
+        isError: false,
+      );
+      Navigator.pop(context);
+      if (widget.onLoginSuccess != null) {
+        widget.onLoginSuccess!();
+      }
+    } else {
+      _showSnackBar(res['message'] ?? 'Đăng nhập Facebook thất bại!');
+    }
+  }
+
   void _showSnackBar(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -465,11 +513,7 @@ class _AuthScreenState extends State<AuthScreen>
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () {
-                                  _showSnackBar(
-                                    'Đăng nhập Google đang phát triển!',
-                                  );
-                                },
+                                onPressed: _isLoading ? null : _handleGoogleLogin,
                                 icon: Image.network(
                                   'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/120px-Google_%22G%22_logo.svg.png',
                                   height: 22,
@@ -499,11 +543,7 @@ class _AuthScreenState extends State<AuthScreen>
                             const SizedBox(width: 16),
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () {
-                                  _showSnackBar(
-                                    'Đăng nhập Facebook đang phát triển!',
-                                  );
-                                },
+                                onPressed: _isLoading ? null : _handleFacebookLogin,
                                 icon: const Icon(
                                   Icons.facebook,
                                   color: Color(0xFF1877F2),

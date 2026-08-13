@@ -73,13 +73,16 @@ class _MainScreenState extends State<MainScreen> {
     super.dispose();
   }
 
-  void _openPostModal() {
-    Navigator.push(
+  Future<void> _openPostModal() async {
+    final res = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const PostPropertyScreen(),
       ),
     );
+    if (res == true && mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _toggleMode(bool isSeller) async {

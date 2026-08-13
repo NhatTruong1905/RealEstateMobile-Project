@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:real_estate_frontend/dto/PropertyDTO.dart';
 import 'package:real_estate_frontend/mixin/api/APIPropertyMixin.dart';
+import 'package:real_estate_frontend/screens/seller/PostProperty.dart';
 import 'package:real_estate_frontend/utils/PriceFormatter.dart';
 
 class SellerPropertiesScreen extends StatefulWidget {
@@ -20,6 +21,8 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
   bool _isLoading = true;
   List<PropertyDTO> _myProperties = [];
   String _activeTab = 'Tất cả';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -27,9 +30,15 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
     _fetchMyProperties();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchMyProperties() async {
     setState(() => _isLoading = true);
-    List<PropertyDTO> list = await fetchProperties();
+    List<PropertyDTO> list = await fetchMyProperties();
     if (mounted) {
       setState(() {
         _myProperties = list;
@@ -38,8 +47,42 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
     }
   }
 
+  List<PropertyDTO> get _filteredProperties {
+    List<PropertyDTO> list = _myProperties;
+
+    if (_activeTab == 'Đang hiển thị') {
+      list = list.where((p) {
+        final s = (p.status ?? '').toLowerCase();
+        return s == 'đang mở bán' || s == 'published' || s == 'đang hiển thị';
+      }).toList();
+    } else if (_activeTab == 'Chờ duyệt') {
+      list = list.where((p) {
+        final s = (p.status ?? '').toLowerCase();
+        return s == 'chờ duyệt' || s == 'pending';
+      }).toList();
+    } else if (_activeTab == 'Đã ẩn') {
+      list = list.where((p) {
+        final s = (p.status ?? '').toLowerCase();
+        return s == 'đã ẩn' || s == 'từ chối' || s == 'rejected' || s == 'deleted' || s == 'đã xóa';
+      }).toList();
+    }
+
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
+      list = list.where((p) {
+        final title = (p.title ?? '').toLowerCase();
+        final address = (p.address ?? '').toLowerCase();
+        return title.contains(q) || address.contains(q);
+      }).toList();
+    }
+
+    return list;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayList = _filteredProperties;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFCFBFA),
       appBar: AppBar(
@@ -64,6 +107,42 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
       ),
       body: Column(
         children: [
+          // Ô TÌM KIẾM THEO TIÊU ĐỀ
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm tin đăng theo tiêu đề...',
+                hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF945331)),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Color(0xFF78736D)),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                filled: true,
+                fillColor: const Color(0xFFF4EEE6),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+
           // BỘ LỌC TRẠNG THÁI BÀI ĐĂNG
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -85,7 +164,7 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFF945331)),
                   )
-                : _myProperties.isEmpty
+                : displayList.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -93,12 +172,17 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
                             const Icon(Icons.article_outlined,
                                 size: 60, color: Color(0xFF78736D)),
                             const SizedBox(height: 12),
-                            const Text(
-                              'Bạn chưa có tin đăng nào',
-                              style: TextStyle(
+                            Text(
+                              _myProperties.isEmpty
+                                  ? 'Bạn chưa có tin đăng nào'
+                                  : _searchQuery.isNotEmpty
+                                      ? 'Không tìm thấy tin đăng khớp với "$_searchQuery"'
+                                      : 'Không có tin đăng nào ở mục này',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 color: Color(0xFF78736D),
                               ),
+                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
@@ -119,15 +203,54 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 12),
-                          itemCount: _myProperties.length,
+                          itemCount: displayList.length,
                           itemBuilder: (context, index) {
-                            final item = _myProperties[index];
+                            final item = displayList[index];
                             return _buildPropertyPostItem(item);
                           },
                         ),
                       ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatusTag(String? statusStr) {
+    final s = (statusStr ?? '').toLowerCase();
+    Color color = const Color(0xFF2E7D32);
+    String label = statusStr ?? 'Đang hiển thị';
+
+    if (s == 'chờ duyệt' || s == 'pending') {
+      color = const Color(0xFFE65100);
+      label = 'Chờ duyệt';
+    } else if (s == 'từ chối' || s == 'rejected' || s == 'đã xóa' || s == 'deleted' || s == 'đã ẩn') {
+      color = const Color(0xFFC62828);
+      if (s == 'từ chối' || s == 'rejected') {
+        label = 'Từ chối';
+      } else if (s == 'đã xóa' || s == 'deleted') {
+        label = 'Đã xóa';
+      } else {
+        label = 'Đã ẩn';
+      }
+    } else if (s == 'published' || s == 'đang mở bán') {
+      color = const Color(0xFF2E7D32);
+      label = 'Đang hiển thị';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -209,22 +332,7 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'Đang hiển thị',
-                            style: TextStyle(
-                              color: Color(0xFF2E7D32),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                        _buildStatusTag(item.status),
                         Text(
                           '#${item.id ?? '---'}',
                           style: const TextStyle(
@@ -269,13 +377,19 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               TextButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tính năng chỉnh sửa bài đăng!'),
-                      behavior: SnackBarBehavior.floating,
+                onPressed: () async {
+                  final res = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PostPropertyScreen(
+                        propertyId: item.id,
+                        property: item,
+                      ),
                     ),
                   );
+                  if (res == true) {
+                    _fetchMyProperties();
+                  }
                 },
                 icon: const Icon(Icons.edit_outlined,
                     size: 18, color: Color(0xFF1565C0)),

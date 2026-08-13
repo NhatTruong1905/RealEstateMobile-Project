@@ -67,6 +67,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
   bool _isLoading = true;
   PropertyDTO? _property;
 
+  final PageController _imagePageController = PageController();
+  int _currentImageIndex = 0;
+
   // Interaction & State
   bool _isCallLoading = false;
   bool _alreadyBookedViewing = false;
@@ -432,6 +435,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
   @override
   void dispose() {
     _msgSub?.cancel();
+    _imagePageController.dispose();
     _chatInputController.dispose();
     super.dispose();
   }
@@ -644,6 +648,214 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     );
   }
 
+  Widget _buildPropertyImageHeader(PropertyDTO property) {
+    final List<String> allImages = (property.images != null && property.images!.isNotEmpty)
+        ? property.images!
+        : (property.image != null && property.image!.isNotEmpty ? [property.image!] : []);
+
+    if (allImages.isEmpty) {
+      return Container(
+        color: Colors.grey.shade300,
+        child: const Icon(Icons.home, size: 60, color: Colors.grey),
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1. SLIDER HÌNH ẢNH (PAGEVIEW)
+        PageView.builder(
+          controller: _imagePageController,
+          itemCount: allImages.length,
+          onPageChanged: (index) {
+            setState(() {
+              _currentImageIndex = index;
+            });
+          },
+          itemBuilder: (context, index) {
+            final imgUrl = allImages[index];
+            return Image.network(
+              imgUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.grey.shade300,
+                child: const Icon(Icons.image_not_supported, size: 50),
+              ),
+            );
+          },
+        ),
+
+        // 2. GRADIENT OVERLAY
+        IgnorePointer(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.4),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.6),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // 3. MŨI TÊN BÊN TRÁI (<)
+        Positioned(
+          left: 12,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  if (allImages.length <= 1) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Bất động sản này hiện có 1 hình ảnh'),
+                        duration: Duration(seconds: 1),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+                  final targetIndex = (_currentImageIndex > 0)
+                      ? _currentImageIndex - 1
+                      : allImages.length - 1;
+                  _imagePageController.animateToPage(
+                    targetIndex,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // 4. MŨI TÊN BÊN PHẢI (>)
+        Positioned(
+          right: 12,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  if (allImages.length <= 1) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Bất động sản này hiện có 1 hình ảnh'),
+                        duration: Duration(seconds: 1),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+                  final targetIndex = (_currentImageIndex < allImages.length - 1)
+                      ? _currentImageIndex + 1
+                      : 0;
+                  _imagePageController.animateToPage(
+                    targetIndex,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // 5. BADGE LOẠI GIAO DỊCH (GÓC TRÁI DƯỚI)
+        Positioned(
+          bottom: 20,
+          left: 20,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: property.typeId == 2
+                  ? const Color(0xFF2E7D32)
+                  : const Color(0xFF945331),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              property.typeId == 2 ? 'Cho Thuê' : 'Cho Bán',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                fontFamily: 'Plus Jakarta Sans',
+              ),
+            ),
+          ),
+        ),
+
+        // 6. THẺ ĐẾM SỐ ẢNH (GÓC PHẢI DƯỚI, VD: 1/5)
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${_currentImageIndex + 1} / ${allImages.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final property = _property;
@@ -715,68 +927,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                             ),
                           ],
                           flexibleSpace: FlexibleSpaceBar(
-                            background: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                (property.image != null &&
-                                        property.image!.isNotEmpty)
-                                    ? Image.network(
-                                        property.image!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                Container(
-                                          color: Colors.grey.shade300,
-                                          child: const Icon(
-                                              Icons.image_not_supported,
-                                              size: 50),
-                                        ),
-                                      )
-                                    : Container(
-                                        color: Colors.grey.shade300,
-                                        child: const Icon(Icons.home,
-                                            size: 60, color: Colors.grey),
-                                      ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.black.withValues(alpha: 0.4),
-                                        Colors.transparent,
-                                        Colors.black.withValues(alpha: 0.6),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 20,
-                                  left: 20,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: property.typeId == 2
-                                          ? const Color(0xFF2E7D32)
-                                          : const Color(0xFF945331),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      property.typeId == 2
-                                          ? 'Cho Thuê'
-                                          : 'Cho Bán',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                        fontFamily: 'Plus Jakarta Sans',
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            background: _buildPropertyImageHeader(property),
                           ),
                         ),
 

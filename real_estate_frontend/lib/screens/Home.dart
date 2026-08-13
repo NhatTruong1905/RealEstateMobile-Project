@@ -7,6 +7,7 @@ import 'package:real_estate_frontend/utils/PriceFormatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:real_estate_frontend/screens/Auth.dart';
 import 'package:real_estate_frontend/services/ChatService.dart';
+import 'package:real_estate_frontend/widgets/RagChatModal.dart';
 import '../../dto/PropertyDTO.dart';
 import '../../dto/PropertyRequestDTO.dart';
 
@@ -35,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
   bool _isLoadingMore = false;
   bool _hasMore = true;
   bool _isLoggedIn = false;
+  bool _showScrollToTop = false;
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalItems = 0;
@@ -59,13 +61,28 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
     super.dispose();
   }
 
-  // TỰ ĐỘNG BẮT SỰ KIỆN CUỘN TỚI CUỐI ĐỂ TẢI TIẾP (LAZY LOADING)
+  // TỰ ĐỘNG BẮT SỰ KIỆN CUỘN TỚI CUỐI ĐỂ TẢI TIẾP (LAZY LOADING) VÀ HIỂN THỊ NÚT SCROLL TO TOP
   void _onScroll() {
+    final showTop = _scrollController.hasClients && _scrollController.offset > 300;
+    if (showTop != _showScrollToTop) {
+      setState(() => _showScrollToTop = showTop);
+    }
+
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       if (!_isLoading && !_isLoadingMore && _hasMore) {
         _loadMoreData();
       }
+    }
+  }
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
@@ -714,6 +731,88 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFBFA),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 250),
+            opacity: _showScrollToTop ? 1.0 : 0.0,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 250),
+              scale: _showScrollToTop ? 1.0 : 0.0,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GestureDetector(
+                  onTap: _showScrollToTop ? _scrollToTop : null,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          FloatingActionButton(
+            heroTag: 'homeAiAssistant',
+            onPressed: () => RagChatModal.show(context),
+            backgroundColor: const Color(0xFF1E293B),
+            elevation: 6,
+            shape: const CircleBorder(),
+            tooltip: 'AI Gợi ý Tòa nhà',
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1E293B), Color(0xFF334155)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.support_agent_rounded,
+                    color: Color(0xFFFFD700),
+                    size: 28,
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: CircleAvatar(
+                      radius: 3.5,
+                      backgroundColor: Color(0xFF10B981),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF945331)),

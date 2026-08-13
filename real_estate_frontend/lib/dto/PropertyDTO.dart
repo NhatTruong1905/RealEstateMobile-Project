@@ -17,12 +17,20 @@ class PropertyDTO {
   final String? direction;
   final String? legal;
   final String? status;
-  final String? image;
+  final List<String>? images;
+  final String? _image;
   final String? userPhone;
   final String? userFullname;
   final String? userEmail;
 
   bool isSaved;
+
+  String? get image {
+    if (images != null && images!.isNotEmpty) {
+      return images!.first;
+    }
+    return _image;
+  }
 
   PropertyDTO({
     this.id,
@@ -43,14 +51,37 @@ class PropertyDTO {
     this.direction,
     this.legal,
     this.status,
-    this.image,
+    this.images,
+    String? image,
     this.userPhone,
     this.userFullname,
     this.userEmail,
     this.isSaved = false,
-  });
+    // ignore: prefer_initializing_formals
+  }) : _image = image;
+
+  static String? cleanAddress(String? input) {
+    if (input == null || input.trim().isEmpty) return input;
+    String cleaned = input
+        .replaceAll(RegExp(r'\(\s*Ward\s*ID:\s*\d+\s*,\s*District\s*ID:\s*\d+\s*\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\(\s*(?:Ward|District)\s*ID:\s*\d+\s*\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\b(?:Ward|District|wardId|districtId)\s*ID?\s*[:=]?\s*\d+\b', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\(\s*\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s{2,}', caseSensitive: false), ' ')
+        .replaceAll(RegExp(r',\s*,', caseSensitive: false), ',')
+        .replaceAll(RegExp(r'^\s*,\s*|\s*,\s*$', caseSensitive: false), '')
+        .trim();
+    return cleaned.isEmpty ? null : cleaned;
+  }
+
+  String? get displayAddress => cleanAddress(addressDetail) ?? cleanAddress(address) ?? city;
 
   factory PropertyDTO.fromJson(Map<String, dynamic> json) {
+    List<String>? parsedImages;
+    if (json['images'] != null && json['images'] is List) {
+      parsedImages = (json['images'] as List<dynamic>).map((e) => e.toString()).toList();
+    }
+
     return PropertyDTO(
       id: (json['id'] as num?)?.toInt(),
       userId: (json['userId'] as num?)?.toInt() ??
@@ -63,10 +94,10 @@ class PropertyDTO {
       categoryId: (json['categoryId'] as num?)?.toInt(),
       title: json['title'] as String?,
       description: json['description'] as String?,
-      address: json['address'] as String?,
-      city: json['city'] as String?,
+      address: cleanAddress(json['address'] as String?),
+      city: cleanAddress(json['city'] as String?),
       wardId: (json['wardId'] as num?)?.toInt(),
-      addressDetail: json['addressDetail'] as String?,
+      addressDetail: cleanAddress(json['addressDetail'] as String?),
       price: (json['price'] as num?)?.toDouble(),
       area: (json['area'] as num?)?.toDouble(),
       floorCount: (json['floorCount'] as num?)?.toInt(),
@@ -75,6 +106,7 @@ class PropertyDTO {
       direction: json['direction'] as String?,
       legal: json['legal'] as String?,
       status: json['status'] as String?,
+      images: parsedImages,
       image: json['image'] as String?,
       userPhone: json['userPhone'] as String?,
       userFullname: json['userFullname'] as String?,
@@ -102,6 +134,7 @@ class PropertyDTO {
       'direction': direction,
       'legal': legal,
       'status': status,
+      'images': images,
       'image': image,
       'userPhone': userPhone,
       'userFullname': userFullname,
