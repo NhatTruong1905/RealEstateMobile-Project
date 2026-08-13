@@ -2,6 +2,7 @@ package com.ndnt.utils;
 
 
 import com.ndnt.model.dto.UserDTO;
+import com.ndnt.model.dto.UserInfoDTO;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -29,17 +30,28 @@ public class JwtUtils {
         return secret.getBytes(StandardCharsets.UTF_8);
     }
 
-    public String generateToken(UserDTO userDTO) throws Exception {
+    public String generateToken(UserDTO user) throws Exception {
+        return createJwtToken(user.getUsername(), user.getId(), user.getFullname(),
+                user.getPhone(), user.getEmail(), user.getRoleCode());
+    }
+
+    public String generateToken(UserInfoDTO user) throws Exception {
+        return createJwtToken(user.getUsername(), user.getId(), user.getFullname(),
+                user.getPhone(), user.getEmail(), user.getRoleCode());
+    }
+
+    private String createJwtToken(String username, Object id, String fullname,
+                                  String phone, String email, String role) {
         try {
             JWSSigner signer = new MACSigner(getSharedKey());
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .jwtID(UUID.randomUUID().toString())
-                    .subject(userDTO.getUsername())
-                    .claim("id", userDTO.getId())
-                    .claim("fullname", userDTO.getFullname())
-                    .claim("phone", userDTO.getPhone())
-                    .claim("email", userDTO.getEmail())
-                    .claim("role", userDTO.getRoleCode())
+                    .subject(username)
+                    .claim("id", id)
+                    .claim("fullname", fullname)
+                    .claim("phone", phone)
+                    .claim("email", email)
+                    .claim("role", role)
                     .expirationTime(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                     .issueTime(new Date())
                     .build();
