@@ -53,7 +53,7 @@ public class APIPropertyController {
         pageData.put("totalPages", propertyPage.getTotalPages());
 
         ResponseDTO responseDTO = new ResponseDTO();
-        responseDTO.setMessage("success");
+        responseDTO.setMessage("Success");
         responseDTO.setData(pageData);
 
         return ResponseEntity.ok().body(responseDTO);
@@ -67,7 +67,7 @@ public class APIPropertyController {
         } else {
             List<PropertyDTO> propertyDTOS = this.propertyService.getPropertyOfUser(currentUser.getId());
             ResponseDTO responseDTO = new ResponseDTO();
-            responseDTO.setMessage("success");
+            responseDTO.setMessage("Success");
             responseDTO.setData(propertyDTOS);
             return ResponseEntity.ok().body(responseDTO);
         }
@@ -91,7 +91,7 @@ public class APIPropertyController {
             propertyDTO.setUserId(currentUser.getId());
             ResponseDTO responseDTO = new ResponseDTO();
             this.propertyService.createOrUpdateProperty(propertyDTO);
-            responseDTO.setMessage("success");
+            responseDTO.setMessage("Success");
             responseDTO.setData(propertyDTO);
             return ResponseEntity.ok().body(responseDTO);
         }
@@ -107,9 +107,23 @@ public class APIPropertyController {
             return ResponseEntity.badRequest().body(responseDTO);
         }
 
-        responseDTO.setMessage("success");
+        responseDTO.setMessage("Success");
         responseDTO.setData(propertyDTO);
         return ResponseEntity.ok().body(responseDTO);
+    }
+
+    @DeleteMapping("/secure/properties/{id}")
+    public ResponseEntity<?> deleteProperty(@PathVariable Integer id) {
+        ResponseDTO responseDTO = new ResponseDTO();
+
+        if (id == null) {
+            responseDTO.setMessage("Error");
+            return ResponseEntity.badRequest().body(responseDTO);
+        } else {
+            responseDTO.setMessage("Success");
+            this.propertyService.deleteProperty(id);
+            return ResponseEntity.ok().body(responseDTO);
+        }
     }
 
     @GetMapping("/secure/favorite-properties")
@@ -121,7 +135,7 @@ public class APIPropertyController {
         if (propertyDTOS.isEmpty()) {
             responseDTO.setMessage("Chưa có tin nào được lưu!");
         } else {
-            responseDTO.setMessage("success");
+            responseDTO.setMessage("Success");
             responseDTO.setData(propertyDTOS);
         }
         return ResponseEntity.ok().body(responseDTO);
