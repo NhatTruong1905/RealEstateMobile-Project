@@ -33,5 +33,7 @@ public interface UserService extends UserDetailsService {
 
     void createOrUpdateUser(UserInfoDTO userDTO);
 
+    UserEntity findEntityByIdentifier(String identifier);
 
+    void resetPassword(String identifier, String newPassword, String newEmail);
 }

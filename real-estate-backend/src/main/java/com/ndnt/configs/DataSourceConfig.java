@@ -27,8 +27,8 @@ public class DataSourceConfig {
     @Bean
     @Primary
     @ConditionalOnProperty(
-            prefix = "spring",
-            value = "datasource.driverClassName",
+            prefix = "spring.datasource",
+            name = "driver-class-name",
             havingValue = "com.mysql.cj.jdbc.Driver"
     )
     public DataSource dataSource() {

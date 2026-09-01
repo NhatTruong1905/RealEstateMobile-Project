@@ -274,5 +274,35 @@ public class UserServiceImpl implements UserService {
             this.userRepository.save(existingUser);
         }
     }
+
+    @Override
+    public UserEntity findEntityByIdentifier(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return null;
+        }
+        return this.userRepository.findByIdentifier(identifier.trim());
+    }
+
+    @Override
+    public void resetPassword(String identifier, String newPassword, String newEmail) {
+        UserEntity user = findEntityByIdentifier(identifier);
+        if (user == null) {
+            throw new RuntimeException("Không tìm thấy tài khoản để đặt lại mật khẩu!");
+        }
+
+        user.setPassword(this.bCryptPasswordEncoder.encode(newPassword));
+
+        if (newEmail != null && !newEmail.trim().isEmpty()) {
+            String trimmedEmail = newEmail.trim();
+            if (user.getEmail() == null || user.getEmail().trim().isEmpty() || !user.getEmail().equalsIgnoreCase(trimmedEmail)) {
+                if (this.userRepository.existsByEmail(trimmedEmail) && (user.getEmail() == null || !user.getEmail().equalsIgnoreCase(trimmedEmail))) {
+                    throw new DuplicateEmailException("Email này đã được tài khoản khác sử dụng!");
+                }
+                user.setEmail(trimmedEmail);
+            }
+        }
+
+        this.userRepository.save(user);
+    }
 }
 

@@ -28,6 +28,13 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer>, User
 
     UserEntity findByUsername(String username);
 
+    UserEntity findByPhone(String phone);
+
+    UserEntity findByEmail(String email);
+
+    @Query("SELECT u FROM UserEntity u WHERE (u.username = :identifier OR u.phone = :identifier OR u.email = :identifier) AND (u.status = 1 OR u.status IS NULL)")
+    UserEntity findByIdentifier(@Param("identifier") String identifier);
+
     UserEntity findByUsernameAndStatus(String username, Integer status);
 
     @Query("SELECT QUARTER(u.createdDate) AS quarter, COUNT(u) AS count " +

@@ -6,7 +6,14 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.ndnt.model.dto.UserDTO;
 import com.ndnt.model.dto.UserInfoDTO;
+import com.ndnt.model.dto.request.ForgotPasswordRequest;
+import com.ndnt.model.dto.request.ResetPasswordRequest;
+import com.ndnt.model.dto.request.VerifyOtpRequest;
+import com.ndnt.model.dto.response.ForgotPasswordResponse;
 import com.ndnt.model.dto.response.ResponseDTO;
+import com.ndnt.model.entity.UserEntity;
+import com.ndnt.services.EmailService;
+import com.ndnt.services.OtpService;
 import com.ndnt.services.UserService;
 import com.ndnt.utils.JwtUtils;
 import jakarta.validation.Valid;
@@ -38,6 +45,12 @@ public class APILoginController {
 
     @Autowired
     private JwtUtils jwtUtils;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private OtpService otpService;
 
     @Value("${GOOGLE_CLIENT_ID}")
     private String GOOGLE_CLIENT_ID;
@@ -251,5 +264,134 @@ public class APILoginController {
             response.put("message", "Lỗi server: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            for (FieldError fieldError : bindingResult.getFieldErrors()) {
+                errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            }
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        UserEntity user = this.userService.findEntityByIdentifier(request.getIdentifier());
+        if (user == null) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Không tìm thấy tài khoản với thông tin đã nhập!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+
+        String targetEmail = null;
+        boolean hasExistingEmail = user.getEmail() != null && !user.getEmail().trim().isEmpty();
+
+        if (hasExistingEmail) {
+            targetEmail = user.getEmail().trim();
+        } else {
+            if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+                ForgotPasswordResponse response = ForgotPasswordResponse.builder()
+                        .status("REQUIRE_EMAIL")
+                        .hasEmail(false)
+                        .identifier(request.getIdentifier())
+                        .message("Tài khoản của bạn chưa cập nhật email. Vui lòng nhập email để nhận mã xác thực OTP.")
+                        .build();
+                return ResponseEntity.ok(response);
+            }
+            targetEmail = request.getEmail().trim();
+        }
+
+        String otp = this.otpService.generateOtp(request.getIdentifier(), targetEmail);
+        this.emailService.sendOtpEmail(targetEmail, otp, user.getFullname());
+
+        ForgotPasswordResponse response = ForgotPasswordResponse.builder()
+                .status("OTP_SENT")
+                .hasEmail(hasExistingEmail)
+                .maskedEmail(maskEmail(targetEmail))
+                .identifier(request.getIdentifier())
+                .message("Mã xác thực OTP đã được gửi đến email " + maskEmail(targetEmail) + ". Vui lòng kiểm tra hộp thư!")
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            for (FieldError fieldError : bindingResult.getFieldErrors()) {
+                errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            }
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        boolean isValid = this.otpService.validateOtp(request.getIdentifier(), request.getOtp());
+        if (!isValid) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "FAIL");
+            errorResponse.put("message", "Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại!");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        String resetToken = this.otpService.getResetToken(request.getIdentifier());
+        Map<String, Object> successResponse = new HashMap<>();
+        successResponse.put("status", "SUCCESS");
+        successResponse.put("message", "Xác thực mã OTP thành công!");
+        successResponse.put("resetToken", resetToken);
+
+        return ResponseEntity.ok(successResponse);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            for (FieldError fieldError : bindingResult.getFieldErrors()) {
+                errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            }
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        boolean isTokenValid = this.otpService.validateResetToken(request.getIdentifier(), request.getResetToken());
+        if (!isTokenValid) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "FAIL");
+            errorResponse.put("message", "Yêu cầu đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng thực hiện lại từ đầu!");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        try {
+            String emailToUpdate = request.getEmail();
+            if (emailToUpdate == null || emailToUpdate.trim().isEmpty()) {
+                emailToUpdate = this.otpService.getTargetEmail(request.getIdentifier());
+            }
+
+            this.userService.resetPassword(request.getIdentifier(), request.getNewPassword(), emailToUpdate);
+            this.otpService.clear(request.getIdentifier());
+
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("status", "SUCCESS");
+            successResponse.put("message", "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới ngay bây giờ.");
+
+            return ResponseEntity.ok(successResponse);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "ERROR");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return email;
+        }
+        int atIndex = email.indexOf("@");
+        String name = email.substring(0, atIndex);
+        String domain = email.substring(atIndex);
+        if (name.length() <= 2) {
+            return name.charAt(0) + "***" + domain;
+        }
+        return name.substring(0, 2) + "***" + domain;
     }
 }

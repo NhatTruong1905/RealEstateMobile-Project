@@ -3,6 +3,12 @@ package com.ndnt.controllers.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ndnt.model.dto.UserDTO;
 import com.ndnt.model.dto.UserInfoDTO;
+import com.ndnt.model.dto.request.ForgotPasswordRequest;
+import com.ndnt.model.dto.request.ResetPasswordRequest;
+import com.ndnt.model.dto.request.VerifyOtpRequest;
+import com.ndnt.model.entity.UserEntity;
+import com.ndnt.services.EmailService;
+import com.ndnt.services.OtpService;
 import com.ndnt.services.UserService;
 import com.ndnt.utils.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +40,12 @@ public class APILoginControllerTest {
 
     @Mock
     private JwtUtils jwtUtils;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private OtpService otpService;
 
     @InjectMocks
     private APILoginController apiLoginController;
@@ -140,5 +152,147 @@ public class APILoginControllerTest {
                 .andExpect(jsonPath("$.message").value("Register Success"));
 
         verify(userService, times(1)).createOrUpdateUser(any(UserInfoDTO.class));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/forgot-password - Tài khoản đã có email -> Gửi OTP thành công")
+    void forgotPassword_WithExistingEmail_Success() throws Exception {
+        ForgotPasswordRequest request = ForgotPasswordRequest.builder()
+                .identifier("testuser")
+                .build();
+
+        UserEntity user = new UserEntity();
+        user.setUsername("testuser");
+        user.setEmail("user@gmail.com");
+        user.setFullname("Nguyen Van A");
+
+        when(userService.findEntityByIdentifier("testuser")).thenReturn(user);
+        when(otpService.generateOtp("testuser", "user@gmail.com")).thenReturn("123456");
+        doNothing().when(emailService).sendOtpEmail(eq("user@gmail.com"), eq("123456"), eq("Nguyen Van A"));
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("OTP_SENT"))
+                .andExpect(jsonPath("$.hasEmail").value(true))
+                .andExpect(jsonPath("$.maskedEmail").value("us***@gmail.com"));
+
+        verify(otpService, times(1)).generateOtp("testuser", "user@gmail.com");
+        verify(emailService, times(1)).sendOtpEmail(eq("user@gmail.com"), eq("123456"), eq("Nguyen Van A"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/forgot-password - Tài khoản chưa có email -> Yêu cầu nhập email")
+    void forgotPassword_NoEmail_RequireEmail() throws Exception {
+        ForgotPasswordRequest request = ForgotPasswordRequest.builder()
+                .identifier("0987654321")
+                .build();
+
+        UserEntity user = new UserEntity();
+        user.setUsername("phoneuser");
+        user.setPhone("0987654321");
+        user.setEmail(null);
+
+        when(userService.findEntityByIdentifier("0987654321")).thenReturn(user);
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REQUIRE_EMAIL"))
+                .andExpect(jsonPath("$.hasEmail").value(false));
+
+        verify(otpService, never()).generateOtp(any(), any());
+        verify(emailService, never()).sendOtpEmail(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/forgot-password - Tài khoản chưa có email + Người dùng cung cấp email -> Gửi OTP thành công")
+    void forgotPassword_NoEmail_WithProvidedEmail_Success() throws Exception {
+        ForgotPasswordRequest request = ForgotPasswordRequest.builder()
+                .identifier("0987654321")
+                .email("newemail@gmail.com")
+                .build();
+
+        UserEntity user = new UserEntity();
+        user.setUsername("phoneuser");
+        user.setPhone("0987654321");
+        user.setEmail(null);
+        user.setFullname("Phone User");
+
+        when(userService.findEntityByIdentifier("0987654321")).thenReturn(user);
+        when(otpService.generateOtp("0987654321", "newemail@gmail.com")).thenReturn("654321");
+        doNothing().when(emailService).sendOtpEmail(eq("newemail@gmail.com"), eq("654321"), eq("Phone User"));
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("OTP_SENT"))
+                .andExpect(jsonPath("$.hasEmail").value(false))
+                .andExpect(jsonPath("$.maskedEmail").value("ne***@gmail.com"));
+
+        verify(otpService, times(1)).generateOtp("0987654321", "newemail@gmail.com");
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/verify-otp - Xác thực OTP thành công -> Trả về resetToken")
+    void verifyOtp_Success() throws Exception {
+        VerifyOtpRequest request = VerifyOtpRequest.builder()
+                .identifier("testuser")
+                .otp("123456")
+                .build();
+
+        when(otpService.validateOtp("testuser", "123456")).thenReturn(true);
+        when(otpService.getResetToken("testuser")).thenReturn("mock-reset-token-uuid");
+
+        mockMvc.perform(post("/api/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.resetToken").value("mock-reset-token-uuid"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/verify-otp - Nhập sai OTP -> Trả về 400 Bad Request")
+    void verifyOtp_WrongOtp() throws Exception {
+        VerifyOtpRequest request = VerifyOtpRequest.builder()
+                .identifier("testuser")
+                .otp("999999")
+                .build();
+
+        when(otpService.validateOtp("testuser", "999999")).thenReturn(false);
+
+        mockMvc.perform(post("/api/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("FAIL"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/reset-password - Đặt lại mật khẩu thành công")
+    void resetPassword_Success() throws Exception {
+        ResetPasswordRequest request = ResetPasswordRequest.builder()
+                .identifier("testuser")
+                .resetToken("valid-token")
+                .newPassword("newPass1234")
+                .build();
+
+        when(otpService.validateResetToken("testuser", "valid-token")).thenReturn(true);
+        when(otpService.getTargetEmail("testuser")).thenReturn("test@gmail.com");
+        doNothing().when(userService).resetPassword("testuser", "newPass1234", "test@gmail.com");
+        doNothing().when(otpService).clear("testuser");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"));
+
+        verify(userService, times(1)).resetPassword("testuser", "newPass1234", "test@gmail.com");
+        verify(otpService, times(1)).clear("testuser");
     }
 }
