@@ -151,5 +151,4 @@ public class APIPropertyController {
         responseDTO.setData(favoritePropertyDTO);
         return ResponseEntity.ok().body(responseDTO);
     }
-
 }

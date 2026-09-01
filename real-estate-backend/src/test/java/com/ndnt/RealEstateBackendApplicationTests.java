@@ -1,13 +1,11 @@
 package com.ndnt;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.platform.suite.api.SelectPackages;
+import org.junit.platform.suite.api.Suite;
+import org.junit.platform.suite.api.SuiteDisplayName;
 
-@SpringBootTest
-class RealEstateBackendApplicationTests {
-
-    @Test
-    void contextLoads() {
-    }
-
+@Suite
+@SuiteDisplayName("Toàn bộ Test Suite - Services & Controllers")
+@SelectPackages("com.ndnt")
+public class RealEstateBackendApplicationTests {
 }
