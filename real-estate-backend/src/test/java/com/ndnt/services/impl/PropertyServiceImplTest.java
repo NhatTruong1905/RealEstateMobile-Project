@@ -9,7 +9,7 @@ import com.ndnt.model.entity.WardEntity;
 import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.repositories.PropertyRepository;
 import com.ndnt.repositories.WardRepository;
-import com.ndnt.services.ChatService;
+import com.ndnt.services.AddressParseService;
 import com.ndnt.services.FavoritePropertyService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ public class PropertyServiceImplTest {
     private Cloudinary cloudinary;
 
     @Mock
-    private ChatService chatService;
+    private AddressParseService addressParseService;
 
     @Mock
     private WardRepository wardRepository;

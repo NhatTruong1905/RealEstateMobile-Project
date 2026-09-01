@@ -16,7 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ChatServiceImplTest {
+public class AddressParseServiceImplTest {
 
     @Mock
     private ChatClient.Builder chatClientBuilder;
@@ -41,8 +41,8 @@ public class ChatServiceImplTest {
                 .entity(AddressParseResult.class))
                 .thenReturn(expectedResult);
 
-        ChatServiceImpl chatService = new ChatServiceImpl(chatClientBuilder);
-        AddressParseResult result = chatService.parseAddress("221/45E Đông Thạnh, Hóc Môn, Hồ Chí Minh");
+        AddressParseServiceImpl addressParseService = new AddressParseServiceImpl(chatClientBuilder);
+        AddressParseResult result = addressParseService.parseAddress("221/45E Đông Thạnh, Hóc Môn, Hồ Chí Minh");
 
         assertNotNull(result);
         assertEquals("Hồ Chí Minh", result.cityName());

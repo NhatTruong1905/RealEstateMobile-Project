@@ -14,7 +14,7 @@ import com.ndnt.model.entity.WardEntity;
 import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.repositories.PropertyRepository;
 import com.ndnt.repositories.WardRepository;
-import com.ndnt.services.ChatService;
+import com.ndnt.services.AddressParseService;
 import com.ndnt.services.FavoritePropertyService;
 import com.ndnt.services.PropertyService;
 import jakarta.persistence.criteria.Predicate;
@@ -51,7 +51,7 @@ public class PropertyServiceImpl implements PropertyService {
     private Cloudinary cloudinary;
 
     @Autowired
-    private ChatService chatService;
+    private AddressParseService addressParseService;
 
     @Autowired
     private WardRepository wardRepository;
@@ -168,7 +168,7 @@ public class PropertyServiceImpl implements PropertyService {
 
         if (rawAddress != null && !rawAddress.isBlank()) {
             try {
-                AddressParseResult parseResult = this.chatService.parseAddress(rawAddress);
+                AddressParseResult parseResult = this.addressParseService.parseAddress(rawAddress);
                 if (parseResult != null) {
                     if (parseResult.addressDetail() != null && !parseResult.addressDetail().isBlank()) {
                         propertyDTO.setAddress(parseResult.addressDetail());
