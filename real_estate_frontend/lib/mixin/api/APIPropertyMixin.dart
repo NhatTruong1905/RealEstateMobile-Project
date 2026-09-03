@@ -178,63 +178,7 @@ mixin ApiPropertyMixin {
 
       request.headers['Authorization'] = 'Bearer $token';
 
-      if (property.id != null) {
-        request.fields['id'] = property.id.toString();
-      }
-      if (property.typeId != null) {
-        request.fields['typeId'] = property.typeId.toString();
-      }
-      if (property.categoryId != null) {
-        request.fields['categoryId'] = property.categoryId.toString();
-      }
-      if (property.title != null && property.title!.isNotEmpty) {
-        request.fields['title'] = property.title!;
-      }
-      if (property.description != null && property.description!.isNotEmpty) {
-        request.fields['description'] = property.description!;
-      }
-      if (property.address != null && property.address!.isNotEmpty) {
-        request.fields['address'] = property.address!;
-      }
-      if (property.city != null && property.city!.isNotEmpty) {
-        request.fields['city'] = property.city!;
-      }
-      if (property.wardId != null) {
-        request.fields['wardId'] = property.wardId.toString();
-      }
-      if (property.addressDetail != null && property.addressDetail!.isNotEmpty) {
-        request.fields['addressDetail'] = property.addressDetail!;
-      }
-      if (property.price != null) {
-        request.fields['price'] = property.price.toString();
-      }
-      if (property.area != null) {
-        request.fields['area'] = property.area.toString();
-      }
-      if (property.floorCount != null) {
-        request.fields['floorCount'] = property.floorCount.toString();
-      }
-      if (property.bedroomCount != null) {
-        request.fields['bedroomCount'] = property.bedroomCount.toString();
-      }
-      if (property.bathroomCount != null) {
-        request.fields['bathroomCount'] = property.bathroomCount.toString();
-      }
-      if (property.direction != null && property.direction!.isNotEmpty) {
-        request.fields['direction'] = property.direction!;
-      }
-      if (property.legal != null && property.legal!.isNotEmpty) {
-        request.fields['legal'] = property.legal!;
-      }
-      if (property.status != null && property.status!.isNotEmpty) {
-        request.fields['status'] = property.status!;
-      }
-
-      if (property.images != null && property.images!.isNotEmpty) {
-        for (var i = 0; i < property.images!.length; i++) {
-          request.fields['images[$i]'] = property.images![i];
-        }
-      }
+      request.fields.addAll(property.toFields());
 
       if (imageFiles != null && imageFiles.isNotEmpty) {
         for (var i = 0; i < imageFiles.length && i < 5; i++) {
@@ -256,15 +200,45 @@ mixin ApiPropertyMixin {
         return {'success': true, 'data': responseData['data']};
       } else {
         final decodedBody = utf8.decode(response.bodyBytes);
-        debugPrint('Save property failed: ${response.statusCode} - $decodedBody');
+        debugPrint(
+          'Save property failed: ${response.statusCode} - $decodedBody',
+        );
         return {
           'success': false,
-          'message': 'Đã xảy ra lỗi (${response.statusCode}): $decodedBody'
+          'message': 'Đã xảy ra lỗi (${response.statusCode}): $decodedBody',
         };
       }
     } catch (e) {
       debugPrint('Lỗi saveProperty: $e');
       return {'success': false, 'message': 'Lỗi kết nối máy chủ: $e'};
+    }
+  }
+
+  Future<bool> deleteProperty(int id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+      if (token == null) return false;
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/secure/properties/$id'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        debugPrint(
+          'Lỗi deleteProperty (${response.statusCode}): ${response.body}',
+        );
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Lỗi deleteProperty: $e');
+      return false;
     }
   }
 }

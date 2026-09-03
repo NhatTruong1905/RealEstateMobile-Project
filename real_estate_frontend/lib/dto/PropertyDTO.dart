@@ -57,15 +57,32 @@ class PropertyDTO {
     this.userFullname,
     this.userEmail,
     this.isSaved = false,
-    // ignore: prefer_initializing_formals
   }) : _image = image;
 
   static String? cleanAddress(String? input) {
     if (input == null || input.trim().isEmpty) return input;
     String cleaned = input
-        .replaceAll(RegExp(r'\(\s*Ward\s*ID:\s*\d+\s*,\s*District\s*ID:\s*\d+\s*\)', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\(\s*(?:Ward|District)\s*ID:\s*\d+\s*\)', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\b(?:Ward|District|wardId|districtId)\s*ID?\s*[:=]?\s*\d+\b', caseSensitive: false), '')
+        .replaceAll(
+          RegExp(
+            r'\(\s*Ward\s*ID:\s*\d+\s*,\s*District\s*ID:\s*\d+\s*\)',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'\(\s*(?:Ward|District)\s*ID:\s*\d+\s*\)',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'\b(?:Ward|District|wardId|districtId)\s*ID?\s*[:=]?\s*\d+\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
         .replaceAll(RegExp(r'\(\s*\)', caseSensitive: false), '')
         .replaceAll(RegExp(r'\s{2,}', caseSensitive: false), ' ')
         .replaceAll(RegExp(r',\s*,', caseSensitive: false), ',')
@@ -74,22 +91,20 @@ class PropertyDTO {
     return cleaned.isEmpty ? null : cleaned;
   }
 
-  String? get displayAddress => cleanAddress(addressDetail) ?? cleanAddress(address) ?? city;
+  String? get displayAddress =>
+      cleanAddress(addressDetail) ?? cleanAddress(address) ?? city;
 
   factory PropertyDTO.fromJson(Map<String, dynamic> json) {
     List<String>? parsedImages;
     if (json['images'] != null && json['images'] is List) {
-      parsedImages = (json['images'] as List<dynamic>).map((e) => e.toString()).toList();
+      parsedImages = (json['images'] as List<dynamic>)
+          .map((e) => e.toString())
+          .toList();
     }
 
     return PropertyDTO(
       id: (json['id'] as num?)?.toInt(),
-      userId: (json['userId'] as num?)?.toInt() ??
-          (json['user_id'] as num?)?.toInt() ??
-          (json['sellerId'] as num?)?.toInt() ??
-          (json['user'] is num
-              ? (json['user'] as num).toInt()
-              : (json['user'] is Map ? (json['user']['id'] as num?)?.toInt() : null)),
+      userId: (json['userId'] as num?)?.toInt(),
       typeId: (json['typeId'] as num?)?.toInt(),
       categoryId: (json['categoryId'] as num?)?.toInt(),
       title: json['title'] as String?,
@@ -141,4 +156,36 @@ class PropertyDTO {
       'userEmail': userEmail,
     };
   }
+
+  Map<String, String> toFields() {
+    return {
+      if (id != null) 'id': id.toString(),
+      if (userId != null) 'userId': userId.toString(),
+      if (typeId != null) 'typeId': typeId.toString(),
+      if (categoryId != null) 'categoryId': categoryId.toString(),
+      if (title != null && title!.trim().isNotEmpty) 'title': title!.trim(),
+      if (description != null && description!.trim().isNotEmpty)
+        'description': description!.trim(),
+      if (address != null && address!.trim().isNotEmpty)
+        'address': address!.trim(),
+      if (city != null && city!.trim().isNotEmpty) 'city': city!.trim(),
+      if (wardId != null) 'wardId': wardId.toString(),
+      if (addressDetail != null && addressDetail!.trim().isNotEmpty)
+        'addressDetail': addressDetail!.trim(),
+      if (price != null) 'price': price.toString(),
+      if (area != null) 'area': area.toString(),
+      if (floorCount != null) 'floorCount': floorCount.toString(),
+      if (bedroomCount != null) 'bedroomCount': bedroomCount.toString(),
+      if (bathroomCount != null) 'bathroomCount': bathroomCount.toString(),
+      if (direction != null && direction!.trim().isNotEmpty)
+        'direction': direction!.trim(),
+      if (legal != null && legal!.trim().isNotEmpty) 'legal': legal!.trim(),
+      if (status != null && status!.trim().isNotEmpty) 'status': status!.trim(),
+      if (images != null)
+        for (var i = 0; i < images!.length; i++) 'images[$i]': images![i],
+    };
+  }
+
+  Map<String, String> toFormData() => toFields();
 }
+

@@ -154,7 +154,9 @@ mixin ApiLoginMixin {
           await prefs.setString('jwt_token', token);
 
           String username = fallbackUsername ?? '';
-          if (userObj != null && userObj is Map && userObj['username'] != null) {
+          if (userObj != null &&
+              userObj is Map &&
+              userObj['username'] != null) {
             username = userObj['username'].toString();
           }
           await prefs.setString('username', username);
@@ -164,28 +166,30 @@ mixin ApiLoginMixin {
             await prefs.setString('user_profile', jsonEncode(userObj));
           }
 
-          // Đồng bộ Profile ngầm ở background, không làm tắc nghẽn luồng Đăng nhập
-          http.get(
-            Uri.parse("$baseUrl/secure/profile"),
-            headers: {
-              "Content-Type": "application/json; charset=UTF-8",
-              "Authorization": "Bearer $token",
-            },
-          ).then((profileResponse) async {
-            if (profileResponse.statusCode == 200) {
-              final profileDecoded = utf8.decode(profileResponse.bodyBytes);
-              final profileData = jsonDecode(profileDecoded)['data'];
-              if (profileData != null) {
-                UserDTO user = UserDTO.fromJson(profileData);
-                await prefs.setString(
-                  'user_profile',
-                  jsonEncode(user.toJson()),
-                );
-              }
-            }
-          }).catchError((e) {
-            debugPrint("Lỗi sync profile ngầm: $e");
-          });
+          http
+              .get(
+                Uri.parse("$baseUrl/secure/profile"),
+                headers: {
+                  "Content-Type": "application/json; charset=UTF-8",
+                  "Authorization": "Bearer $token",
+                },
+              )
+              .then((profileResponse) async {
+                if (profileResponse.statusCode == 200) {
+                  final profileDecoded = utf8.decode(profileResponse.bodyBytes);
+                  final profileData = jsonDecode(profileDecoded)['data'];
+                  if (profileData != null) {
+                    UserDTO user = UserDTO.fromJson(profileData);
+                    await prefs.setString(
+                      'user_profile',
+                      jsonEncode(user.toJson()),
+                    );
+                  }
+                }
+              })
+              .catchError((e) {
+                debugPrint("Lỗi sync profile ngầm: $e");
+              });
 
           try {
             ChatService().initGlobalConnection();
@@ -260,6 +264,153 @@ mixin ApiLoginMixin {
     }
   }
 
+  Future<Map<String, dynamic>> forgotPassword(
+    String identifier, {
+    String? email,
+  }) async {
+    final url = Uri.parse("$baseUrl/auth/forgot-password");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json; charset=UTF-8"},
+        body: jsonEncode({
+          "identifier": identifier,
+          if (email != null && email.trim().isNotEmpty) "email": email.trim(),
+        }),
+      );
+
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final dynamic data = jsonDecode(decodedBody);
+
+      if (data is Map<String, dynamic>) {
+        if (response.statusCode == 200) {
+          return {
+            'success': true,
+            'status': data['status'],
+            'hasEmail': data['hasEmail'] ?? true,
+            'maskedEmail': data['maskedEmail'] ?? '',
+            'identifier': data['identifier'] ?? identifier,
+            'message': data['message'] ?? 'Thành công',
+          };
+        } else {
+          return {
+            'success': false,
+            'message': data['message'] ?? 'Không tìm thấy tài khoản',
+          };
+        }
+      }
+      return {
+        'success': false,
+        'message': 'Đã xảy ra lỗi máy chủ (${response.statusCode})',
+      };
+    } catch (e) {
+      debugPrint("Lỗi forgotPassword: $e");
+      return {
+        'success': false,
+        'message': 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng!',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyOtp(
+    String identifier,
+    String otp, {
+    String? email,
+  }) async {
+    final url = Uri.parse("$baseUrl/auth/verify-otp");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json; charset=UTF-8"},
+        body: jsonEncode({
+          "identifier": identifier,
+          "otp": otp,
+          if (email != null && email.trim().isNotEmpty) "email": email.trim(),
+        }),
+      );
+
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final dynamic data = jsonDecode(decodedBody);
+
+      if (data is Map<String, dynamic>) {
+        if (response.statusCode == 200 && data['status'] == 'SUCCESS') {
+          return {
+            'success': true,
+            'resetToken': data['resetToken'],
+            'message': data['message'] ?? 'Xác thực OTP thành công',
+          };
+        } else {
+          return {
+            'success': false,
+            'message':
+                data['message'] ?? 'Mã OTP không chính xác hoặc đã hết hạn',
+          };
+        }
+      }
+      return {
+        'success': false,
+        'message': 'Đã xảy ra lỗi (${response.statusCode})',
+      };
+    } catch (e) {
+      debugPrint("Lỗi verifyOtp: $e");
+      return {
+        'success': false,
+        'message': 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng!',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword(
+    String identifier,
+    String resetToken,
+    String newPassword, {
+    String? email,
+  }) async {
+    final url = Uri.parse("$baseUrl/auth/reset-password");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json; charset=UTF-8"},
+        body: jsonEncode({
+          "identifier": identifier,
+          "resetToken": resetToken,
+          "newPassword": newPassword,
+          if (email != null && email.trim().isNotEmpty) "email": email.trim(),
+        }),
+      );
+
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final dynamic data = jsonDecode(decodedBody);
+
+      if (data is Map<String, dynamic>) {
+        if (response.statusCode == 200 && data['status'] == 'SUCCESS') {
+          return {
+            'success': true,
+            'message': data['message'] ?? 'Đặt lại mật khẩu thành công!',
+          };
+        } else {
+          return {
+            'success': false,
+            'message': data['message'] ?? 'Đặt lại mật khẩu thất bại',
+          };
+        }
+      }
+      return {
+        'success': false,
+        'message': 'Đã xảy ra lỗi (${response.statusCode})',
+      };
+    } catch (e) {
+      debugPrint("Lỗi resetPassword: $e");
+      return {
+        'success': false,
+        'message': 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng!',
+      };
+    }
+  }
+
   Future<void> logout() async {
     try {
       await GoogleSignIn().signOut();
@@ -311,6 +462,3 @@ mixin ApiLoginMixin {
     };
   }
 }
-
-
-

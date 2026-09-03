@@ -55,7 +55,9 @@ mixin ApiInteractionMixin {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token');
       if (token == null || token.isEmpty) {
-        debugPrint('fetchUserInteractions thất bại: jwt_token null (chưa đăng nhập)');
+        debugPrint(
+          'fetchUserInteractions thất bại: jwt_token null (chưa đăng nhập)',
+        );
         return [];
       }
 
@@ -70,7 +72,9 @@ mixin ApiInteractionMixin {
         },
       );
 
-      debugPrint('Response fetchUserInteractions status: ${response.statusCode}');
+      debugPrint(
+        'Response fetchUserInteractions status: ${response.statusCode}',
+      );
 
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
@@ -84,7 +88,9 @@ mixin ApiInteractionMixin {
           return [data];
         }
       } else {
-        debugPrint('fetchUserInteractions thất bại: status ${response.statusCode}');
+        debugPrint(
+          'fetchUserInteractions thất bại: status ${response.statusCode}',
+        );
       }
     } catch (e) {
       debugPrint('Lỗi fetchUserInteractions: $e');
@@ -105,7 +111,9 @@ mixin ApiInteractionMixin {
       final token = prefs.getString('jwt_token');
 
       final uri = Uri.parse('$baseUrl/secure/interactions/completed');
-      debugPrint('Gửi API markInteractionCompleted: $uri (completeBoth=$completeBoth)');
+      debugPrint(
+        'Gửi API markInteractionCompleted: $uri (completeBoth=$completeBoth)',
+      );
 
       final List<Map<String, dynamic>> bodyList = [
         {
@@ -136,7 +144,9 @@ mixin ApiInteractionMixin {
         body: jsonEncode(bodyList),
       );
 
-      debugPrint('Response markInteractionCompleted status: ${response.statusCode}');
+      debugPrint(
+        'Response markInteractionCompleted status: ${response.statusCode}',
+      );
       if (response.statusCode == 200) {
         try {
           final chatService = ChatService();

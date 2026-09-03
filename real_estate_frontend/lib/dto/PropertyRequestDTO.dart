@@ -44,10 +44,14 @@ class PropertyRequestDTO {
     double? maxPrice,
     int? size,
   }) {
-    if (keyword != null && keyword.trim().isNotEmpty && (title == null || title!.isEmpty)) {
+    if (keyword != null &&
+        keyword.trim().isNotEmpty &&
+        (title == null || title!.isEmpty)) {
       title = keyword;
     }
-    if (city != null && city.trim().isNotEmpty && (address == null || address!.isEmpty)) {
+    if (city != null &&
+        city.trim().isNotEmpty &&
+        (address == null || address!.isEmpty)) {
       address = city;
     }
     if (minPrice != null && minPrice > 0 && fromPrice == null) {
@@ -62,18 +66,23 @@ class PropertyRequestDTO {
   }
 
   String? get keyword => title;
+
   set keyword(String? val) => title = val;
 
   String? get city => address;
+
   set city(String? val) => address = val;
 
   double? get minPrice => fromPrice;
+
   set minPrice(double? val) => fromPrice = val;
 
   double? get maxPrice => toPrice;
+
   set maxPrice(double? val) => toPrice = val;
 
   int get size => limit;
+
   set size(int val) => limit = val;
 
   Map<String, String> toQueryParams() {
