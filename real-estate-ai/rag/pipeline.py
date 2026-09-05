@@ -266,14 +266,9 @@ class RAGPipeline:
 
         print("[RAGPipeline] Đang khởi tạo Google Gemini (LLM: gemini-3.5-flash, Embedding: gemini-embedding-001)...",
               flush=True)
-        # Local
-        # embedding = GoogleGenerativeAIEmbeddings(
-        #     model="models/gemini-embedding-001",
-        #     google_api_key=GEMINI_API_KEY
-        # )
-        # Deploy
+
         embedding = GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-002",
+            model="models/gemini-embedding-001",
             google_api_key=GEMINI_API_KEY
         )
         llm = ChatGoogleGenerativeAI(
