@@ -1,0 +1,9 @@
+.git
+.idea
+.agents
+target
+out
+*.iml
+*.log
+.env
+application-secret.properties
