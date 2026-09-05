@@ -40,8 +40,7 @@ public class InteractionEntity extends BaseEntity {
     @JoinColumn(name = "type_id", nullable = false)
     private InteractionTypeEntity interactionType;
 
-    @Lob
-    @Column(name = "message")
+    @Column(name = "message", columnDefinition = "TEXT")
     private String message;
 
     @Column(name = "status")
