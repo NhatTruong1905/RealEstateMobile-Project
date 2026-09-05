@@ -3,9 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY requirements.txt .
-RUN grep -v '^en_core_web_sm==' requirements.txt > requirements-docker.txt \
-    && pip install --no-cache-dir -r requirements-docker.txt \
-    && python -m spacy download en_core_web_sm
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
