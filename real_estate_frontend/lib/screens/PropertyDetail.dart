@@ -13,7 +13,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 Future<void> openPropertyDetail(
-    BuildContext context, PropertyDTO property) async {
+  BuildContext context,
+  PropertyDTO property,
+) async {
   if (property.id == null) return;
 
   final prefs = await SharedPreferences.getInstance();
@@ -53,10 +55,7 @@ Future<void> openPropertyDetail(
 class PropertyDetailScreen extends StatefulWidget {
   final int propertyId;
 
-  const PropertyDetailScreen({
-    super.key,
-    required this.propertyId,
-  });
+  const PropertyDetailScreen({super.key, required this.propertyId});
 
   @override
   State<PropertyDetailScreen> createState() => _PropertyDetailScreenState();
@@ -70,13 +69,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
   final PageController _imagePageController = PageController();
   int _currentImageIndex = 0;
 
-  // Interaction & State
   bool _isCallLoading = false;
   bool _alreadyBookedViewing = false;
   bool _isViewingLoading = false;
   bool _hasUnreadFromSeller = false;
 
-  // Chat
   final List<Map<String, dynamic>> _chatMessages = [];
   final TextEditingController _chatInputController = TextEditingController();
 
@@ -84,13 +81,18 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     final phone = property.userPhone ?? '';
     final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
     if (cleanPhone.isEmpty) {
-      _showContactModal(context, property);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chủ bất động sản chưa cập nhật số điện thoại liên hệ.'),
+          backgroundColor: Color(0xFFE65100),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
     setState(() => _isCallLoading = true);
 
-    // 1. Gọi điện thoại
     final Uri launchUri = Uri.parse('tel:$cleanPhone');
     try {
       final launched = await launchUrl(
@@ -102,9 +104,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
       debugPrint('Lỗi thực hiện cuộc gọi: $e');
     }
 
-    // 2. Ghi interaction với CODE = 'CALL' vào backend
     if (property.id != null && property.userId != null) {
-      debugPrint('Tạo interaction CALL (propertyId=${property.id}, receiverId=${property.userId})');
+      debugPrint(
+        'Tạo interaction CALL (propertyId=${property.id}, receiverId=${property.userId})',
+      );
       await createInteraction(
         propertyId: property.id!,
         receiverId: property.userId!,
@@ -133,6 +136,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     TimeOfDay selectedTime = const TimeOfDay(hour: 9, minute: 0);
     final TextEditingController noteController = TextEditingController();
 
+    String formatDate(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    String formatTime(TimeOfDay t) =>
+        '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -143,12 +151,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final dayStr = selectedDate.day.toString().padLeft(2, '0');
-            final monthStr = selectedDate.month.toString().padLeft(2, '0');
-            final yearStr = selectedDate.year.toString();
-            final hourStr = selectedTime.hour.toString().padLeft(2, '0');
-            final minuteStr = selectedTime.minute.toString().padLeft(2, '0');
-
             return Padding(
               padding: EdgeInsets.only(
                 left: 20,
@@ -181,7 +183,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                   const Divider(color: Color(0xFFE8E3DC)),
                   const SizedBox(height: 12),
 
-                  // NÚT CHỌN NGÀY VÀ GIỜ
                   Row(
                     children: [
                       Expanded(
@@ -191,7 +192,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                               context: context,
                               initialDate: selectedDate,
                               firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 90)),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 90),
+                              ),
                             );
                             if (picked != null) {
                               setModalState(() => selectedDate = picked);
@@ -203,18 +206,36 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                             decoration: BoxDecoration(
                               color: const Color(0xFFF4EEE6),
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFE8E3DC)),
+                              border: Border.all(
+                                color: const Color(0xFFE8E3DC),
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Nguyện vọng ngày:', style: TextStyle(fontSize: 11, color: Color(0xFF78736D))),
+                                const Text(
+                                  'Nguyện vọng ngày:',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF78736D),
+                                  ),
+                                ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(Icons.calendar_today, size: 16, color: Color(0xFF945331)),
+                                    const Icon(
+                                      Icons.calendar_today,
+                                      size: 16,
+                                      color: Color(0xFF945331),
+                                    ),
                                     const SizedBox(width: 6),
-                                    Text('$dayStr/$monthStr/$yearStr', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    Text(
+                                      formatDate(selectedDate),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -240,18 +261,36 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                             decoration: BoxDecoration(
                               color: const Color(0xFFF4EEE6),
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFE8E3DC)),
+                              border: Border.all(
+                                color: const Color(0xFFE8E3DC),
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Nguyện vọng giờ:', style: TextStyle(fontSize: 11, color: Color(0xFF78736D))),
+                                const Text(
+                                  'Nguyện vọng giờ:',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF78736D),
+                                  ),
+                                ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(Icons.access_time, size: 16, color: Color(0xFF945331)),
+                                    const Icon(
+                                      Icons.access_time,
+                                      size: 16,
+                                      color: Color(0xFF945331),
+                                    ),
                                     const SizedBox(width: 6),
-                                    Text('$hourStr:$minuteStr', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    Text(
+                                      formatTime(selectedTime),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -263,7 +302,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                   ),
                   const SizedBox(height: 16),
 
-                  // Ô NHẬP MESSAGE LỜI NHẮN
                   const Text(
                     'Lời nhắn cho chủ nhà (không bắt buộc):',
                     style: TextStyle(
@@ -280,7 +318,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                       hintText: 'Nhập ghi chú yêu cầu thêm cho chủ nhà...',
                       filled: true,
                       fillColor: const Color(0xFFF4EEE6),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
@@ -289,7 +330,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                   ),
                   const SizedBox(height: 20),
 
-                  // NÚT ĐẶT LỊCH HẸN
                   SizedBox(
                     width: double.infinity,
                     height: 48,
@@ -321,12 +361,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
 
     if (result != true || !mounted) return;
 
-    final hourStr = selectedTime.hour.toString().padLeft(2, '0');
-    final minuteStr = selectedTime.minute.toString().padLeft(2, '0');
-    final dayStr = selectedDate.day.toString().padLeft(2, '0');
-    final monthStr = selectedDate.month.toString().padLeft(2, '0');
-    final yearStr = selectedDate.year.toString();
-    final dateTimeStr = '$hourStr:$minuteStr - Ngày $dayStr/$monthStr/$yearStr';
+    final dateTimeStr =
+        '${formatTime(selectedTime)} - Ngày ${formatDate(selectedDate)}';
 
     final userNote = noteController.text.trim();
     final String appointmentMessage;
@@ -348,7 +384,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
         message: appointmentMessage,
       );
 
-      // Gửi tín hiệu STOMP Realtime tới Seller ngay tức thì
       try {
         final chatService = ChatService();
         final prefs = await SharedPreferences.getInstance();
@@ -360,7 +395,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
           try {
             final userMap = jsonDecode(profileStr);
             senderId ??= (userMap['id'] as num?)?.toInt();
-            senderName = userMap['fullname'] ?? userMap['username'] ?? 'Khách hàng';
+            senderName =
+                userMap['fullname'] ?? userMap['username'] ?? 'Khách hàng';
           } catch (_) {}
         }
 
@@ -396,7 +432,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
           content: Text('Đã gửi đặt lịch xem nhà lúc $dateTimeStr!'),
           backgroundColor: const Color(0xFF2E7D32),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }
@@ -412,11 +450,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     _msgSub = ChatService().messageStream.listen((msg) {
       if (!mounted) return;
       if (msg.propertyId == widget.propertyId) {
-        if (msg.text == '__SYS_COMPLETE_VIEWING__' || msg.text == '__SYS_CANCEL_APPOINTMENT__') {
+        if (msg.text == '__SYS_COMPLETE_VIEWING__' ||
+            msg.text == '__SYS_CANCEL_APPOINTMENT__') {
           setState(() {
             _alreadyBookedViewing = false;
           });
-        } else if (msg.text == '__SYS_ACCEPT_APPOINTMENT__' || msg.text.contains('Lịch hẹn')) {
+        } else if (msg.text == '__SYS_ACCEPT_APPOINTMENT__' ||
+            msg.text.contains('Lịch hẹn')) {
           setState(() {
             _alreadyBookedViewing = true;
           });
@@ -442,8 +482,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
 
   Future<void> _loadDetail() async {
     setState(() => _isLoading = true);
-    
-    // Fetch property detail và các interaction của property này song song
+
     final results = await Future.wait([
       fetchPropertyById(widget.propertyId),
       fetchPropertyInteractions(widget.propertyId),
@@ -452,22 +491,16 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     final detail = results[0] as PropertyDTO?;
     final interactions = results[1] as List<Map<String, dynamic>>;
 
-    // Chỉ tính đã đặt lịch nếu tương tác còn Active (status == 1)
     bool hasViewing = false;
     for (final item in interactions) {
       final status = (item['status'] as num?)?.toInt() ?? 1;
       if (status != 1) continue;
 
-      final codeStr = (
-        item['code'] ??
-        item['interactionTypeCode'] ??
-        item['typeCode'] ??
-        item['type'] ??
-        (item['interactionType'] is Map ? (item['interactionType']['code'] ?? item['interactionType']['name']) : '') ??
-        ''
-      ).toString().toUpperCase();
+      final codeStr = (item['interactionTypeCode'] ?? '')
+          .toString()
+          .toUpperCase();
 
-      if (codeStr == 'VIEWING' || codeStr == 'MESSAGE' || codeStr == 'CHAT') {
+      if (codeStr == 'VIEWING' || codeStr == 'MESSAGE') {
         hasViewing = true;
         break;
       }
@@ -506,152 +539,22 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     await syncFavoriteProperties(userFavoriteIds.toList());
   }
 
-  void _showContactModal(BuildContext context, PropertyDTO property) {
-    final sellerName = property.userFullname ?? 'Chủ bất động sản';
-    final sellerPhone = property.userPhone ?? '0912 345 678';
-    final sellerEmail = property.userEmail ?? 'chubds@gmail.com';
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: const Color(0xFFF4EEE6),
-                child: Text(
-                  sellerName.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(
-                    color: Color(0xFF945331),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                sellerName,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1918),
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Chủ sở hữu bất động sản',
-                style: TextStyle(color: Color(0xFF78736D), fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4EEE6),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.phone_outlined,
-                            color: Color(0xFF2E7D32), size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            sellerPhone,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A1918),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(Icons.email_outlined,
-                            color: Color(0xFF1565C0), size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            sellerEmail,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF1A1918),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _makePhoneCall(property);
-                  },
-                  icon: const Icon(Icons.phone, color: Colors.white),
-                  label: Text(
-                    'Gọi ngay $sellerPhone',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showChatBottomSheet(BuildContext context, PropertyDTO property) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(property: property),
-      ),
+      MaterialPageRoute(builder: (context) => ChatScreen(property: property)),
     );
   }
 
   Widget _buildPropertyImageHeader(PropertyDTO property) {
-    final List<String> allImages = (property.images != null && property.images!.isNotEmpty)
+    final List<String> allImages =
+        (property.images != null && property.images!.isNotEmpty)
         ? property.images!
-        : (property.image != null && property.image!.isNotEmpty ? [property.image!] : []);
+        : (property.image != null && property.image!.isNotEmpty
+              ? [property.image!]
+              : []);
 
     if (allImages.isEmpty) {
       return Container(
@@ -663,7 +566,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. SLIDER HÌNH ẢNH (PAGEVIEW)
         PageView.builder(
           controller: _imagePageController,
           itemCount: allImages.length,
@@ -685,7 +587,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
           },
         ),
 
-        // 2. GRADIENT OVERLAY
         IgnorePointer(
           child: Container(
             decoration: BoxDecoration(
@@ -702,7 +603,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
           ),
         ),
 
-        // 3. MŨI TÊN BÊN TRÁI (<)
         Positioned(
           left: 12,
           top: 0,
@@ -755,7 +655,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
           ),
         ),
 
-        // 4. MŨI TÊN BÊN PHẢI (>)
         Positioned(
           right: 12,
           top: 0,
@@ -776,7 +675,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                     );
                     return;
                   }
-                  final targetIndex = (_currentImageIndex < allImages.length - 1)
+                  final targetIndex =
+                      (_currentImageIndex < allImages.length - 1)
                       ? _currentImageIndex + 1
                       : 0;
                   _imagePageController.animateToPage(
@@ -808,7 +708,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
           ),
         ),
 
-        // 5. BADGE LOẠI GIAO DỊCH (GÓC TRÁI DƯỚI)
         Positioned(
           bottom: 20,
           left: 20,
@@ -832,7 +731,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
           ),
         ),
 
-        // 6. THẺ ĐẾM SỐ ẢNH (GÓC PHẢI DƯỚI, VD: 1/5)
         Positioned(
           bottom: 20,
           right: 20,
@@ -867,430 +765,460 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
               child: CircularProgressIndicator(color: Color(0xFF945331)),
             )
           : property == null
-              ? Scaffold(
-                  appBar: AppBar(
-                    backgroundColor: const Color(0xFFFCFBFA),
-                    elevation: 0,
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new,
-                          color: Color(0xFF1A1918)),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+          ? Scaffold(
+              appBar: AppBar(
+                backgroundColor: const Color(0xFFFCFBFA),
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Color(0xFF1A1918),
                   ),
-                  body: const Center(
-                    child: Text(
-                      'Không tìm thấy thông tin bất động sản',
-                      style: TextStyle(color: Color(0xFF78736D), fontSize: 16),
-                    ),
-                  ),
-                )
-              : Stack(
-                  children: [
-                    CustomScrollView(
-                      slivers: [
-                        // 1. BANNER HÌNH ẢNH & NÚT QUAY LẠI
-                        SliverAppBar(
-                          expandedHeight: 320,
-                          pinned: true,
-                          backgroundColor: const Color(0xFF945331),
-                          leading: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: CircleAvatar(
-                              backgroundColor:
-                                  Colors.black.withValues(alpha: 0.4),
-                              child: IconButton(
-                                icon: const Icon(Icons.arrow_back_ios_new,
-                                    color: Colors.white, size: 18),
-                                onPressed: () => Navigator.pop(context),
-                              ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              body: const Center(
+                child: Text(
+                  'Không tìm thấy thông tin bất động sản',
+                  style: TextStyle(color: Color(0xFF78736D), fontSize: 16),
+                ),
+              ),
+            )
+          : Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      expandedHeight: 320,
+                      pinned: true,
+                      backgroundColor: const Color(0xFF945331),
+                      leading: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black.withValues(alpha: 0.4),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.white,
+                              size: 18,
                             ),
-                          ),
-                          actions: [
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: CircleAvatar(
-                                backgroundColor:
-                                    Colors.black.withValues(alpha: 0.4),
-                                child: IconButton(
-                                  icon: Icon(
-                                    property.isSaved
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: property.isSaved
-                                        ? const Color(0xFF945331)
-                                        : Colors.white,
-                                    size: 20,
-                                  ),
-                                  onPressed: _toggleSave,
-                                ),
-                              ),
-                            ),
-                          ],
-                          flexibleSpace: FlexibleSpaceBar(
-                            background: _buildPropertyImageHeader(property),
+                            onPressed: () => Navigator.pop(context),
                           ),
                         ),
-
-                        // 2. NỘI DUNG CHI TIẾT
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // GIÁ TIỀN & DIỆN TÍCH
-                                Text(
-                                  formatPropertyPrice(property.price),
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF945331),
-                                    fontFamily: 'Georgia',
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-
-                                // TIÊU ĐỀ
-                                Text(
-                                  property.title ?? 'Chưa có tiêu đề',
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918),
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    height: 1.3,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // ĐỊA CHỈ
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.location_on_outlined,
-                                      color: Color(0xFF945331),
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        property.addressDetail ??
-                                            property.address ??
-                                            property.city ??
-                                            'Đang cập nhật địa chỉ',
-                                        style: const TextStyle(
-                                          color: Color(0xFF78736D),
-                                          fontSize: 15,
-                                          fontFamily: 'Plus Jakarta Sans',
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 24),
-
-                                // THÔNG TIN CHỦ TÀI KHOẢN ĐĂNG TIN
-                                _buildSellerCard(property),
-                                const SizedBox(height: 24),
-                                const Divider(color: Color(0xFFE8E3DC)),
-                                const SizedBox(height: 16),
-
-                                // LƯỚI THÔNG SỐ ĐẶC TRƯNG
-                                const Text(
-                                  'Đặc điểm bất động sản',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918),
-                                    fontFamily: 'Georgia',
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-
-                                Row(
-                                  children: [
-                                    _buildFeatureCard(
-                                      icon: Icons.bed_outlined,
-                                      title: 'Phòng ngủ',
-                                      value: '${property.bedroomCount ?? 0} phòng',
-                                    ),
-                                    const SizedBox(width: 12),
-                                    _buildFeatureCard(
-                                      icon: Icons.bathtub_outlined,
-                                      title: 'Phòng tắm',
-                                      value: '${property.bathroomCount ?? 0} phòng',
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    _buildFeatureCard(
-                                      icon: Icons.crop_free,
-                                      title: 'Diện tích',
-                                      value: property.area != null
-                                          ? '${property.area!.toStringAsFixed(0)} m²'
-                                          : 'N/A',
-                                    ),
-                                    const SizedBox(width: 12),
-                                    _buildFeatureCard(
-                                      icon: Icons.layers_outlined,
-                                      title: 'Số tầng',
-                                      value: property.floorCount != null
-                                          ? '${property.floorCount} tầng'
-                                          : 'N/A',
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 24),
-                                const Divider(color: Color(0xFFE8E3DC)),
-                                const SizedBox(height: 16),
-
-                                // BẢNG THÔNG TIN CHI TIẾT
-                                const Text(
-                                  'Thông tin chi tiết',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918),
-                                    fontFamily: 'Georgia',
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF4EEE6),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      _buildInfoRow('Mã tin đăng', '#${property.id ?? '---'}'),
-                                      _buildInfoRow('Loại giao dịch', property.typeId == 2 ? 'Cho thuê' : 'Cho bán'),
-                                      _buildInfoRow('Hướng nhà', property.direction ?? 'Chưa cập nhật'),
-                                      _buildInfoRow('Giấy tờ pháp lý', property.legal ?? 'Chưa cập nhật'),
-                                      _buildInfoRow('Trạng thái', property.status ?? 'Đã đăng tin', isLast: true),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(height: 24),
-                                const Divider(color: Color(0xFFE8E3DC)),
-                                const SizedBox(height: 16),
-
-                                // MÔ TẢ CHI TIẾT
-                                const Text(
-                                  'Mô tả chi tiết',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918),
-                                    fontFamily: 'Georgia',
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  property.description ??
-                                      'Chưa có thông tin mô tả chi tiết cho bất động sản này.',
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    color: Color(0xFF78736D),
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    height: 1.6,
-                                  ),
-                                ),
-                                const SizedBox(height: 100),
-                              ],
+                      ),
+                      actions: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: CircleAvatar(
+                            backgroundColor: Colors.black.withValues(
+                              alpha: 0.4,
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                property.isSaved
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: property.isSaved
+                                    ? const Color(0xFF945331)
+                                    : Colors.white,
+                                size: 20,
+                              ),
+                              onPressed: _toggleSave,
                             ),
                           ),
                         ),
                       ],
-                    ),
-
-                    // 3. THANH HÀNH ĐỘNG 2 NÚT (LIÊN HỆ | VIEWING)
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFCFBFA),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 16,
-                              offset: const Offset(0, -4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            // NÚT 1: GỌI ĐIỆN (có loading)
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: _isCallLoading
-                                    ? null
-                                    : () => _makePhoneCall(property),
-                                icon: _isCallLoading
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Color(0xFF2E7D32),
-                                        ),
-                                      )
-                                    : const Icon(Icons.phone,
-                                        color: Color(0xFF2E7D32), size: 18),
-                                label: Text(
-                                  property.userPhone != null &&
-                                          property.userPhone!.isNotEmpty
-                                      ? property.userPhone!
-                                      : 'Gọi điện',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFF2E7D32),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 16, horizontal: 8),
-                                  side: const BorderSide(
-                                      color: Color(0xFF2E7D32), width: 1.5),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-
-                            // NÚT 2: VIEWING (HẸN XEM NHÀ) - KHÓA TUYỆT ĐỐI NẾU ĐÃ ĐẶT
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _isViewingLoading
-                                    ? null
-                                    : () {
-                                        if (_alreadyBookedViewing) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                  'Bạn đã đặt lịch xem bất động sản này rồi! Đang chờ chủ nhà xác nhận.'),
-                                              backgroundColor: Color(0xFFE65100),
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                        } else {
-                                          _handleViewing(property);
-                                        }
-                                      },
-                                icon: _isViewingLoading
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : Icon(
-                                        _alreadyBookedViewing
-                                            ? Icons.check_circle
-                                            : Icons.calendar_month_outlined,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                label: Text(
-                                  _alreadyBookedViewing ? 'Đã đặt lịch xem' : 'Hẹn xem nhà',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 16, horizontal: 8),
-                                  backgroundColor: _alreadyBookedViewing
-                                      ? const Color(0xFF2E7D32)
-                                      : const Color(0xFF945331),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: _buildPropertyImageHeader(property),
                       ),
                     ),
 
-                    // 4. NÚT TRÒN MESSAGE (FAB góc dưới phải) - Hiển thị chấm đỏ & sáng lên khi Seller nhắn tin
-                    Positioned(
-                      bottom: 90,
-                      right: 16,
-                      child: GestureDetector(
-                        onTap: () {
-                          if (mounted) {
-                            setState(() => _hasUnreadFromSeller = false);
-                          }
-                          _showChatBottomSheet(context, property);
-                        },
-                        child: Stack(
-                          clipBehavior: Clip.none,
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: 56,
-                              height: 56,
+                            Text(
+                              formatPropertyPrice(property.price),
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF945331),
+                                fontFamily: 'Georgia',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            Text(
+                              property.title ?? 'Chưa có tiêu đề',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1918),
+                                fontFamily: 'Plus Jakarta Sans',
+                                height: 1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  color: Color(0xFF945331),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    property.addressDetail ??
+                                        property.address ??
+                                        property.city ??
+                                        'Đang cập nhật địa chỉ',
+                                    style: const TextStyle(
+                                      color: Color(0xFF78736D),
+                                      fontSize: 15,
+                                      fontFamily: 'Plus Jakarta Sans',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+
+                            _buildSellerCard(property),
+                            const SizedBox(height: 24),
+                            const Divider(color: Color(0xFFE8E3DC)),
+                            const SizedBox(height: 16),
+
+                            const Text(
+                              'Đặc điểm bất động sản',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1918),
+                                fontFamily: 'Georgia',
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            Row(
+                              children: [
+                                _buildFeatureCard(
+                                  icon: Icons.bed_outlined,
+                                  title: 'Phòng ngủ',
+                                  value: '${property.bedroomCount ?? 0} phòng',
+                                ),
+                                const SizedBox(width: 12),
+                                _buildFeatureCard(
+                                  icon: Icons.bathtub_outlined,
+                                  title: 'Phòng tắm',
+                                  value: '${property.bathroomCount ?? 0} phòng',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                _buildFeatureCard(
+                                  icon: Icons.crop_free,
+                                  title: 'Diện tích',
+                                  value: property.area != null
+                                      ? '${property.area!.toStringAsFixed(0)} m²'
+                                      : 'N/A',
+                                ),
+                                const SizedBox(width: 12),
+                                _buildFeatureCard(
+                                  icon: Icons.layers_outlined,
+                                  title: 'Số tầng',
+                                  value: property.floorCount != null
+                                      ? '${property.floorCount} tầng'
+                                      : 'N/A',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            const Divider(color: Color(0xFFE8E3DC)),
+                            const SizedBox(height: 16),
+
+                            const Text(
+                              'Thông tin chi tiết',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1918),
+                                fontFamily: 'Georgia',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: _hasUnreadFromSeller
-                                    ? const Color(0xFFDC2626)
-                                    : const Color(0xFF945331),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (_hasUnreadFromSeller
-                                            ? const Color(0xFFDC2626)
-                                            : const Color(0xFF945331))
-                                        .withValues(alpha: 0.5),
-                                    blurRadius: _hasUnreadFromSeller ? 16 : 12,
-                                    spreadRadius: _hasUnreadFromSeller ? 3 : 0,
-                                    offset: const Offset(0, 4),
+                                color: const Color(0xFFF4EEE6),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Column(
+                                children: [
+                                  _buildInfoRow(
+                                    'Mã tin đăng',
+                                    '#${property.id ?? '---'}',
+                                  ),
+                                  _buildInfoRow(
+                                    'Loại giao dịch',
+                                    property.typeId == 2
+                                        ? 'Cho thuê'
+                                        : 'Cho bán',
+                                  ),
+                                  _buildInfoRow(
+                                    'Hướng nhà',
+                                    property.direction ?? 'Chưa cập nhật',
+                                  ),
+                                  _buildInfoRow(
+                                    'Giấy tờ pháp lý',
+                                    property.legal ?? 'Chưa cập nhật',
+                                  ),
+                                  _buildInfoRow(
+                                    'Trạng thái',
+                                    property.status ?? 'Đã đăng tin',
+                                    isLast: true,
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.chat_bubble_outline,
-                                color: Colors.white,
-                                size: 24,
+                            ),
+
+                            const SizedBox(height: 24),
+                            const Divider(color: Color(0xFFE8E3DC)),
+                            const SizedBox(height: 16),
+
+                            const Text(
+                              'Mô tả chi tiết',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1918),
+                                fontFamily: 'Georgia',
                               ),
                             ),
-                            if (_hasUnreadFromSeller)
-                              Positioned(
-                                top: -2,
-                                right: -2,
-                                child: Container(
-                                  width: 14,
-                                  height: 14,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
-                                  ),
-                                ),
+                            const SizedBox(height: 12),
+                            Text(
+                              property.description ??
+                                  'Chưa có thông tin mô tả chi tiết cho bất động sản này.',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF78736D),
+                                fontFamily: 'Plus Jakarta Sans',
+                                height: 1.6,
                               ),
+                            ),
+                            const SizedBox(height: 100),
                           ],
                         ),
                       ),
                     ),
                   ],
                 ),
+
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFCFBFA),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, -4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _isCallLoading
+                                ? null
+                                : () => _makePhoneCall(property),
+                            icon: _isCallLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFF2E7D32),
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.phone,
+                                    color: Color(0xFF2E7D32),
+                                    size: 18,
+                                  ),
+                            label: Text(
+                              property.userPhone != null &&
+                                      property.userPhone!.isNotEmpty
+                                  ? property.userPhone!
+                                  : 'Gọi điện',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF2E7D32),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 8,
+                              ),
+                              side: const BorderSide(
+                                color: Color(0xFF2E7D32),
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isViewingLoading
+                                ? null
+                                : () {
+                                    if (_alreadyBookedViewing) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Bạn đã đặt lịch xem bất động sản này rồi! Đang chờ chủ nhà xác nhận.',
+                                          ),
+                                          backgroundColor: Color(0xFFE65100),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    } else {
+                                      _handleViewing(property);
+                                    }
+                                  },
+                            icon: _isViewingLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Icon(
+                                    _alreadyBookedViewing
+                                        ? Icons.check_circle
+                                        : Icons.calendar_month_outlined,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                            label: Text(
+                              _alreadyBookedViewing
+                                  ? 'Đã đặt lịch xem'
+                                  : 'Hẹn xem nhà',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 8,
+                              ),
+                              backgroundColor: _alreadyBookedViewing
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFF945331),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                Positioned(
+                  bottom: 90,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (mounted) {
+                        setState(() => _hasUnreadFromSeller = false);
+                      }
+                      _showChatBottomSheet(context, property);
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: _hasUnreadFromSeller
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFF945331),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    (_hasUnreadFromSeller
+                                            ? const Color(0xFFDC2626)
+                                            : const Color(0xFF945331))
+                                        .withValues(alpha: 0.5),
+                                blurRadius: _hasUnreadFromSeller ? 16 : 12,
+                                spreadRadius: _hasUnreadFromSeller ? 3 : 0,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.chat_bubble_outline,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        if (_hasUnreadFromSeller)
+                          Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 

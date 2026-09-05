@@ -54,15 +54,12 @@ class _MainScreenState extends State<MainScreen> {
 
       final myId = _currentUserId ?? _chatService.currentUserId;
 
-      // Không tự bắn thông báo nếu chính mình gửi tin nhắn
       if (myId != null && msg.getSenderId == myId) return;
 
-      // KHÔNG hiển thị thông báo nếu người dùng ĐANG MỞ màn hình Chat với đối phương & BĐS này
       if (ChatService.isChatActive(msg.propertyId, msg.getSenderId)) {
         return;
       }
 
-      // Bật chấm đỏ thông báo trên biểu tượng Chuông khi có tin nhắn mới mà người dùng ở ngoài khung chat
       ChatService.hasUnreadNotification.value = true;
     });
   }
@@ -76,9 +73,7 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _openPostModal() async {
     final res = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const PostPropertyScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const PostPropertyScreen()),
     );
     if (res == true && mounted) {
       setState(() {});
@@ -93,10 +88,14 @@ class _MainScreenState extends State<MainScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Vui lòng đăng nhập để sử dụng giao diện Người bán!'),
+            content: const Text(
+              'Vui lòng đăng nhập để sử dụng giao diện Người bán!',
+            ),
             backgroundColor: const Color(0xFFDC2626),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
         return;
@@ -118,7 +117,6 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isSellerMode) {
-      // GIAO DIỆN NGƯỜI TÌM NHÀ (BUYER MODE)
       return Scaffold(
         body: IndexedStack(
           index: _buyerIndex,
@@ -144,7 +142,6 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    // GIAO DIỆN CHỦ ĐĂNG TIN / BÁN NHÀ (SELLER MODE)
     return Scaffold(
       body: IndexedStack(
         index: _sellerIndex,
@@ -159,7 +156,6 @@ class _MainScreenState extends State<MainScreen> {
             key: ValueKey('seller_properties_$_sellerIndex'),
             onPostNewProperty: _openPostModal,
           ),
-          // Placeholder index 2 cho nút (+) Đăng tin
           SellerOverviewScreen(
             key: ValueKey('seller_dummy_$_sellerIndex'),
             onPostNewProperty: _openPostModal,

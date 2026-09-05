@@ -11,7 +11,6 @@ import 'package:real_estate_frontend/widgets/RagChatModal.dart';
 import '../../dto/PropertyDTO.dart';
 import '../../dto/PropertyRequestDTO.dart';
 
-// Biến toàn cục chứa danh sách BĐS từ API
 List<PropertyDTO> globalProperties = [];
 
 class HomeScreen extends StatefulWidget {
@@ -31,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
     "Đất nền",
   ];
 
-  // CÁC BIẾN LOGIC API, PHÂN TRANG & BỘ LỌC
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasMore = true;
@@ -61,9 +59,9 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
     super.dispose();
   }
 
-  // TỰ ĐỘNG BẮT SỰ KIỆN CUỘN TỚI CUỐI ĐỂ TẢI TIẾP (LAZY LOADING) VÀ HIỂN THỊ NÚT SCROLL TO TOP
   void _onScroll() {
-    final showTop = _scrollController.hasClients && _scrollController.offset > 300;
+    final showTop =
+        _scrollController.hasClients && _scrollController.offset > 300;
     if (showTop != _showScrollToTop) {
       setState(() => _showScrollToTop = showTop);
     }
@@ -86,7 +84,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
     }
   }
 
-  // HÀM TẢI DỮ LIỆU BAN ĐẦU / KHI LỌC LẠI
   Future<void> _loadData({bool isReset = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
@@ -119,8 +116,9 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
       setState(() => _isLoading = true);
     }
 
-    PropertyPageResponseDTO? pageResponse =
-        await fetchPropertiesPage(request: _filterRequest);
+    PropertyPageResponseDTO? pageResponse = await fetchPropertiesPage(
+      request: _filterRequest,
+    );
 
     List<PropertyDTO> fetched = pageResponse?.content ?? [];
     _currentPage = pageResponse?.currentPage ?? 1;
@@ -144,7 +142,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
     }
   }
 
-  // HÀM TẢI THÊM TRANG TIẾP THEO
   Future<void> _loadMoreData() async {
     if (_isLoadingMore || !_hasMore || _currentPage >= _totalPages) return;
 
@@ -155,8 +152,9 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
     int nextPage = _currentPage + 1;
     _filterRequest.page = nextPage;
 
-    PropertyPageResponseDTO? pageResponse =
-        await fetchPropertiesPage(request: _filterRequest);
+    PropertyPageResponseDTO? pageResponse = await fetchPropertiesPage(
+      request: _filterRequest,
+    );
 
     List<PropertyDTO> fetched = pageResponse?.content ?? [];
     if (pageResponse != null) {
@@ -184,12 +182,10 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
     }
   }
 
-  // HÀM LÀM MỚI DỮ LIỆU KHI VUỐT XUỐNG (PULL TO REFRESH)
   Future<void> _refreshData() async {
     await _loadData(isReset: true);
   }
 
-  // HÀM XỬ LÝ THẢ TIM
   Future<void> _toggleSave(PropertyDTO property) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
@@ -222,26 +218,33 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
     await syncFavoriteProperties(userFavoriteIds.toList());
   }
 
-  // HIỂN THỊ BẢNG BỘ LỌC TÌM KIẾM ĐA ĐIỀU KIỆN (BOTTOM SHEET)
   void _showFilterBottomSheet() {
-    final titleController = TextEditingController(text: _filterRequest.title ?? '');
-    final addressController = TextEditingController(text: _filterRequest.address ?? '');
+    final titleController = TextEditingController(
+      text: _filterRequest.title ?? '',
+    );
+    final addressController = TextEditingController(
+      text: _filterRequest.address ?? '',
+    );
     final fromPriceController = TextEditingController(
-        text: _filterRequest.fromPrice != null
-            ? _filterRequest.fromPrice!.toStringAsFixed(0)
-            : '');
+      text: _filterRequest.fromPrice != null
+          ? _filterRequest.fromPrice!.toStringAsFixed(0)
+          : '',
+    );
     final toPriceController = TextEditingController(
-        text: _filterRequest.toPrice != null
-            ? _filterRequest.toPrice!.toStringAsFixed(0)
-            : '');
+      text: _filterRequest.toPrice != null
+          ? _filterRequest.toPrice!.toStringAsFixed(0)
+          : '',
+    );
     final areaController = TextEditingController(
-        text: _filterRequest.area != null
-            ? _filterRequest.area!.toStringAsFixed(0)
-            : '');
+      text: _filterRequest.area != null
+          ? _filterRequest.area!.toStringAsFixed(0)
+          : '',
+    );
     final floorController = TextEditingController(
-        text: _filterRequest.floorCount != null
-            ? _filterRequest.floorCount!.toString()
-            : '');
+      text: _filterRequest.floorCount != null
+          ? _filterRequest.floorCount!.toString()
+          : '',
+    );
 
     int? tempBedroom = _filterRequest.bedroomCount;
     int? tempBathroom = _filterRequest.bathroomCount;
@@ -274,6 +277,9 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.88,
+              ),
               padding: EdgeInsets.only(
                 top: 24,
                 left: 24,
@@ -309,13 +315,13 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const Divider(height: 24),
 
-                    // Tiêu đề
                     const Text(
                       'Tên / Tiêu đề bất động sản',
                       style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1918)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1918),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -332,19 +338,20 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(height: 16),
 
-                    // Địa chỉ
                     const Text(
                       'Địa chỉ / Khu vực',
                       style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1918)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1918),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: addressController,
                       decoration: InputDecoration(
-                        hintText: 'Ví dụ: Quận 1, Nguyễn Trãi, TP. Hồ Chí Minh...',
+                        hintText:
+                            'Ví dụ: Quận 1, Nguyễn Trãi, TP. Hồ Chí Minh...',
                         filled: true,
                         fillColor: const Color(0xFFF4EEE6),
                         border: OutlineInputBorder(
@@ -355,13 +362,13 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(height: 16),
 
-                    // Khoảng giá
                     const Text(
                       'Khoảng giá (VNĐ)',
                       style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1918)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1918),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -401,7 +408,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(height: 16),
 
-                    // Diện tích & Số tầng
                     Row(
                       children: [
                         Expanded(
@@ -411,9 +417,10 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               const Text(
                                 'Diện tích (m²)',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               TextField(
@@ -440,9 +447,10 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               const Text(
                                 'Số tầng',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               TextField(
@@ -465,7 +473,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(height: 16),
 
-                    // Số phòng ngủ & Số phòng tắm
                     Row(
                       children: [
                         Expanded(
@@ -475,27 +482,41 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               const Text(
                                 'Số phòng ngủ',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<int>(
+                                isExpanded: true,
                                 initialValue: tempBedroom,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: const Color(0xFFF4EEE6),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                hint: const Text('Bất kỳ'),
+                                hint: const Text(
+                                  'Bất kỳ',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: [1, 2, 3, 4, 5]
-                                    .map((n) => DropdownMenuItem(
-                                          value: n,
-                                          child: Text('$n phòng'),
-                                        ))
+                                    .map(
+                                      (n) => DropdownMenuItem(
+                                        value: n,
+                                        child: Text(
+                                          '$n phòng',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (val) =>
                                     setModalState(() => tempBedroom = val),
@@ -511,27 +532,41 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               const Text(
                                 'Số phòng tắm',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<int>(
+                                isExpanded: true,
                                 initialValue: tempBathroom,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: const Color(0xFFF4EEE6),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                hint: const Text('Bất kỳ'),
+                                hint: const Text(
+                                  'Bất kỳ',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: [1, 2, 3, 4, 5]
-                                    .map((n) => DropdownMenuItem(
-                                          value: n,
-                                          child: Text('$n phòng'),
-                                        ))
+                                    .map(
+                                      (n) => DropdownMenuItem(
+                                        value: n,
+                                        child: Text(
+                                          '$n phòng',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (val) =>
                                     setModalState(() => tempBathroom = val),
@@ -543,7 +578,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(height: 16),
 
-                    // Hướng & Pháp lý
                     Row(
                       children: [
                         Expanded(
@@ -553,27 +587,41 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               const Text(
                                 'Hướng nhà',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
+                                isExpanded: true,
                                 initialValue: tempDirection,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: const Color(0xFFF4EEE6),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                hint: const Text('Tất cả'),
+                                hint: const Text(
+                                  'Tất cả',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: directions
-                                    .map((d) => DropdownMenuItem(
-                                          value: d,
-                                          child: Text(d),
-                                        ))
+                                    .map(
+                                      (d) => DropdownMenuItem(
+                                        value: d,
+                                        child: Text(
+                                          d,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (val) =>
                                     setModalState(() => tempDirection = val),
@@ -589,27 +637,42 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               const Text(
                                 'Pháp lý',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
+                                isExpanded: true,
                                 initialValue: tempLegal,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: const Color(0xFFF4EEE6),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                hint: const Text('Tất cả'),
+                                hint: const Text(
+                                  'Tất cả',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: legals
-                                    .map((l) => DropdownMenuItem(
-                                          value: l,
-                                          child: Text(l),
-                                        ))
+                                    .map(
+                                      (l) => DropdownMenuItem(
+                                        value: l,
+                                        child: Text(
+                                          l,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (val) =>
                                     setModalState(() => tempLegal = val),
@@ -621,10 +684,8 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                     ),
                     const SizedBox(height: 24),
 
-                    // NÚT ĐẶT LẠI & ÁP DỤNG
                     Row(
                       children: [
-                        // NÚT ĐẶT LẠI (RESET CÁC FIELD VÀ BỘ LỌC)
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
@@ -640,8 +701,10 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                 tempDirection = null;
                                 tempLegal = null;
                               });
-                              _filterRequest =
-                                  PropertyRequestDTO(page: 1, limit: 6);
+                              _filterRequest = PropertyRequestDTO(
+                                page: 1,
+                                limit: 6,
+                              );
                               setState(() {
                                 activeCategory = "Tất cả";
                                 _searchController.clear();
@@ -652,34 +715,42 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               side: const BorderSide(color: Color(0xFF78736D)),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
-                            child: const Text('Đặt lại',
-                                style: TextStyle(
-                                    color: Color(0xFF1A1918),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14)),
+                            child: const Text(
+                              'Đặt lại',
+                              style: TextStyle(
+                                color: Color(0xFF1A1918),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // NÚT ÁP DỤNG
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
                               final fromP = double.tryParse(
-                                  fromPriceController.text.trim());
+                                fromPriceController.text.trim(),
+                              );
                               final toP = double.tryParse(
-                                  toPriceController.text.trim());
+                                toPriceController.text.trim(),
+                              );
                               final ar = double.tryParse(
-                                  areaController.text.trim());
+                                areaController.text.trim(),
+                              );
                               final fl = int.tryParse(
-                                  floorController.text.trim());
+                                floorController.text.trim(),
+                              );
 
                               _filterRequest = PropertyRequestDTO(
                                 title: titleController.text.trim().isNotEmpty
                                     ? titleController.text.trim()
                                     : null,
-                                address: addressController.text.trim().isNotEmpty
+                                address:
+                                    addressController.text.trim().isNotEmpty
                                     ? addressController.text.trim()
                                     : null,
                                 fromPrice: fromP,
@@ -695,8 +766,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               );
 
                               if (titleController.text.isNotEmpty) {
-                                _searchController.text =
-                                    titleController.text;
+                                _searchController.text = titleController.text;
                               }
 
                               Navigator.pop(context);
@@ -706,13 +776,17 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               backgroundColor: const Color(0xFF945331),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
-                            child: const Text('Áp dụng',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14)),
+                            child: const Text(
+                              'Áp dụng',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -827,7 +901,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. HEADER
                       Padding(
                         padding: const EdgeInsets.only(
                           left: 24,
@@ -880,11 +953,13 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                             ),
                             const SizedBox(width: 8),
                             ValueListenableBuilder<bool>(
-                              valueListenable: ChatService.hasUnreadNotification,
+                              valueListenable:
+                                  ChatService.hasUnreadNotification,
                               builder: (context, hasUnread, child) {
                                 return InkWell(
                                   onTap: () {
-                                    ChatService.hasUnreadNotification.value = false;
+                                    ChatService.hasUnreadNotification.value =
+                                        false;
                                   },
                                   borderRadius: BorderRadius.circular(24),
                                   child: Row(
@@ -892,10 +967,15 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                     children: [
                                       if (hasUnread) ...[
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFDC2626),
-                                            borderRadius: BorderRadius.circular(14),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
                                             boxShadow: const [
                                               BoxShadow(
                                                 color: Color(0x29DC2626),
@@ -907,7 +987,12 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                           child: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 11),
+                                              Icon(
+                                                Icons
+                                                    .chat_bubble_outline_rounded,
+                                                color: Colors.white,
+                                                size: 11,
+                                              ),
                                               SizedBox(width: 3),
                                               Text(
                                                 'Tin nhắn mới',
@@ -961,7 +1046,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                         ),
                       ),
 
-                      // 2. SEARCH BOX & FILTER BUTTON
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -988,8 +1072,8 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                         onSubmitted: (value) {
                                           _filterRequest.title =
                                               value.trim().isNotEmpty
-                                                  ? value.trim()
-                                                  : null;
+                                              ? value.trim()
+                                              : null;
                                           _loadData(isReset: true);
                                         },
                                         textInputAction: TextInputAction.search,
@@ -998,8 +1082,7 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                           fontSize: 15,
                                         ),
                                         decoration: const InputDecoration(
-                                          hintText:
-                                              'Tìm kiếm bất động sản...',
+                                          hintText: 'Tìm kiếm bất động sản...',
                                           border: InputBorder.none,
                                           hintStyle: TextStyle(
                                             color: Color(0xFF78736D),
@@ -1010,9 +1093,11 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                     ),
                                     if (_searchController.text.isNotEmpty)
                                       IconButton(
-                                        icon: const Icon(Icons.cancel,
-                                            size: 18,
-                                            color: Color(0xFF78736D)),
+                                        icon: const Icon(
+                                          Icons.cancel,
+                                          size: 18,
+                                          color: Color(0xFF78736D),
+                                        ),
                                         onPressed: () {
                                           setState(() {
                                             _searchController.clear();
@@ -1023,18 +1108,20 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                       ),
                                     GestureDetector(
                                       onTap: () {
-                                        String val =
-                                            _searchController.text.trim();
-                                        _filterRequest.title =
-                                            val.isNotEmpty ? val : null;
+                                        String val = _searchController.text
+                                            .trim();
+                                        _filterRequest.title = val.isNotEmpty
+                                            ? val
+                                            : null;
                                         _loadData(isReset: true);
                                       },
                                       child: Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF945331),
-                                          borderRadius:
-                                              BorderRadius.circular(14),
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
                                         ),
                                         child: const Icon(
                                           Icons.search,
@@ -1068,10 +1155,11 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                         ),
                       ),
 
-                      // 2.1 THANH CHỌN LOẠI BĐS (CHO BÁN & CHO THUÊ)
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 4),
+                          horizontal: 24,
+                          vertical: 4,
+                        ),
                         child: Row(
                           children: [
                             Expanded(
@@ -1082,27 +1170,32 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           const PropertyListScreen(
-                                        pageTitle: 'Bất động sản Mua Bán',
-                                        initialTypeId: 1,
-                                      ),
+                                            pageTitle: 'Bất động sản Mua Bán',
+                                            initialTypeId: 1,
+                                          ),
                                     ),
                                   );
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                      vertical: 14, horizontal: 16),
+                                    vertical: 14,
+                                    horizontal: 16,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF4EEE6),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                        color: const Color(0xFFE8E3DC)),
+                                      color: const Color(0xFFE8E3DC),
+                                    ),
                                   ),
                                   child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: const [
-                                      Icon(Icons.house_outlined,
-                                          color: Color(0xFF945331), size: 22),
+                                      Icon(
+                                        Icons.house_outlined,
+                                        color: Color(0xFF945331),
+                                        size: 22,
+                                      ),
                                       SizedBox(width: 8),
                                       Text(
                                         'Cho Bán',
@@ -1127,27 +1220,32 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           const PropertyListScreen(
-                                        pageTitle: 'Bất động sản Cho Thuê',
-                                        initialTypeId: 2,
-                                      ),
+                                            pageTitle: 'Bất động sản Cho Thuê',
+                                            initialTypeId: 2,
+                                          ),
                                     ),
                                   );
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                      vertical: 14, horizontal: 16),
+                                    vertical: 14,
+                                    horizontal: 16,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF4EEE6),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                        color: const Color(0xFFE8E3DC)),
+                                      color: const Color(0xFFE8E3DC),
+                                    ),
                                   ),
                                   child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: const [
-                                      Icon(Icons.key_outlined,
-                                          color: Color(0xFF945331), size: 22),
+                                      Icon(
+                                        Icons.key_outlined,
+                                        color: Color(0xFF945331),
+                                        size: 22,
+                                      ),
                                       SizedBox(width: 8),
                                       Text(
                                         'Cho Thuê',
@@ -1167,7 +1265,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                         ),
                       ),
 
-                      // 3. CATEGORIES ROW
                       const SizedBox(height: 8),
                       SizedBox(
                         height: 46,
@@ -1216,7 +1313,6 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                         ),
                       ),
 
-                      // 4. HORIZONTAL FEATURED LIST
                       if (globalProperties.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(
@@ -1244,9 +1340,9 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           const PropertyListScreen(
-                                        pageTitle: 'Tất cả Bất động sản',
-                                        initialTypeId: null,
-                                      ),
+                                            pageTitle: 'Tất cả Bất động sản',
+                                            initialTypeId: null,
+                                          ),
                                     ),
                                   );
                                 },
@@ -1280,9 +1376,13 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
                           ),
                         ),
 
-                      // 5. VERTICAL RECOMMENDATION LIST (LAZY LOADING)
                       Padding(
-                        padding: const EdgeInsets.only(left: 24, top: 12, bottom: 16, right: 24),
+                        padding: const EdgeInsets.only(
+                          left: 24,
+                          top: 12,
+                          bottom: 16,
+                          right: 24,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -1372,196 +1472,207 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
       child: Container(
         width: 280,
         margin: const EdgeInsets.only(right: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Stack(
-              children: [
-                (property.image != null && property.image!.isNotEmpty)
-                    ? Image.network(
-                        property.image!,
-                        height: 195,
-                        width: 280,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
+                children: [
+                  (property.image != null && property.image!.isNotEmpty)
+                      ? Image.network(
+                          property.image!,
+                          height: 195,
+                          width: 280,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                height: 195,
+                                width: 280,
+                                color: Colors.grey.shade300,
+                                child: const Icon(Icons.image_not_supported),
+                              ),
+                        )
+                      : Container(
                           height: 195,
                           width: 280,
                           color: Colors.grey.shade300,
-                          child: const Icon(Icons.image_not_supported),
+                          child: const Icon(
+                            Icons.home,
+                            size: 50,
+                            color: Colors.grey,
+                          ),
                         ),
-                      )
-                    : Container(
-                        height: 195,
-                        width: 280,
-                        color: Colors.grey.shade300,
-                        child: const Icon(
-                          Icons.home,
-                          size: 50,
-                          color: Colors.grey,
+                  Positioned(
+                    top: 14,
+                    left: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFCFBFA).withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        property.addressDetail ?? 'Bất động sản',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1918),
+                          fontFamily: 'Plus Jakarta Sans',
                         ),
                       ),
-                Positioned(
-                  top: 14,
-                  left: 14,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFCFBFA).withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      property.addressDetail ?? 'Bất động sản',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1918),
-                        fontFamily: 'Plus Jakarta Sans',
+                  ),
+                  Positioned(
+                    top: 14,
+                    right: 14,
+                    child: GestureDetector(
+                      onTap: () => _toggleSave(property),
+                      child: CircleAvatar(
+                        radius: 19,
+                        backgroundColor: property.isSaved
+                            ? const Color(0xFF945331)
+                            : const Color(0xFF1A1918).withValues(alpha: 0.4),
+                        child: Icon(
+                          property.isSaved
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  top: 14,
-                  right: 14,
-                  child: GestureDetector(
-                    onTap: () => _toggleSave(property),
-                    child: CircleAvatar(
-                      radius: 19,
-                      backgroundColor: property.isSaved
-                          ? const Color(0xFF945331)
-                          : const Color(0xFF1A1918).withValues(alpha: 0.4),
-                      child: Icon(
-                        property.isSaved
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            property.title ?? "Chưa có tiêu đề",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1918),
-              fontFamily: 'Plus Jakarta Sans',
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            formatPropertyPrice(property.price),
-            style: const TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF945331),
-              fontFamily: 'Georgia',
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: Color(0xFF78736D),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  property.address ?? property.city ?? 'Đang cập nhật địa chỉ',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF78736D),
-                    fontSize: 13,
-                    fontFamily: 'Plus Jakarta Sans',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.only(top: 10),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xFFE8E3DC), width: 1),
+                ],
               ),
             ),
-            child: Row(
+            const SizedBox(height: 12),
+            Text(
+              property.title ?? "Chưa có tiêu đề",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1918),
+                fontFamily: 'Plus Jakarta Sans',
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              formatPropertyPrice(property.price),
+              style: const TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF945331),
+                fontFamily: 'Georgia',
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
               children: [
-                const Icon(Icons.bed_outlined, size: 18, color: Color(0xFF78736D)),
-                const SizedBox(width: 5),
-                Text(
-                  '${property.bedroomCount ?? 0}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(width: 12),
                 const Icon(
-                  Icons.bathtub_outlined,
-                  size: 17,
-                  color: Color(0xFF78736D),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  '${property.bathroomCount ?? 0}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Icon(
-                  Icons.layers_outlined,
+                  Icons.location_on_outlined,
                   size: 16,
                   color: Color(0xFF78736D),
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  '${property.floorCount ?? 1}T',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Icon(Icons.crop_free, size: 15, color: Color(0xFF78736D)),
-                const SizedBox(width: 6),
-                Text(
-                  property.area != null
-                      ? '${property.area!.toStringAsFixed(0)}m²'
-                      : 'N/A',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    property.address ??
+                        property.city ??
+                        'Đang cập nhật địa chỉ',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF78736D),
+                      fontSize: 13,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.only(top: 10),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Color(0xFFE8E3DC), width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.bed_outlined,
+                    size: 18,
+                    color: Color(0xFF78736D),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${property.bedroomCount ?? 0}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(
+                    Icons.bathtub_outlined,
+                    size: 17,
+                    color: Color(0xFF78736D),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${property.bathroomCount ?? 0}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(
+                    Icons.layers_outlined,
+                    size: 16,
+                    color: Color(0xFF78736D),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${property.floorCount ?? 1}T',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(
+                    Icons.crop_free,
+                    size: 15,
+                    color: Color(0xFF78736D),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    property.area != null
+                        ? '${property.area!.toStringAsFixed(0)}m²'
+                        : 'N/A',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -1570,183 +1681,188 @@ class _HomeScreenState extends State<HomeScreen> with ApiPropertyMixin {
       onTap: () => openPropertyDetail(context, property),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 24),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
-              children: [
-                (property.image != null && property.image!.isNotEmpty)
-                    ? Image.network(
-                        property.image!,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                children: [
+                  (property.image != null && property.image!.isNotEmpty)
+                      ? Image.network(
+                          property.image!,
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                width: 120,
+                                height: 120,
+                                color: Colors.grey.shade300,
+                                child: const Icon(Icons.image_not_supported),
+                              ),
+                        )
+                      : Container(
                           width: 120,
                           height: 120,
                           color: Colors.grey.shade300,
-                          child: const Icon(Icons.image_not_supported),
+                          child: const Icon(
+                            Icons.home,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
                         ),
-                      )
-                    : Container(
-                        width: 120,
-                        height: 120,
-                        color: Colors.grey.shade300,
-                        child: const Icon(
-                          Icons.home,
-                          size: 40,
-                          color: Colors.grey,
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () => _toggleSave(property),
+                      child: CircleAvatar(
+                        radius: 15,
+                        backgroundColor: property.isSaved
+                            ? const Color(0xFF945331)
+                            : const Color(0xFF1A1918).withValues(alpha: 0.4),
+                        child: Icon(
+                          property.isSaved
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: Colors.white,
+                          size: 15,
                         ),
                       ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () => _toggleSave(property),
-                    child: CircleAvatar(
-                      radius: 15,
-                      backgroundColor: property.isSaved
-                          ? const Color(0xFF945331)
-                          : const Color(0xFF1A1918).withValues(alpha: 0.4),
-                      child: Icon(
-                        property.isSaved
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    property.title ?? "Chưa có tiêu đề",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1918),
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    formatPropertyPrice(property.price),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: property.typeId == 2
+                          ? const Color(0xFF2E7D32)
+                          : const Color(0xFF945331),
+                      fontFamily: 'Georgia',
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
                         size: 15,
+                        color: Color(0xFF78736D),
                       ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  property.title ?? "Chưa có tiêu đề",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1918),
-                    fontFamily: 'Plus Jakarta Sans',
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  formatPropertyPrice(property.price),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: property.typeId == 2
-                        ? const Color(0xFF2E7D32)
-                        : const Color(0xFF945331),
-                    fontFamily: 'Georgia',
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 15,
-                      color: Color(0xFF78736D),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        property.address ??
-                            property.city ??
-                            'Đang cập nhật địa chỉ',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF78736D),
-                          fontSize: 13,
-                          fontFamily: 'Plus Jakarta Sans',
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          property.address ??
+                              property.city ??
+                              'Đang cập nhật địa chỉ',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF78736D),
+                            fontSize: 13,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.bed_outlined,
-                      size: 16,
-                      color: Color(0xFF78736D),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${property.bedroomCount ?? 0} PN',
-                      style: const TextStyle(
-                        fontSize: 12,
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.bed_outlined,
+                        size: 16,
                         color: Color(0xFF78736D),
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.bathtub_outlined,
-                      size: 15,
-                      color: Color(0xFF78736D),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${property.bathroomCount ?? 0} PT',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      const SizedBox(width: 4),
+                      Text(
+                        '${property.bedroomCount ?? 0} PN',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF78736D),
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.bathtub_outlined,
+                        size: 15,
                         color: Color(0xFF78736D),
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.layers_outlined,
-                      size: 14,
-                      color: Color(0xFF78736D),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${property.floorCount ?? 1} Tầng',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      const SizedBox(width: 4),
+                      Text(
+                        '${property.bathroomCount ?? 0} PT',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF78736D),
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.layers_outlined,
+                        size: 14,
                         color: Color(0xFF78736D),
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.crop_free, size: 13, color: Color(0xFF78736D)),
-                    const SizedBox(width: 4),
-                    Text(
-                      property.area != null
-                          ? '${property.area!.toStringAsFixed(0)}m²'
-                          : 'N/A',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      const SizedBox(width: 4),
+                      Text(
+                        '${property.floorCount ?? 1} Tầng',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF78736D),
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.crop_free,
+                        size: 13,
                         color: Color(0xFF78736D),
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 4),
+                      Text(
+                        property.area != null
+                            ? '${property.area!.toStringAsFixed(0)}m²'
+                            : 'N/A',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF78736D),
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }

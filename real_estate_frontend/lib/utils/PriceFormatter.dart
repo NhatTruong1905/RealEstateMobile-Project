@@ -19,3 +19,4 @@ String formatPropertyPrice(double? price) {
     return '$priceStr VNĐ';
   }
 }
+

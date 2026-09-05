@@ -74,7 +74,8 @@ class _PropertyListScreenState extends State<PropertyListScreen>
   }
 
   void _onScroll() {
-    final showTop = _scrollController.hasClients && _scrollController.offset > 300;
+    final showTop =
+        _scrollController.hasClients && _scrollController.offset > 300;
     if (showTop != _showScrollToTop) {
       setState(() => _showScrollToTop = showTop);
     }
@@ -120,8 +121,9 @@ class _PropertyListScreenState extends State<PropertyListScreen>
       setState(() => _isLoading = true);
     }
 
-    PropertyPageResponseDTO? pageResponse =
-        await fetchPropertiesPage(request: _filterRequest);
+    PropertyPageResponseDTO? pageResponse = await fetchPropertiesPage(
+      request: _filterRequest,
+    );
 
     List<PropertyDTO> fetched = pageResponse?.content ?? [];
     _currentPage = pageResponse?.currentPage ?? 1;
@@ -156,8 +158,9 @@ class _PropertyListScreenState extends State<PropertyListScreen>
     _filterRequest.page = nextPage;
     _filterRequest.typeId = _selectedTypeId;
 
-    PropertyPageResponseDTO? pageResponse =
-        await fetchPropertiesPage(request: _filterRequest);
+    PropertyPageResponseDTO? pageResponse = await fetchPropertiesPage(
+      request: _filterRequest,
+    );
 
     List<PropertyDTO> fetched = pageResponse?.content ?? [];
     if (pageResponse != null) {
@@ -233,26 +236,32 @@ class _PropertyListScreenState extends State<PropertyListScreen>
   }
 
   void _showFilterBottomSheet() {
-    final titleController =
-        TextEditingController(text: _filterRequest.title ?? '');
-    final addressController =
-        TextEditingController(text: _filterRequest.address ?? '');
+    final titleController = TextEditingController(
+      text: _filterRequest.title ?? '',
+    );
+    final addressController = TextEditingController(
+      text: _filterRequest.address ?? '',
+    );
     final fromPriceController = TextEditingController(
-        text: _filterRequest.fromPrice != null
-            ? _filterRequest.fromPrice!.toStringAsFixed(0)
-            : '');
+      text: _filterRequest.fromPrice != null
+          ? _filterRequest.fromPrice!.toStringAsFixed(0)
+          : '',
+    );
     final toPriceController = TextEditingController(
-        text: _filterRequest.toPrice != null
-            ? _filterRequest.toPrice!.toStringAsFixed(0)
-            : '');
+      text: _filterRequest.toPrice != null
+          ? _filterRequest.toPrice!.toStringAsFixed(0)
+          : '',
+    );
     final areaController = TextEditingController(
-        text: _filterRequest.area != null
-            ? _filterRequest.area!.toStringAsFixed(0)
-            : '');
+      text: _filterRequest.area != null
+          ? _filterRequest.area!.toStringAsFixed(0)
+          : '',
+    );
     final floorController = TextEditingController(
-        text: _filterRequest.floorCount != null
-            ? _filterRequest.floorCount!.toString()
-            : '');
+      text: _filterRequest.floorCount != null
+          ? _filterRequest.floorCount!.toString()
+          : '',
+    );
 
     int? tempBedroom = _filterRequest.bedroomCount;
     int? tempBathroom = _filterRequest.bathroomCount;
@@ -285,6 +294,9 @@ class _PropertyListScreenState extends State<PropertyListScreen>
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.88,
+              ),
               padding: EdgeInsets.only(
                 top: 24,
                 left: 24,
@@ -322,9 +334,10 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                     const Text(
                       'Tên / Tiêu đề bất động sản',
                       style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1918)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1918),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -343,9 +356,10 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                     const Text(
                       'Địa chỉ / Khu vực',
                       style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1918)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1918),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -365,9 +379,10 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                     const Text(
                       'Khoảng giá (VNĐ)',
                       style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1918)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1918),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -415,9 +430,10 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               const Text(
                                 'Diện tích (m²)',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               TextField(
@@ -444,9 +460,10 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               const Text(
                                 'Số tầng',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               TextField(
@@ -477,27 +494,41 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               const Text(
                                 'Số phòng ngủ',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<int>(
+                                isExpanded: true,
                                 initialValue: tempBedroom,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: const Color(0xFFF4EEE6),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                hint: const Text('Bất kỳ'),
+                                hint: const Text(
+                                  'Bất kỳ',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: [1, 2, 3, 4, 5]
-                                    .map((n) => DropdownMenuItem(
-                                          value: n,
-                                          child: Text('$n phòng'),
-                                        ))
+                                    .map(
+                                      (n) => DropdownMenuItem(
+                                        value: n,
+                                        child: Text(
+                                          '$n phòng',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (val) =>
                                     setModalState(() => tempBedroom = val),
@@ -513,27 +544,41 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               const Text(
                                 'Số phòng tắm',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<int>(
+                                isExpanded: true,
                                 initialValue: tempBathroom,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: const Color(0xFFF4EEE6),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                hint: const Text('Bất kỳ'),
+                                hint: const Text(
+                                  'Bất kỳ',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: [1, 2, 3, 4, 5]
-                                    .map((n) => DropdownMenuItem(
-                                          value: n,
-                                          child: Text('$n phòng'),
-                                        ))
+                                    .map(
+                                      (n) => DropdownMenuItem(
+                                        value: n,
+                                        child: Text(
+                                          '$n phòng',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (val) =>
                                     setModalState(() => tempBathroom = val),
@@ -553,27 +598,41 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               const Text(
                                 'Hướng nhà',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
+                                isExpanded: true,
                                 initialValue: tempDirection,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: const Color(0xFFF4EEE6),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                hint: const Text('Tất cả'),
+                                hint: const Text(
+                                  'Tất cả',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: directions
-                                    .map((d) => DropdownMenuItem(
-                                          value: d,
-                                          child: Text(d),
-                                        ))
+                                    .map(
+                                      (d) => DropdownMenuItem(
+                                        value: d,
+                                        child: Text(
+                                          d,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (val) =>
                                     setModalState(() => tempDirection = val),
@@ -589,27 +648,42 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               const Text(
                                 'Pháp lý',
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1918)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1918),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
+                                isExpanded: true,
                                 initialValue: tempLegal,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: const Color(0xFFF4EEE6),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                hint: const Text('Tất cả'),
+                                hint: const Text(
+                                  'Tất cả',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: legals
-                                    .map((l) => DropdownMenuItem(
-                                          value: l,
-                                          child: Text(l),
-                                        ))
+                                    .map(
+                                      (l) => DropdownMenuItem(
+                                        value: l,
+                                        child: Text(
+                                          l,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (val) =>
                                     setModalState(() => tempLegal = val),
@@ -620,10 +694,8 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // NÚT ĐẶT LẠI & ÁP DỤNG
                     Row(
                       children: [
-                        // NÚT ĐẶT LẠI (RESET CÁC FIELD VÀ BỘ LỌC)
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
@@ -653,35 +725,43 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               side: const BorderSide(color: Color(0xFF78736D)),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
-                            child: const Text('Đặt lại',
-                                style: TextStyle(
-                                    color: Color(0xFF1A1918),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14)),
+                            child: const Text(
+                              'Đặt lại',
+                              style: TextStyle(
+                                color: Color(0xFF1A1918),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // NÚT ÁP DỤNG
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
                               final fromP = double.tryParse(
-                                  fromPriceController.text.trim());
+                                fromPriceController.text.trim(),
+                              );
                               final toP = double.tryParse(
-                                  toPriceController.text.trim());
+                                toPriceController.text.trim(),
+                              );
                               final ar = double.tryParse(
-                                  areaController.text.trim());
+                                areaController.text.trim(),
+                              );
                               final fl = int.tryParse(
-                                  floorController.text.trim());
+                                floorController.text.trim(),
+                              );
 
                               _filterRequest = PropertyRequestDTO(
                                 typeId: _selectedTypeId,
                                 title: titleController.text.trim().isNotEmpty
                                     ? titleController.text.trim()
                                     : null,
-                                address: addressController.text.trim().isNotEmpty
+                                address:
+                                    addressController.text.trim().isNotEmpty
                                     ? addressController.text.trim()
                                     : null,
                                 fromPrice: fromP,
@@ -697,8 +777,7 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               );
 
                               if (titleController.text.isNotEmpty) {
-                                _searchController.text =
-                                    titleController.text;
+                                _searchController.text = titleController.text;
                               }
 
                               Navigator.pop(context);
@@ -708,13 +787,17 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               backgroundColor: const Color(0xFF945331),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
-                            child: const Text('Áp dụng',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14)),
+                            child: const Text(
+                              'Áp dụng',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -772,7 +855,11 @@ class _PropertyListScreenState extends State<PropertyListScreen>
         backgroundColor: const Color(0xFFFCFBFA),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1A1918), size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Color(0xFF1A1918),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -792,10 +879,11 @@ class _PropertyListScreenState extends State<PropertyListScreen>
           onRefresh: _refreshData,
           child: Column(
             children: [
-              // 1. THANH TÌM KIẾM + NÚT LỌC
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -830,8 +918,11 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                             ),
                             if (_searchController.text.isNotEmpty)
                               IconButton(
-                                icon: const Icon(Icons.cancel,
-                                    size: 18, color: Color(0xFF78736D)),
+                                icon: const Icon(
+                                  Icons.cancel,
+                                  size: 18,
+                                  color: Color(0xFF78736D),
+                                ),
                                 onPressed: () {
                                   _searchController.clear();
                                   _triggerSearch();
@@ -869,9 +960,7 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                         decoration: BoxDecoration(
                           color: const Color(0xFFF4EEE6),
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: const Color(0xFFE8E3DC),
-                          ),
+                          border: Border.all(color: const Color(0xFFE8E3DC)),
                         ),
                         child: const Icon(
                           Icons.tune_rounded,
@@ -884,9 +973,11 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                 ),
               ),
 
-              // 2. TAB PHÂN LOẠI NHANH (Tất cả, Mua Bán, Cho Thuê)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     _buildTypeChip('Tất cả', null),
@@ -898,9 +989,11 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                 ),
               ),
 
-              // THÔNG TIN SỐ LƯỢNG KẾT QUẢ
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 6,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -908,8 +1001,8 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                       _selectedTypeId == 1
                           ? 'Bất động sản Cho Bán'
                           : _selectedTypeId == 2
-                              ? 'Bất động sản Cho Thuê'
-                              : 'Tất cả Bất động sản',
+                          ? 'Bất động sản Cho Thuê'
+                          : 'Tất cả Bất động sản',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -930,7 +1023,6 @@ class _PropertyListScreenState extends State<PropertyListScreen>
               ),
               const SizedBox(height: 8),
 
-              // 3. DANH SÁCH BẤT ĐỘNG SẢN (LAZY LOADING)
               Expanded(
                 child: _isLoading
                     ? const Center(
@@ -939,58 +1031,58 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                         ),
                       )
                     : _properties.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: const [
-                              SizedBox(height: 80),
-                              Center(
-                                child: Text(
-                                  'Không tìm thấy bất động sản phù hợp',
-                                  style: TextStyle(
-                                    color: Color(0xFF78736D),
-                                    fontSize: 15,
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 80),
+                          Center(
+                            child: Text(
+                              'Không tìm thấy bất động sản phù hợp',
+                              style: TextStyle(
+                                color: Color(0xFF78736D),
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        itemCount: _properties.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == _properties.length) {
+                            if (_isLoadingMore) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF945331),
                                   ),
                                 ),
-                              ),
-                            ],
-                          )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            itemCount: _properties.length + 1,
-                            itemBuilder: (context, index) {
-                              if (index == _properties.length) {
-                                if (_isLoadingMore) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 20),
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        color: Color(0xFF945331),
-                                      ),
+                              );
+                            }
+                            if (!_hasMore && _properties.isNotEmpty) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: Text(
+                                    'Đã hiển thị tất cả bất động sản',
+                                    style: TextStyle(
+                                      color: Color(0xFF78736D),
+                                      fontSize: 13,
                                     ),
-                                  );
-                                }
-                                if (!_hasMore && _properties.isNotEmpty) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 20),
-                                    child: Center(
-                                      child: Text(
-                                        'Đã hiển thị tất cả bất động sản',
-                                        style: TextStyle(
-                                          color: Color(0xFF78736D),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              }
-                              final property = _properties[index];
-                              return _buildVerticalCard(property);
-                            },
-                          ),
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          }
+                          final property = _properties[index];
+                          return _buildVerticalCard(property);
+                        },
+                      ),
               ),
             ],
           ),
@@ -1015,7 +1107,9 @@ class _PropertyListScreenState extends State<PropertyListScreen>
           padding: const EdgeInsets.symmetric(vertical: 10),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF945331) : const Color(0xFFF4EEE6),
+            color: isSelected
+                ? const Color(0xFF945331)
+                : const Color(0xFFF4EEE6),
             borderRadius: BorderRadius.circular(16),
             boxShadow: isSelected
                 ? [
@@ -1023,7 +1117,7 @@ class _PropertyListScreenState extends State<PropertyListScreen>
                       color: const Color(0xFF945331).withValues(alpha: 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
-                    )
+                    ),
                   ]
                 : [],
           ),
@@ -1046,220 +1140,221 @@ class _PropertyListScreenState extends State<PropertyListScreen>
       onTap: () => openPropertyDetail(context, property),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 20),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Stack(
-                children: [
-                  (property.image != null && property.image!.isNotEmpty)
-                      ? Image.network(
-                          property.image!,
-                          width: 110,
-                          height: 110,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  children: [
+                    (property.image != null && property.image!.isNotEmpty)
+                        ? Image.network(
+                            property.image!,
+                            width: 110,
+                            height: 110,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  width: 110,
+                                  height: 110,
+                                  color: Colors.grey.shade300,
+                                  child: const Icon(Icons.image_not_supported),
+                                ),
+                          )
+                        : Container(
                             width: 110,
                             height: 110,
                             color: Colors.grey.shade300,
-                            child: const Icon(Icons.image_not_supported),
+                            child: const Icon(
+                              Icons.home,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
                           ),
-                        )
-                      : Container(
-                          width: 110,
-                          height: 110,
-                          color: Colors.grey.shade300,
-                          child: const Icon(
-                            Icons.home,
-                            size: 40,
-                            color: Colors.grey,
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: GestureDetector(
+                        onTap: () => _toggleSave(property),
+                        child: CircleAvatar(
+                          radius: 14,
+                          backgroundColor: property.isSaved
+                              ? const Color(0xFF945331)
+                              : const Color(0xFF1A1918).withValues(alpha: 0.4),
+                          child: Icon(
+                            property.isSaved
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: Colors.white,
+                            size: 14,
                           ),
                         ),
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: GestureDetector(
-                      onTap: () => _toggleSave(property),
-                      child: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: property.isSaved
-                            ? const Color(0xFF945331)
-                            : const Color(0xFF1A1918).withValues(alpha: 0.4),
-                        child: Icon(
-                          property.isSaved
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      property.title ?? "Chưa có tiêu đề",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1918),
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      formatPropertyPrice(property.price),
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: property.typeId == 2
+                            ? const Color(0xFF2E7D32)
+                            : const Color(0xFF945331),
+                        fontFamily: 'Georgia',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
                           size: 14,
+                          color: Color(0xFF78736D),
                         ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    property.title ?? "Chưa có tiêu đề",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1918),
-                      fontFamily: 'Plus Jakarta Sans',
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    formatPropertyPrice(property.price),
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: property.typeId == 2
-                          ? const Color(0xFF2E7D32)
-                          : const Color(0xFF945331),
-                      fontFamily: 'Georgia',
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 14,
-                        color: Color(0xFF78736D),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          property.address ??
-                              property.city ??
-                              'Đang cập nhật địa chỉ',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF78736D),
-                            fontSize: 12,
-                            fontFamily: 'Plus Jakarta Sans',
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            property.address ??
+                                property.city ??
+                                'Đang cập nhật địa chỉ',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF78736D),
+                              fontSize: 12,
+                              fontFamily: 'Plus Jakarta Sans',
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.bed_outlined,
-                            size: 14,
-                            color: Color(0xFF78736D),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${property.bedroomCount ?? 0} PN',
-                            style: const TextStyle(
-                              fontSize: 11,
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.bed_outlined,
+                              size: 14,
                               color: Color(0xFF78736D),
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.bathtub_outlined,
-                            size: 14,
-                            color: Color(0xFF78736D),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${property.bathroomCount ?? 0} PT',
-                            style: const TextStyle(
-                              fontSize: 11,
+                            const SizedBox(width: 3),
+                            Text(
+                              '${property.bedroomCount ?? 0} PN',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF78736D),
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.bathtub_outlined,
+                              size: 14,
                               color: Color(0xFF78736D),
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.layers_outlined,
-                            size: 14,
-                            color: Color(0xFF78736D),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${property.floorCount ?? 1} Tầng',
-                            style: const TextStyle(
-                              fontSize: 11,
+                            const SizedBox(width: 3),
+                            Text(
+                              '${property.bathroomCount ?? 0} PT',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF78736D),
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.layers_outlined,
+                              size: 14,
                               color: Color(0xFF78736D),
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.crop_free,
-                            size: 13,
-                            color: Color(0xFF78736D),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            property.area != null
-                                ? '${property.area!.toStringAsFixed(0)}m²'
-                                : 'N/A',
-                            style: const TextStyle(
-                              fontSize: 11,
+                            const SizedBox(width: 3),
+                            Text(
+                              '${property.floorCount ?? 1} Tầng',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF78736D),
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.crop_free,
+                              size: 13,
                               color: Color(0xFF78736D),
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
+                            const SizedBox(width: 3),
+                            Text(
+                              property.area != null
+                                  ? '${property.area!.toStringAsFixed(0)}m²'
+                                  : 'N/A',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF78736D),
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }

@@ -39,7 +39,6 @@ class _RagChatModalState extends State<RagChatModal> {
     _loadPersistedHistory();
   }
 
-  /// Nạp lịch sử trò chuyện đã lưu từ SharedPreferences
   Future<void> _loadPersistedHistory() async {
     final history = await _ragChatService.loadHistory();
     if (mounted) {
@@ -79,7 +78,6 @@ class _RagChatModalState extends State<RagChatModal> {
     });
   }
 
-  /// Gửi câu hỏi và nhận Token Stream từ AI Backend theo thời gian thực (Real-time Stream)
   Future<void> _handleSendMessage([String? textToSend]) async {
     final text = textToSend ?? _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -88,7 +86,6 @@ class _RagChatModalState extends State<RagChatModal> {
       _controller.clear();
     }
 
-    // Lưu lại lịch sử trước khi thêm câu hỏi mới
     final previousHistory = List<RagChatMessage>.from(_messages);
 
     final aiMsg = RagChatMessage(text: "", isUser: false);
@@ -125,12 +122,10 @@ class _RagChatModalState extends State<RagChatModal> {
     if (mounted) {
       setState(() => _isLoading = false);
       _scrollToBottom();
-      // Lưu lại lịch sử sau khi stream hoàn tất
       await _ragChatService.saveHistory(_messages);
     }
   }
 
-  /// Xóa lịch sử khi người dùng nhấn nút Reload ở header
   Future<void> _clearHistory() async {
     await _ragChatService.clearHistory();
     if (mounted) {
@@ -167,7 +162,6 @@ class _RagChatModalState extends State<RagChatModal> {
       ),
       child: Column(
         children: [
-          // 1. HEADER CÔNG NGHỆ VỚI ICON AI CHUYÊN NGHIỆP MỚI
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: const BoxDecoration(
@@ -187,7 +181,7 @@ class _RagChatModalState extends State<RagChatModal> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.support_agent_rounded, // Icon AI Chatbot mới siêu nét
+                    Icons.support_agent_rounded,
                     color: Color(0xFFFFD700),
                     size: 26,
                   ),
@@ -245,7 +239,6 @@ class _RagChatModalState extends State<RagChatModal> {
             ),
           ),
 
-          // 2. QUICK SUGGESTION CHIPS
           if (_messages.length <= 2 && !_isInitialLoading)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -285,7 +278,6 @@ class _RagChatModalState extends State<RagChatModal> {
               ),
             ),
 
-          // 3. CHAT MESSAGES LIST
           Expanded(
             child: _isInitialLoading
                 ? const Center(
@@ -305,7 +297,6 @@ class _RagChatModalState extends State<RagChatModal> {
                   ),
           ),
 
-          // 4. INPUT SECTION
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: const BoxDecoration(
@@ -434,7 +425,7 @@ class _RagChatModalState extends State<RagChatModal> {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.support_agent_rounded, // Icon AI Chatbot mới
+              Icons.support_agent_rounded,
               color: Colors.white,
               size: 18,
             ),
@@ -488,7 +479,6 @@ class _RagChatModalState extends State<RagChatModal> {
   }
 }
 
-/// Hiệu ứng 3 dấu chấm nhảy động phong cách Messenger / iMessage
 class _MessengerTypingDots extends StatefulWidget {
   const _MessengerTypingDots();
 
