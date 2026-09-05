@@ -60,10 +60,10 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
         final s = (p.status ?? '').toLowerCase();
         return s == 'chờ duyệt' || s == 'pending';
       }).toList();
-    } else if (_activeTab == 'Đã ẩn') {
+    } else if (_activeTab == 'Đã xóa' || _activeTab == 'Đã ẩn') {
       list = list.where((p) {
         final s = (p.status ?? '').toLowerCase();
-        return s == 'đã ẩn' || s == 'từ chối' || s == 'rejected' || s == 'deleted' || s == 'đã xóa';
+        return s == 'đã xóa' || s == 'deleted' || s == 'từ chối' || s == 'rejected' || s == 'đã ẩn';
       }).toList();
     }
 
@@ -152,7 +152,7 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
                 _buildStatusChip('Tất cả'),
                 _buildStatusChip('Đang hiển thị'),
                 _buildStatusChip('Chờ duyệt'),
-                _buildStatusChip('Đã ẩn'),
+                _buildStatusChip('Đã xóa'),
               ],
             ),
           ),
@@ -228,10 +228,8 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
       color = const Color(0xFFC62828);
       if (s == 'từ chối' || s == 'rejected') {
         label = 'Từ chối';
-      } else if (s == 'đã xóa' || s == 'deleted') {
-        label = 'Đã xóa';
       } else {
-        label = 'Đã ẩn';
+        label = 'Đã xóa';
       }
     } else if (s == 'published' || s == 'đang mở bán') {
       color = const Color(0xFF2E7D32);
@@ -397,28 +395,7 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
                     style: TextStyle(color: Color(0xFF1565C0))),
               ),
               TextButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đã ẩn tin đăng khỏi trang tìm kiếm'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.visibility_off_outlined,
-                    size: 18, color: Color(0xFF78736D)),
-                label: const Text('Ẩn tin',
-                    style: TextStyle(color: Color(0xFF78736D))),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Xóa tin đăng thành công!'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onPressed: () => _confirmAndDeleteProperty(item),
                 icon: const Icon(Icons.delete_outline,
                     size: 18, color: Colors.redAccent),
                 label: const Text('Xóa',
@@ -429,5 +406,85 @@ class _SellerPropertiesScreenState extends State<SellerPropertiesScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _confirmAndDeleteProperty(PropertyDTO item) async {
+    if (item.id == null) return;
+
+    final s = (item.status ?? '').toLowerCase();
+    final isAlreadyDeleted = s == 'đã xóa' ||
+        s == 'deleted' ||
+        s == 'từ chối' ||
+        s == 'rejected' ||
+        s == 'đã ẩn';
+
+    if (isAlreadyDeleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tin đăng này đã ở trạng thái đã xóa.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Xác nhận xóa',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            fontFamily: 'Georgia',
+          ),
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa tin "${item.title ?? ''}" không?',
+          style: const TextStyle(fontSize: 14, color: Color(0xFF1A1918)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Hủy', style: TextStyle(color: Color(0xFF78736D))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final success = await deleteProperty(item.id!);
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Xóa tin đăng thành công!'),
+          backgroundColor: Color(0xFF2E7D32),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      _fetchMyProperties();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Xóa tin đăng thất bại. Vui lòng thử lại!'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

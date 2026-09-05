@@ -32,7 +32,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
     _globalMsgSub = _chatService.messageStream.listen((msg) {
       if (!mounted) return;
 
-      // Cập nhật lại danh sách khách hàng và trạng thái nút xem nhà realtime KHÔNG hiện loading spinner
       _loadInteractions(isSilent: true);
       ChatService.hasUnreadNotification.value = true;
     });
@@ -100,7 +99,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
         final isActiveViewing = (status == 1) &&
             (code == 'MESSAGE' || code == 'CHAT' || code == 'VIEWING');
 
-        // Gom nhóm duy nhất theo Khách hàng (senderId hoặc SĐT)
         final groupKey = 'id_$senderId';
 
         final interactionItem = {
@@ -142,7 +140,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
           if (isActiveViewing) {
             group['hasActiveViewing'] = true;
           }
-          // Cập nhật thông tin tương tác mới nhất
           group['latestMessage'] = message;
           group['latestTime'] = time;
           group['latestPropertyTitle'] = propertyTitle;
@@ -155,7 +152,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
         }
       }
 
-      // Nạp các phiên chat local từ máy (để hiển thị khách chỉ nhắn tin chưa lưu DB)
       final localChatCustomers = await _chatService.getAllChatCustomers();
 
       for (var c in localChatCustomers) {
@@ -338,7 +334,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
       ),
       body: Column(
         children: [
-          // Ô TÌM KIẾM
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
@@ -410,7 +405,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
             ),
           ),
 
-          // NÚT MỞ TRANG "KHÁCH HÀNG NHẮN TIN" (SẮP XẾP MỚI NHẤT ĐẾN CỦ NHẤT)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             child: InkWell(
@@ -474,7 +468,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
             ),
           ),
 
-          // BỘ LỌC TRẠNG THÁI KHÁCH HÀNG
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -489,7 +482,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
           ),
           const SizedBox(height: 4),
 
-          // DANH SÁCH KHÁCH HÀNG
           Expanded(
             child: _isLoading
                 ? const Center(
@@ -500,7 +492,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
                     color: const Color(0xFF945331),
                     child: () {
                       final filtered = _customers.where((c) {
-                        // Lọc theo tên khách hàng
                         if (_searchQuery.trim().isNotEmpty) {
                           final query = _searchQuery.trim().toLowerCase();
                           final customerName = (c['name'] ?? '').toString().toLowerCase();
@@ -509,7 +500,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
                           }
                         }
 
-                        // Lọc theo tab tương tác
                         if (_activeTab == 'Hẹn xem nhà') {
                           return (c['viewingCount'] as int? ?? 0) > 0;
                         } else if (_activeTab == 'Đã tư vấn') {
@@ -775,7 +765,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER: THÔNG TIN KHÁCH HÀNG
           Row(
             children: [
               CircleAvatar(
@@ -818,7 +807,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
           ),
           const SizedBox(height: 12),
 
-          // KHU VỰC THỐNG KÊ: SỐ CUỘC GỌI, TIN NHẮN, HẸN XEM NHÀ
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
@@ -854,7 +842,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
           ),
           const SizedBox(height: 12),
 
-          // BĐS QUAN TÂM & NỘI DUNG MỚI NHẤT
           if (customer['latestPropertyTitle'] != null) ...[
             const Text(
               'BĐS quan tâm:',
@@ -905,7 +892,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
 
           const SizedBox(height: 10),
 
-          // NÚT XEM LỊCH SỬ TƯƠNG TÁC
           InkWell(
             onTap: () =>
                 _showInteractionHistoryBottomSheet(context, customer),
@@ -939,7 +925,6 @@ class _SellerCustomersScreenState extends State<SellerCustomersScreen>
           ),
           const SizedBox(height: 14),
 
-          // NÚT HÀNH ĐỘNG GỌI / NHẮN TIN / ĐÃ XEM NHÀ XONG KHÁCH HÀNG
           Row(
             children: [
               Expanded(

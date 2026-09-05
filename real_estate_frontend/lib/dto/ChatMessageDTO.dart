@@ -26,29 +26,12 @@ class ChatMessageDTO {
   factory ChatMessageDTO.fromJson(Map<String, dynamic> json) {
     return ChatMessageDTO(
       id: (json['id'] as num?)?.toInt(),
-      senderId:
-          (json['senderId'] as num?)?.toInt() ??
-          (json['sender'] is num
-              ? (json['sender'] as num).toInt()
-              : (json['sender'] is Map
-                    ? (json['sender']['id'] as num?)?.toInt()
-                    : null)),
-      receiverId:
-          (json['receiverId'] as num?)?.toInt() ??
-          (json['receiver'] is num
-              ? (json['receiver'] as num).toInt()
-              : (json['receiver'] is Map
-                    ? (json['receiver']['id'] as num?)?.toInt()
-                    : null)),
+      senderId: (json['senderId'] as num?)?.toInt(),
+      receiverId: (json['receiverId'] as num?)?.toInt(),
       propertyId: (json['propertyId'] as num?)?.toInt(),
       message: (json['message'] as String?) ?? (json['content'] as String?),
       timestamp: json['timestamp'] as String?,
-      senderName:
-          (json['senderName'] as String?) ??
-          (json['sender'] is Map
-              ? (json['sender']['fullname'] as String? ??
-                    json['sender']['username'] as String?)
-              : null),
+      senderName: json['senderName'] as String?,
     );
   }
 

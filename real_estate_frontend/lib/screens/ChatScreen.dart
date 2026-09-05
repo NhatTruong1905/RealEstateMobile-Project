@@ -30,7 +30,8 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPropertyMixin {
+class _ChatScreenState extends State<ChatScreen>
+    with ApiInteractionMixin, ApiPropertyMixin {
   bool get _isSellerUser {
     if (widget.isSeller != null) return widget.isSeller!;
     if (_myUserId != null && widget.property.userId != null) {
@@ -41,6 +42,7 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
     }
     return false;
   }
+
   final ChatService _chatService = ChatService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -61,8 +63,8 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
   bool _fullyAccepted = false;
 
   Timer? _countdownTimer;
-  int _remainingSeconds = 900; // 15 phút đếm ngược
-  
+  int _remainingSeconds = 900;
+
   @override
   void initState() {
     super.initState();
@@ -95,12 +97,17 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
           _partnerAccept = false;
         });
         if (widget.property.id != null) {
-          _chatService.clearLocalAcceptance(widget.property.id!, _targetReceiverId);
+          _chatService.clearLocalAcceptance(
+            widget.property.id!,
+            _targetReceiverId,
+          );
         }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Hết thời hạn 15 phút chờ xác nhận. Yêu cầu đã được làm mới.'),
+              content: Text(
+                'Hết thời hạn 15 phút chờ xác nhận. Yêu cầu đã được làm mới.',
+              ),
               backgroundColor: Colors.orange,
             ),
           );
@@ -153,55 +160,51 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
   String? _myUserName;
 
   Future<void> _initChat() async {
-    // 1. Xác định ID người dùng hiện tại
     final prefs = await SharedPreferences.getInstance();
     final userProfileStr = prefs.getString('user_profile');
     if (userProfileStr != null) {
       try {
         final userMap = jsonDecode(userProfileStr) as Map<String, dynamic>;
         _myUserId = (userMap['id'] as num?)?.toInt();
-        _myUserName = userMap['fullname'] as String? ?? userMap['username'] as String?;
+        _myUserName =
+            userMap['fullname'] as String? ?? userMap['username'] as String?;
       } catch (_) {}
     }
     if (widget.currentUserId != null) {
       _myUserId = widget.currentUserId;
     }
 
-    // 2. Xác định ID và tên người nhận tin nhắn (Chủ BĐS hoặc Khách hàng)
     _targetReceiverId = widget.receiverId ?? widget.property.userId;
-    _targetReceiverName = (widget.receiverName != null && widget.receiverName!.isNotEmpty)
+    _targetReceiverName =
+        (widget.receiverName != null && widget.receiverName!.isNotEmpty)
         ? widget.receiverName!
         : (widget.property.userFullname ?? 'Khách hàng quan tâm');
 
     if (widget.property.id != null) {
-      // 2.1 Nếu chưa có _targetReceiverId, nạp chi tiết BĐS từ API để lấy userId chuẩn xác
       if (_targetReceiverId == null || _targetReceiverId == 0) {
         final fullProp = await fetchPropertyById(widget.property.id!);
         if (fullProp != null && fullProp.userId != null) {
           _targetReceiverId = fullProp.userId;
-          if (_targetReceiverName.isEmpty || _targetReceiverName == 'Khách hàng quan tâm') {
+          if (_targetReceiverName.isEmpty ||
+              _targetReceiverName == 'Khách hàng quan tâm') {
             _targetReceiverName = fullProp.userFullname ?? 'Chủ bất động sản';
           }
         }
       }
 
-      // Đánh dấu đang mở màn hình chat với BĐS & đối phương này
       ChatService.activeChatPropertyId = widget.property.id;
       ChatService.activeChatReceiverId = _targetReceiverId;
 
-      // Nạp trạng thái chấp nhận 2 chiều từ local
       final acceptState = await _chatService.loadLocalAcceptance(
         widget.property.id!,
         _targetReceiverId,
       );
 
-      // Nạp từ Bộ nhớ cục bộ Local Storage 24h
       final localMsgs = await _chatService.loadLocalChatSession(
         widget.property.id!,
         _targetReceiverId,
       );
 
-      // Kiểm tra DB xem đã có Interaction loại MESSAGE đang hẹn xem nhà (status == 1) hay chưa
       bool hasActiveViewingInDB = false;
       try {
         final list1 = await fetchPropertyInteractions(widget.property.id!);
@@ -209,22 +212,22 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
         final dbInteractions = [...list1, ...list2];
 
         for (var item in dbInteractions) {
-          final pId = (item['propertyId'] ?? (item['property'] is Map ? item['property']['id'] : null)) as int?;
+          final pId = (item['propertyId'] as num?)?.toInt();
           if (pId != null && pId != widget.property.id) continue;
 
           final status = (item['status'] as num?)?.toInt() ?? 0;
-          final typeCode = (item['interactionTypeCode'] ?? item['code'] ?? item['type'] ?? '')
+          final typeCode = (item['interactionTypeCode'] ?? item['code'] ?? '')
               .toString()
               .toUpperCase();
 
-          final sId = (item['senderId'] ?? (item['sender'] is Map ? item['sender']['id'] : null)) as int?;
-          final rId = (item['receiverId'] ?? (item['receiver'] is Map ? item['receiver']['id'] : null)) as int?;
+          final sId = (item['senderId'] as num?)?.toInt();
+          final rId = (item['receiverId'] as num?)?.toInt();
 
-          final isCurrentConversation = (sId == _myUserId && rId == _targetReceiverId) ||
-              (sId == _targetReceiverId && rId == _myUserId) ||
-              (_myUserId != null && (sId == _myUserId || rId == _myUserId));
+          final isCurrentConversation =
+              (sId == _myUserId && rId == _targetReceiverId) ||
+              (sId == _targetReceiverId && rId == _myUserId);
 
-          if (status == 1 && (typeCode == 'MESSAGE' || typeCode == 'CHAT') && isCurrentConversation) {
+          if (status == 1 && typeCode == 'MESSAGE' && isCurrentConversation) {
             hasActiveViewingInDB = true;
             break;
           }
@@ -237,9 +240,12 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
         final myAcc = acceptState['myAccept'] as bool? ?? false;
         final partnerAcc = acceptState['partnerAccept'] as bool? ?? false;
         final fullyAcc = acceptState['fullyAccepted'] as bool? ?? false;
-        final acceptTimestamp = acceptState['acceptTimestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+        final acceptTimestamp =
+            acceptState['acceptTimestamp'] as int? ??
+            DateTime.now().millisecondsSinceEpoch;
 
-        final elapsed = (DateTime.now().millisecondsSinceEpoch - acceptTimestamp) ~/ 1000;
+        final elapsed =
+            (DateTime.now().millisecondsSinceEpoch - acceptTimestamp) ~/ 1000;
         final remaining = 900 - elapsed;
 
         setState(() {
@@ -253,36 +259,37 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
             _fullyAccepted = fullyAcc;
           }
 
-          if (localMsgs.isNotEmpty) {
-            _messages = localMsgs;
-            _isLoadingHistory = false;
-          }
+          _messages = localMsgs;
+          _isLoadingHistory = false;
         });
 
         if (localMsgs.isNotEmpty) {
           _syncAcceptanceStateFromMessages();
         }
 
-        if ((_myAccept || _partnerAccept) && !_fullyAccepted && !hasActiveViewingInDB) {
+        if ((_myAccept || _partnerAccept) &&
+            !_fullyAccepted &&
+            !hasActiveViewingInDB) {
           if (remaining > 0) {
             _startCountdownTimer(remaining);
           } else {
             _myAccept = false;
             _partnerAccept = false;
-            _chatService.clearLocalAcceptance(widget.property.id!, _targetReceiverId);
+            _chatService.clearLocalAcceptance(
+              widget.property.id!,
+              _targetReceiverId,
+            );
           }
         }
 
         if (localMsgs.isNotEmpty) _scrollToBottom();
       }
 
-      // 3. Kết nối WebSocket STOMP Realtime
       await _chatService.connect(
         propertyId: widget.property.id!,
         currentUserId: _myUserId,
       );
 
-      // Lắng nghe trạng thái kết nối
       _connSub = _chatService.connectionStream.listen((state) {
         if (mounted) {
           setState(() => _connState = state);
@@ -290,10 +297,8 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
       });
       _connState = _chatService.connectionState;
 
-      // Lắng nghe tin nhắn mới phát từ WebSocket Realtime
       _msgSub = _chatService.messageStream.listen((msg) async {
         if (mounted && msg.propertyId == widget.property.id) {
-          // Nếu là tín hiệu Chấp nhận từ đối phương
           if (msg.text == '__SYS_ACCEPT_APPOINTMENT__') {
             if (msg.getSenderId != _myUserId) {
               setState(() {
@@ -308,8 +313,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
               _startCountdownTimer(900);
 
               if (_myAccept) {
-                // Cả 2 bên đã bấm Chấp nhận -> Phía bên kia (người bấm thứ 2) đã gửi API lưu DB duy nhất 1 lần.
-                // Phía người nhận tín hiệu chỉ cập nhật UI & local storage, KHÔNG gọi thêm API lưu DB bị lặp.
                 _countdownTimer?.cancel();
                 setState(() => _fullyAccepted = true);
                 if (mounted) {
@@ -326,7 +329,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
             return;
           }
 
-          // Nếu là tín hiệu Hủy chấp nhận / Hủy yêu cầu từ đối phương
           if (msg.text == '__SYS_CANCEL_APPOINTMENT__') {
             if (msg.getSenderId != _myUserId) {
               _countdownTimer?.cancel();
@@ -345,7 +347,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
             return;
           }
 
-          // Nếu là tín hiệu Hoàn tất xem nhà từ Seller
           if (msg.text == '__SYS_COMPLETE_VIEWING__') {
             _countdownTimer?.cancel();
             setState(() {
@@ -372,7 +373,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
             return;
           }
 
-          // Tin nhắn văn bản bình thường
           final bool exists = _messages.any((m) {
             if (msg.id != null && m.id != null) {
               return m.id == msg.id;
@@ -397,96 +397,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
           }
         }
       });
-
-      // 4. Nếu chưa có tin nhắn local, nạp lịch sử từ Backend API
-      if (localMsgs.isEmpty) {
-        final history = await _chatService.fetchMessageHistory(
-          propertyId: widget.property.id!,
-          receiverId: _targetReceiverId,
-        );
-
-        if (mounted) {
-          setState(() {
-            _messages = history;
-            _isLoadingHistory = false;
-          });
-          if (history.isNotEmpty) {
-            _chatService.saveLocalChatSession(
-              widget.property.id!,
-              _targetReceiverId,
-              _messages,
-            );
-          }
-          _scrollToBottom();
-        }
-      }
-
-      // 5. Kiểm tra API interaction trong DB (cho cả Buyer & Seller) xem có tương tác active status = 1 không
-      try {
-        final List<Map<String, dynamic>> allInteractions = [];
-
-        final propInteractions = await fetchPropertyInteractions(widget.property.id!);
-        allInteractions.addAll(propInteractions);
-
-        final userInteractions = await fetchUserInteractions();
-        allInteractions.addAll(userInteractions);
-
-        bool hasActiveMessageInteraction = false;
-
-        for (var item in allInteractions) {
-          final propId = item['propertyId'] ?? (item['property'] is Map ? item['property']['id'] : null);
-          if (propId != null && propId != widget.property.id) continue;
-
-          final senderObj = item['sender'] is Map ? item['sender'] as Map : null;
-          final receiverObj = item['receiver'] is Map ? item['receiver'] as Map : null;
-          final senderId = item['senderId'] ?? senderObj?['id'];
-          final receiverId = item['receiverId'] ?? receiverObj?['id'];
-
-          if (_targetReceiverId != null) {
-            final isRelevantUser = (senderId == _targetReceiverId || receiverId == _targetReceiverId);
-            if (!isRelevantUser) continue;
-          }
-
-          final code = (item['interactionTypeCode'] ?? item['code'] ?? item['type'] ?? '')
-              .toString()
-              .toUpperCase();
-          final status = (item['status'] as num?)?.toInt() ?? 1;
-
-          if (status == 1 && (code == 'MESSAGE' || code == 'CHAT' || code == 'VIEWING')) {
-            hasActiveMessageInteraction = true;
-            break;
-          }
-        }
-
-        if (mounted) {
-          if (hasActiveMessageInteraction) {
-            setState(() {
-              _myAccept = true;
-              _partnerAccept = true;
-              _fullyAccepted = true;
-            });
-            await _chatService.saveLocalAcceptance(
-              widget.property.id!,
-              _targetReceiverId,
-              myAccept: true,
-              partnerAccept: true,
-              fullyAccepted: true,
-            );
-          } else {
-            setState(() {
-              _myAccept = false;
-              _partnerAccept = false;
-              _fullyAccepted = false;
-            });
-            await _chatService.clearLocalAcceptance(
-              widget.property.id!,
-              _targetReceiverId,
-            );
-          }
-        }
-      } catch (e) {
-        debugPrint('Lỗi kiểm tra DB interaction VIEWING: $e');
-      }
     } else {
       setState(() => _isLoadingHistory = false);
     }
@@ -535,7 +445,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
       senderName: _myUserName,
     );
 
-    // Thêm tin nhắn vào bộ nhớ cục bộ & lưu SharedPreferences
     setState(() {
       _messages.add(newMsg);
       _inputController.clear();
@@ -549,14 +458,12 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
       partnerName: _targetReceiverName,
     );
 
-    // Gửi realtime qua WebSocket STOMP (KHÔNG lưu DB)
     final sent = await _chatService.sendMessage(newMsg);
     if (!sent) {
       debugPrint('Cảnh báo: Tin nhắn gửi qua WS chưa nhận phản hồi');
     }
   }
 
-  /// Xử lý sự kiện nhấn nút "Chấp nhận đi xem bất động sản"
   Future<void> _acceptPropertyViewing() async {
     if (_fullyAccepted) return;
     if (_messages.isEmpty) {
@@ -593,7 +500,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
       _countdownTimer?.cancel();
       setState(() => _isSubmittingAppointment = true);
 
-      // Đảm bảo senderId luôn là ID của User (Buyer), receiverId luôn là ID của Seller
       final int sellerId = _isSellerUser
           ? (_myUserId ?? 0)
           : (_targetReceiverId ?? widget.property.userId ?? 0);
@@ -648,7 +554,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
     }
   }
 
-  /// Xử lý sự kiện nhấn nút "Hủy yêu cầu chấp nhận"
   Future<void> _cancelPropertyViewing() async {
     if (_fullyAccepted) return;
 
@@ -684,7 +589,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
     }
   }
 
-  /// Xử lý sự kiện Seller nhấn nút "Đã xem nhà xong"
   Future<void> _completePropertyViewing() async {
     _countdownTimer?.cancel();
 
@@ -706,7 +610,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
         receiverId: _targetReceiverId ?? 0,
       );
 
-      // Gọi API Backend /api/secure/interactions/completed để set status = 0
       try {
         final int sellerId = _isSellerUser
             ? (_myUserId ?? 0)
@@ -749,7 +652,11 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
         elevation: 1,
         shadowColor: Colors.black12,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1A1918), size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Color(0xFF1A1918),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -787,19 +694,20 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
                     children: [
                       CircleAvatar(
                         radius: 4,
-                        backgroundColor: _connState == ChatConnectionState.connected
+                        backgroundColor:
+                            _connState == ChatConnectionState.connected
                             ? const Color(0xFF2E7D32)
                             : _connState == ChatConnectionState.connecting
-                                ? const Color(0xFFE65100)
-                                : const Color(0xFFD32F2F),
+                            ? const Color(0xFFE65100)
+                            : const Color(0xFFD32F2F),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         _connState == ChatConnectionState.connected
                             ? 'Trực tuyến'
                             : _connState == ChatConnectionState.connecting
-                                ? 'Đang kết nối...'
-                                : 'Ngoại tuyến',
+                            ? 'Đang kết nối...'
+                            : 'Ngoại tuyến',
                         style: TextStyle(
                           fontSize: 11,
                           color: _connState == ChatConnectionState.connected
@@ -817,32 +725,31 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
       ),
       body: Column(
         children: [
-          // BANNER BẤT ĐỘNG SẢN LIÊN QUAN
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
               color: Color(0xFFF4EEE6),
-              border: Border(
-                bottom: BorderSide(color: Color(0xFFE8E3DC)),
-              ),
+              border: Border(bottom: BorderSide(color: Color(0xFFE8E3DC))),
             ),
             child: Row(
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: (widget.property.image != null &&
+                  child:
+                      (widget.property.image != null &&
                           widget.property.image!.isNotEmpty)
                       ? Image.network(
                           widget.property.image!,
                           width: 48,
                           height: 48,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            width: 48,
-                            height: 48,
-                            color: Colors.grey.shade300,
-                            child: const Icon(Icons.home, size: 24),
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                width: 48,
+                                height: 48,
+                                color: Colors.grey.shade300,
+                                child: const Icon(Icons.home, size: 24),
+                              ),
                         )
                       : Container(
                           width: 48,
@@ -882,7 +789,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
             ),
           ),
 
-          // BANNER HÀNH ĐỘNG CHUYÊN NGHIỆP: XÁC NHẬN ĐI XEM BẤT ĐỘNG SẢN & ĐẾM NGƯỢC 15 PHÚT
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -890,15 +796,15 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
               color: _fullyAccepted
                   ? const Color(0xFFECFDF5)
                   : (_myAccept || _partnerAccept
-                      ? const Color(0xFFFFFBEB)
-                      : const Color(0xFFFAF5EF)),
+                        ? const Color(0xFFFFFBEB)
+                        : const Color(0xFFFAF5EF)),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: _fullyAccepted
                     ? const Color(0xFFA7F3D0)
                     : (_myAccept || _partnerAccept
-                        ? const Color(0xFFFDE68A)
-                        : const Color(0xFFE8DFD5)),
+                          ? const Color(0xFFFDE68A)
+                          : const Color(0xFFE8DFD5)),
                 width: 1,
               ),
               boxShadow: const [
@@ -911,33 +817,31 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
             ),
             child: Row(
               children: [
-                // Icon chuyên nghiệp thể hiện trạng thái
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: _fullyAccepted
                         ? const Color(0xFFD1FAE5)
                         : (_myAccept || _partnerAccept
-                            ? const Color(0xFFFEF3C7)
-                            : const Color(0xFFF3E8DC)),
+                              ? const Color(0xFFFEF3C7)
+                              : const Color(0xFFF3E8DC)),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     _fullyAccepted
                         ? Icons.task_alt_rounded
                         : (_myAccept || _partnerAccept
-                            ? Icons.timer_outlined
-                            : Icons.edit_calendar_rounded),
+                              ? Icons.timer_outlined
+                              : Icons.edit_calendar_rounded),
                     color: _fullyAccepted
                         ? const Color(0xFF059669)
                         : (_myAccept || _partnerAccept
-                            ? const Color(0xFFD97706)
-                            : const Color(0xFF945331)),
+                              ? const Color(0xFFD97706)
+                              : const Color(0xFF945331)),
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 10),
-                // Tiêu đề và Đếm ngược 15p
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -950,35 +854,39 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
                               _fullyAccepted
                                   ? 'Đã chốt lịch & lưu hệ thống'
                                   : (_myAccept && _partnerAccept
-                                      ? 'Cả 2 bên đã đồng ý!'
-                                      : (_myAccept
-                                          ? 'Đã gửi yêu cầu xác nhận'
-                                          : (_partnerAccept
-                                              ? 'Đối phương đã chấp nhận!'
-                                              : 'Xác nhận hẹn xem BĐS'))),
+                                        ? 'Cả 2 bên đã đồng ý!'
+                                        : (_myAccept
+                                              ? 'Đã gửi yêu cầu xác nhận'
+                                              : (_partnerAccept
+                                                    ? 'Đối phương đã chấp nhận!'
+                                                    : 'Xác nhận hẹn xem BĐS'))),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: _fullyAccepted
                                     ? const Color(0xFF065F46)
                                     : (_myAccept || _partnerAccept
-                                        ? const Color(0xFF92400E)
-                                        : const Color(0xFF1A1918)),
+                                          ? const Color(0xFF92400E)
+                                          : const Color(0xFF1A1918)),
                                 fontFamily: 'Plus Jakarta Sans',
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if ((_myAccept || _partnerAccept) && !_fullyAccepted) ...[
+                          if ((_myAccept || _partnerAccept) &&
+                              !_fullyAccepted) ...[
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFEF3C7),
                                 borderRadius: BorderRadius.circular(10),
-                                border:
-                                    Border.all(color: const Color(0xFFFDE68A)),
+                                border: Border.all(
+                                  color: const Color(0xFFFDE68A),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1006,19 +914,21 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
                       const SizedBox(height: 2),
                       Text(
                         _fullyAccepted
-                            ? (isSeller ? 'Đã hẹn lịch xem nhà' : 'Lịch xem nhà đã được chốt')
+                            ? (isSeller
+                                  ? 'Đã hẹn lịch xem nhà'
+                                  : 'Lịch xem nhà đã được chốt')
                             : (_myAccept
-                                ? 'Chờ đối phương xác nhận (15p)'
-                                : (_partnerAccept
-                                    ? 'Nhấn chấp nhận để chốt lịch'
-                                    : 'Thống nhất và chốt lịch xem nhà')),
+                                  ? 'Chờ đối phương xác nhận (15p)'
+                                  : (_partnerAccept
+                                        ? 'Nhấn chấp nhận để chốt lịch'
+                                        : 'Thống nhất và chốt lịch xem nhà')),
                         style: TextStyle(
                           fontSize: 11,
                           color: _fullyAccepted
                               ? const Color(0xFF047857)
                               : (_myAccept || _partnerAccept
-                                  ? const Color(0xFFB45309)
-                                  : const Color(0xFF78736D)),
+                                    ? const Color(0xFFB45309)
+                                    : const Color(0xFF78736D)),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1027,28 +937,33 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Nút thao tác chuyên nghiệp (Chấp nhận / Hủy yêu cầu / Đã xem nhà xong)
                 ElevatedButton.icon(
                   onPressed: _isSubmittingAppointment
                       ? null
                       : (_fullyAccepted
-                          ? (isSeller ? _completePropertyViewing : null)
-                          : (_myAccept ? _cancelPropertyViewing : _acceptPropertyViewing)),
+                            ? (isSeller ? _completePropertyViewing : null)
+                            : (_myAccept
+                                  ? _cancelPropertyViewing
+                                  : _acceptPropertyViewing)),
                   icon: _isSubmittingAppointment
                       ? const SizedBox(
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : Icon(
                           _fullyAccepted
-                              ? (isSeller ? Icons.task_alt_rounded : Icons.verified_rounded)
+                              ? (isSeller
+                                    ? Icons.task_alt_rounded
+                                    : Icons.verified_rounded)
                               : (_myAccept
-                                  ? Icons.cancel_outlined
-                                  : (_partnerAccept
-                                      ? Icons.mark_email_unread_rounded
-                                      : Icons.approval_rounded)),
+                                    ? Icons.cancel_outlined
+                                    : (_partnerAccept
+                                          ? Icons.mark_email_unread_rounded
+                                          : Icons.approval_rounded)),
                           size: 15,
                           color: Colors.white,
                         ),
@@ -1056,10 +971,12 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
                     _isSubmittingAppointment
                         ? 'Đang xử lý...'
                         : (_fullyAccepted
-                            ? (isSeller ? 'Đã xem nhà xong' : 'Hoàn tất')
-                            : (_myAccept
-                                ? 'Hủy yêu cầu'
-                                : (_partnerAccept ? 'Đồng ý hẹn xem nhà' : 'Hẹn đi xem nhà'))),
+                              ? (isSeller ? 'Đã xem nhà xong' : 'Hoàn tất')
+                              : (_myAccept
+                                    ? 'Hủy yêu cầu'
+                                    : (_partnerAccept
+                                          ? 'Đồng ý hẹn xem nhà'
+                                          : 'Hẹn đi xem nhà'))),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -1068,14 +985,18 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _fullyAccepted
-                        ? (isSeller ? const Color(0xFF059669) : const Color(0xFF059669))
+                        ? (isSeller
+                              ? const Color(0xFF059669)
+                              : const Color(0xFF059669))
                         : (_myAccept
-                            ? const Color(0xFFDC2626)
-                            : (_partnerAccept
-                                ? const Color(0xFF2563EB)
-                                : const Color(0xFF945331))),
+                              ? const Color(0xFFDC2626)
+                              : (_partnerAccept
+                                    ? const Color(0xFF2563EB)
+                                    : const Color(0xFF945331))),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -1086,49 +1007,45 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
             ),
           ),
 
-          // DANH SÁCH TIN NHẮN REALTIME
           Expanded(
             child: _isLoadingHistory
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF945331),
-                    ),
+                    child: CircularProgressIndicator(color: Color(0xFF945331)),
                   )
                 : _messages.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.chat_bubble_outline,
-                              size: 48,
-                              color: Color(0xFF78736D),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Hãy bắt đầu cuộc trò chuyện với $_targetReceiverName',
-                              style: const TextStyle(
-                                color: Color(0xFF78736D),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.chat_bubble_outline,
+                          size: 48,
+                          color: Color(0xFF78736D),
                         ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = _messages[index];
-                          final isMe = msg.getSenderId == _myUserId;
+                        const SizedBox(height: 12),
+                        Text(
+                          'Hãy bắt đầu cuộc trò chuyện với $_targetReceiverName',
+                          style: const TextStyle(
+                            color: Color(0xFF78736D),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = _messages[index];
+                      final isMe = msg.getSenderId == _myUserId;
 
-                          return _buildMessageBubble(msg, isMe);
-                        },
-                      ),
+                      return _buildMessageBubble(msg, isMe);
+                    },
+                  ),
           ),
 
-          // Ô NHẬP TIN NHẮN CHAT
           SafeArea(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1184,7 +1101,6 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
                       ),
                     ),
                   ),
-                  
                 ],
               ),
             ),
@@ -1213,8 +1129,9 @@ class _ChatScreenState extends State<ChatScreen> with ApiInteractionMixin, ApiPr
           ),
         ),
         child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               msg.text,

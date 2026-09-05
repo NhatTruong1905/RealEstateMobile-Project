@@ -106,11 +106,8 @@ class _SellerOverviewScreenState extends State<SellerOverviewScreen>
           (myUsername != null && myUsername.isNotEmpty && rUser == myUsername) ||
           (myFullname != null && myFullname.isNotEmpty && rName == myFullname);
 
-      // Nếu cả sender và receiver đều là bản thân -> tự liên hệ mình -> bỏ qua
       if (isSenderMe && isReceiverMe) continue;
 
-      // Nếu sender là bản thân và receiver không phải bản thân -> lấy receiver làm khách
-      // Nếu sender không phải bản thân -> lấy sender làm khách
       if (isSenderMe) {
         if (myId != null && receiverId == myId) continue;
         if (myFullname != null && myFullname.isNotEmpty && rName == myFullname) continue;
@@ -182,7 +179,6 @@ class _SellerOverviewScreenState extends State<SellerOverviewScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // HEADER GREETING
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -314,7 +310,6 @@ class _SellerOverviewScreenState extends State<SellerOverviewScreen>
                 ),
                 const SizedBox(height: 24),
 
-                // BÀN CỜ THỐNG KÊ (METRICS GRID)
                 Row(
                   children: [
                     Expanded(
@@ -351,7 +346,6 @@ class _SellerOverviewScreenState extends State<SellerOverviewScreen>
 
                 const SizedBox(height: 28),
 
-                // PHÍM TẮT THAO TÁC NHANH
                 const Text(
                   'Thao tác nhanh',
                   style: TextStyle(
@@ -414,7 +408,6 @@ class _SellerOverviewScreenState extends State<SellerOverviewScreen>
                 ),
                 const SizedBox(height: 28),
 
-                // KHÁCH HÀNG MỚI LIÊN HỆ
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

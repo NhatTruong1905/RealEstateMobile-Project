@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:real_estate_frontend/mixin/api/ApiLoginMixin.dart';
 import 'package:real_estate_frontend/mixin/validation/ValidationMixin.dart';
+import 'package:real_estate_frontend/screens/ForgotPassword.dart';
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback? onLoginSuccess;
@@ -363,7 +364,15 @@ class _AuthScreenState extends State<AuthScreen>
                             child: Padding(
                               padding: const EdgeInsets.only(top: 12),
                               child: TextButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                },
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   minimumSize: Size.zero,

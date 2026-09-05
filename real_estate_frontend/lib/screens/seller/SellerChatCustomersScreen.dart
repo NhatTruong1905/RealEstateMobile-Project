@@ -10,7 +10,8 @@ class SellerChatCustomersScreen extends StatefulWidget {
   const SellerChatCustomersScreen({super.key});
 
   @override
-  State<SellerChatCustomersScreen> createState() => _SellerChatCustomersScreenState();
+  State<SellerChatCustomersScreen> createState() =>
+      _SellerChatCustomersScreenState();
 }
 
 class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
@@ -49,30 +50,34 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
     try {
       final myId = _chatService.currentUserId;
 
-      // 1. Nạp danh sách khách hàng từ phiên chat local
       final localCustomers = await _chatService.getAllChatCustomers();
 
-      // 2. Nạp tương tác từ API Backend
       final apiInteractions = await fetchUserInteractions();
 
       final Map<String, Map<String, dynamic>> mergedMap = {};
 
-      // Đưa tương tác API vào danh sách
       for (var item in apiInteractions) {
-        final code = (item['interactionTypeCode'] ?? item['code'] ?? item['type'] ?? '')
-            .toString()
-            .toUpperCase();
+        final code =
+            (item['interactionTypeCode'] ?? item['code'] ?? item['type'] ?? '')
+                .toString()
+                .toUpperCase();
         if (code != 'CHAT' && code != 'MESSAGE') continue;
 
         final status = (item['status'] as num?)?.toInt() ?? 0;
-        final isActiveViewing = (status == 1) &&
+        final isActiveViewing =
+            (status == 1) &&
             (code == 'MESSAGE' || code == 'CHAT' || code == 'VIEWING');
         final senderObj = item['sender'] is Map ? item['sender'] as Map : null;
-        final receiverObj = item['receiver'] is Map ? item['receiver'] as Map : null;
-        final propObj = item['property'] is Map ? item['property'] as Map : null;
+        final receiverObj = item['receiver'] is Map
+            ? item['receiver'] as Map
+            : null;
+        final propObj = item['property'] is Map
+            ? item['property'] as Map
+            : null;
 
         int? customerId = item['senderId'] ?? senderObj?['id'];
-        String name = item['senderName'] ??
+        String name =
+            item['senderName'] ??
             item['senderFullname'] ??
             item['senderUsername'] ??
             senderObj?['fullname'] ??
@@ -81,7 +86,8 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
 
         if (myId != null && customerId == myId) {
           customerId = item['receiverId'] ?? receiverObj?['id'];
-          final recName = item['receiverName'] ??
+          final recName =
+              item['receiverName'] ??
               item['receiverFullname'] ??
               item['receiverUsername'] ??
               receiverObj?['fullname'] ??
@@ -96,13 +102,22 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
 
         final senderId = customerId;
         final propertyId = item['propertyId'] ?? propObj?['id'];
-        final phone = item['senderPhone'] ??
+        final phone =
+            item['senderPhone'] ??
             senderObj?['phone'] ??
             item['phone'] ??
             'Chưa cập nhật SĐT';
-        final propertyTitle = item['propertyTitle'] ?? propObj?['title'] ?? 'Bất động sản quan tâm';
-        final message = item['message'] ?? item['content'] ?? 'Đã gửi tin nhắn tư vấn';
-        final time = item['createdAt'] ?? item['createdDate'] ?? item['timestamp'] ?? 'Mới đây';
+        final propertyTitle =
+            item['propertyTitle'] ??
+            propObj?['title'] ??
+            'Bất động sản quan tâm';
+        final message =
+            item['message'] ?? item['content'] ?? 'Đã gửi tin nhắn tư vấn';
+        final time =
+            item['createdAt'] ??
+            item['createdDate'] ??
+            item['timestamp'] ??
+            'Mới đây';
 
         final key = 'id_$senderId';
 
@@ -128,7 +143,6 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
         }
       }
 
-      // Đưa các phiên chat local vào (nếu có khách mới chưa lưu DB)
       for (var c in localCustomers) {
         final senderId = c['senderId'];
         if (myId != null && senderId == myId) continue;
@@ -138,14 +152,14 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
         if (!mergedMap.containsKey(key)) {
           mergedMap[key] = c;
         } else {
-          // Cập nhật thông tin tin nhắn mới nhất
-          mergedMap[key]!['latestMessage'] = c['latestMessage'] ?? mergedMap[key]!['latestMessage'];
-          mergedMap[key]!['latestTime'] = c['latestTime'] ?? mergedMap[key]!['latestTime'];
+          mergedMap[key]!['latestMessage'] =
+              c['latestMessage'] ?? mergedMap[key]!['latestMessage'];
+          mergedMap[key]!['latestTime'] =
+              c['latestTime'] ?? mergedMap[key]!['latestTime'];
         }
       }
 
       final list = mergedMap.values.toList();
-      // Sắp xếp theo thứ tự mới nhất đến cũ nhất
       list.sort((a, b) {
         final timeA = a['latestTime']?.toString() ?? '';
         final timeB = b['latestTime']?.toString() ?? '';
@@ -175,7 +189,11 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
         elevation: 1,
         shadowColor: Colors.black12,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1A1918), size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Color(0xFF1A1918),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -190,7 +208,6 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
       ),
       body: Column(
         children: [
-          // Ô TÌM KIẾM
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
@@ -206,11 +223,21 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                     },
                     decoration: InputDecoration(
                       hintText: 'Nhập tên khách hàng...',
-                      hintStyle: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
-                      prefixIcon: const Icon(Icons.person_search, color: Color(0xFF945331)),
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF9E9E9E),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.person_search,
+                        color: Color(0xFF945331),
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18, color: Color(0xFF78736D)),
+                              icon: const Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: Color(0xFF78736D),
+                              ),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() {
@@ -232,7 +259,10 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFF945331), width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF945331),
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -247,11 +277,17 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                   icon: const Icon(Icons.search, color: Colors.white, size: 18),
                   label: const Text(
                     'Tìm',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF945331),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -262,7 +298,6 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
             ),
           ),
 
-          // DANH SÁCH KHÁCH HÀNG NHẮN TIN
           Expanded(
             child: _isLoading
                 ? const Center(
@@ -275,7 +310,9 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                       final filtered = _chatCustomers.where((c) {
                         if (_searchQuery.trim().isNotEmpty) {
                           final q = _searchQuery.trim().toLowerCase();
-                          final name = (c['name'] ?? '').toString().toLowerCase();
+                          final name = (c['name'] ?? '')
+                              .toString()
+                              .toLowerCase();
                           return name.contains(q);
                         }
                         return true;
@@ -297,15 +334,17 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                       }
 
                       return ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final item = filtered[index];
                           return _buildCustomerChatItem(item);
                         },
                       );
-                    }(),
-                  ),
+                    }(),                  ),
           ),
         ],
       ),
@@ -362,9 +401,14 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1565C0).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF1565C0,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(
@@ -403,6 +447,7 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
               color: Color(0xFF1A1918),
             ),
           ),
+
           const SizedBox(height: 6),
 
           Container(
@@ -413,12 +458,19 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
             ),
             child: Row(
               children: [
-                const Icon(Icons.chat_bubble_outline, size: 16, color: Color(0xFF945331)),
+                const Icon(
+                  Icons.chat_bubble_outline,
+                  size: 16,
+                  color: Color(0xFF945331),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     item['latestMessage'] ?? 'Nội dung tin nhắn',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF1A1918)),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF1A1918),
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -435,7 +487,9 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                   onPressed: () {
                     final dummyProperty = PropertyDTO(
                       id: item['latestPropertyId'] ?? 1,
-                      title: item['latestPropertyTitle'] ?? 'Bất động sản quan tâm',
+                      title:
+                          item['latestPropertyTitle'] ??
+                          'Bất động sản quan tâm',
                       price: 2500000000,
                     );
                     Navigator.push(
@@ -450,10 +504,18 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                       ),
                     );
                   },
-                  icon: const Icon(Icons.chat, color: Color(0xFF945331), size: 16),
+                  icon: const Icon(
+                    Icons.chat,
+                    color: Color(0xFF945331),
+                    size: 16,
+                  ),
                   label: const Text(
                     'Trò chuyện',
-                    style: TextStyle(color: Color(0xFF945331), fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(
+                      color: Color(0xFF945331),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
@@ -469,8 +531,11 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      final propId = (item['latestPropertyId'] ?? item['propertyId'] ?? 1) as int;
-                      final customerId = (item['senderId'] ?? item['userId'] ?? 0) as int;
+                      final propId =
+                          (item['latestPropertyId'] ?? item['propertyId'] ?? 1)
+                              as int;
+                      final customerId =
+                          (item['senderId'] ?? item['userId'] ?? 0) as int;
                       try {
                         await markInteractionCompleted(
                           propertyId: propId,
@@ -484,7 +549,9 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Đã cập nhật hoàn tất lượt xem nhà cho khách hàng này!'),
+                              content: Text(
+                                'Đã cập nhật hoàn tất lượt xem nhà cho khách hàng này!',
+                              ),
                               backgroundColor: Color(0xFF2E7D32),
                             ),
                           );
@@ -493,10 +560,18 @@ class _SellerChatCustomersScreenState extends State<SellerChatCustomersScreen>
                         debugPrint('Lỗi hoàn tất xem nhà: $e');
                       }
                     },
-                    icon: const Icon(Icons.task_alt_rounded, color: Colors.white, size: 16),
+                    icon: const Icon(
+                      Icons.task_alt_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                     label: const Text(
                       'Đã xem nhà xong',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF059669),

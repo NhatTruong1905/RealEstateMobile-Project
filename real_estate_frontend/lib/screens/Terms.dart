@@ -52,7 +52,10 @@ class _TermsScreenState extends State<TermsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
                       InkWell(
@@ -109,7 +112,9 @@ class _TermsScreenState extends State<TermsScreen> {
                           width: 64,
                           height: 64,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF945331).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF945331,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Icon(
@@ -131,7 +136,9 @@ class _TermsScreenState extends State<TermsScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        _buildSectionTitle('Quyền sở hữu trí tuệ đối với nội dung'),
+                        _buildSectionTitle(
+                          'Quyền sở hữu trí tuệ đối với nội dung',
+                        ),
                         _buildParagraph(
                           'Với việc đưa nội dung lên vùng tương tác bất kỳ, bạn tự động chấp nhận và/hoặc cam đoan rằng, chủ sở hữu của nội dung đó, hoặc là bạn, hoặc là nhóm thứ ba, đã cho website realestate.com.vn quyền và giấy phép không phải trả tiền bản quyền, lâu dài, không thay đổi, không loại trừ, không hạn chế để sử dụng, mô phỏng, thay đổi, sửa lại, công bố, dịch thuật, tạo các sản phẩm phái sinh, cấp phép con, phân phối, thực hiện và hiển thị nội dung đó, toàn phần hay từng phần, khắp thế giới và/hoặc kết hợp nó với các công việc khác ở dạng bất kỳ, qua các phương tiện truyền thông hoặc công nghệ hiện tại hay sẽ phát triển sau này theo điều khoản đầy đủ của Quyền Sở hữu Trí tuệ bất kỳ trong nội dung đó.',
                         ),
@@ -215,4 +222,3 @@ class _TermsScreenState extends State<TermsScreen> {
     );
   }
 }
-
