@@ -6,9 +6,10 @@ import 'package:http/http.dart' as http;
 import 'package:real_estate_frontend/dto/UserDTO.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:real_estate_frontend/services/ChatService.dart';
+import 'package:real_estate_frontend/config/AppConfig.dart';
 
 mixin ApiLoginMixin {
-  final String baseUrl = "http://10.0.2.2:8080/api";
+  String get baseUrl => AppConfig.springBootBaseUrl;
 
   Future<bool> login(String username, String password) async {
     final url = Uri.parse("$baseUrl/auth/login");

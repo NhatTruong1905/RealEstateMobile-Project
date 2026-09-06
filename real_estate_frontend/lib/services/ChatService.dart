@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:real_estate_frontend/dto/ChatMessageDTO.dart';
+import 'package:real_estate_frontend/config/AppConfig.dart';
 
 enum ChatConnectionState { disconnected, connecting, connected }
 
@@ -23,8 +24,8 @@ class ChatService {
   final StreamController<ChatConnectionState> _connectionStreamController =
       StreamController<ChatConnectionState>.broadcast();
 
-  String _baseUrl = "http://10.0.2.2:8080/api";
-  String _wsUrl = "ws://10.0.2.2:8080/ws";
+  String _baseUrl = AppConfig.springBootBaseUrl;
+  String _wsUrl = AppConfig.springBootWsUrl;
 
   int? _currentUserId;
   int? _currentPropertyId;

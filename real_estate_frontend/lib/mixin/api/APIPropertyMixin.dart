@@ -6,11 +6,12 @@ import 'package:real_estate_frontend/dto/PropertyDTO.dart';
 import 'package:real_estate_frontend/dto/PropertyPageResponseDTO.dart';
 import 'package:real_estate_frontend/dto/PropertyRequestDTO.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:real_estate_frontend/config/AppConfig.dart';
 
 Set<int> userFavoriteIds = {};
 
 mixin ApiPropertyMixin {
-  final String baseUrl = "http://10.0.2.2:8080/api";
+  String get baseUrl => AppConfig.springBootBaseUrl;
 
   Future<PropertyPageResponseDTO?> fetchPropertiesPage({
     PropertyRequestDTO? request,

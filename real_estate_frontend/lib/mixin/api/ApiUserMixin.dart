@@ -5,9 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../dto/UserDTO.dart';
+import '../../config/AppConfig.dart';
 
 mixin ApiUserMixin {
-  final String baseUrl = "http://10.0.2.2:8080/api";
+  String get baseUrl => AppConfig.springBootBaseUrl;
 
   Future<UserDTO?> getProfile() async {
     try {

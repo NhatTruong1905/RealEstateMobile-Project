@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:real_estate_frontend/config/AppConfig.dart';
 
 class RagChatMessage {
   String text;
@@ -55,7 +56,7 @@ class RagChatService {
   factory RagChatService() => _instance;
   RagChatService._internal();
 
-  String _baseUrl = "http://10.0.2.2:8000/api";
+  String _baseUrl = AppConfig.aiBaseUrl;
   static const String _storageKey = "rag_chat_history_v1";
 
   void configureHost(String host, {int port = 8000}) {
@@ -86,9 +87,11 @@ class RagChatService {
 
     final candidateUrls = {
       "$_baseUrl/chat-rag/stream",
-      "http://10.0.2.2:8000/api/chat-rag/stream",
-      "http://localhost:8000/api/chat-rag/stream",
-      "http://127.0.0.1:8000/api/chat-rag/stream",
+      if (!AppConfig.isProduction) ...[
+        "http://10.0.2.2:8000/api/chat-rag/stream",
+        "http://localhost:8000/api/chat-rag/stream",
+        "http://127.0.0.1:8000/api/chat-rag/stream",
+      ],
     }.toList();
 
     bool streamSuccess = false;
@@ -141,9 +144,11 @@ class RagChatService {
 
     final candidateUrls = {
       "$_baseUrl/chat-rag",
-      "http://10.0.2.2:8000/api/chat-rag",
-      "http://localhost:8000/api/chat-rag",
-      "http://127.0.0.1:8000/api/chat-rag",
+      if (!AppConfig.isProduction) ...[
+        "http://10.0.2.2:8000/api/chat-rag",
+        "http://localhost:8000/api/chat-rag",
+        "http://127.0.0.1:8000/api/chat-rag",
+      ],
     }.toList();
 
     final historyList = _buildHistoryPayload(history);

@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter: Chạy Local (Dev - 10.0.2.2)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "real_estate_frontend",
+      "program": "real_estate_frontend/lib/main.dart"
+    },
+    {
+      "name": "Flutter: Chạy Deploy (Prod - Railway)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "real_estate_frontend",
+      "program": "real_estate_frontend/lib/main.dart",
+      "args": ["--dart-define=ENV=prod"]
+    }
+  ]
+}
