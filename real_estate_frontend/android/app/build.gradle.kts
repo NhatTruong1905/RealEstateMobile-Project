@@ -45,9 +45,6 @@ android {
 
     buildTypes {
         release {
-            ndk {
-                debugSymbolLevel = "none"
-            }
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
