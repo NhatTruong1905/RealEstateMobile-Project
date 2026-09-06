@@ -1,12 +1,13 @@
 <div align="center">
 
-# 🏡 BẤT ĐỘNG SẢN NDNT (REAL ESTATE MOBILE PLATFORM)
-### Hệ Thống Ứng Dụng Di Động Bất Động Sản Tích Hợp Trợ Lý Ảo AI (RAG) & Chat Thời Gian Thực
+# 🏡 BẤT ĐỘNG SẢN NDNT
+### Nền Tảng Di Động Bất Động Sản Tích Hợp Trợ Lý Ảo AI & Chat Thời Gian Thực
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.44.8-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.12-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
 [![LangChain](https://img.shields.io/badge/LangChain-RAG-1C3C3C?style=for-the-badge&logo=chainlink&logoColor=white)](https://www.langchain.com)
@@ -17,47 +18,50 @@
 
 ---
 
-## 📖 1. Giới Thiệu Dự Án (Project Overview)
+## 📖 1. Giới Thiệu Dự Án
 
-**Bất Động Sản NDNT** là giải pháp nền tảng công nghệ bất động sản toàn diện (PropTech Platform) kết hợp giữa ứng dụng di động đa nền tảng (**Flutter**), hệ thống quản lý dịch vụ lõi phân tán (**Spring Boot**) và trung tâm xử lý trí tuệ nhân tạo thông minh (**FastAPI + LangChain + RAG**).
+**Bất Động Sản NDNT** là giải pháp nền tảng công nghệ bất động sản toàn diện (PropTech Platform) kết hợp giữa ứng dụng di động đa nền tảng (**Flutter**), hệ thống quản lý dịch vụ lõi phân tán (**Spring Boot**), cơ sở dữ liệu đám mây (**Supabase PostgreSQL**) và trung tâm xử lý trí tuệ nhân tạo thông minh (**FastAPI + LangChain + RAG**).
 
 Dự án cung cấp cho người dùng trải nghiệm tìm kiếm, đăng tin mua bán, cho thuê nhà đất, tương tác thương lượng trực tiếp qua **WebSocket Chat thời gian thực**, cùng với **Trợ lý ảo AI RAG** có khả năng trả lời thông minh dựa trên dữ liệu bất động sản chuyên sâu 24/7.
 
 ---
 
-## 🚀 2. Điểm Nhấn Công Nghệ & Triển Khai (Live Deployments)
+## 🚀 2. Điểm Nhấn Công Nghệ & Triển Khai
 
 | Thành phần | Công nghệ chính | Trạng thái triển khai | Địa chỉ Live / Kênh phân phối |
 | :--- | :--- | :---: | :--- |
-| **Mobile App (Frontend)** | Flutter, Kotlin, Android App Bundle | ✅ Đã phát hành | Google Play Store (`com.ndnt.realestate`) |
-| **Core Backend (REST & WS)** | Spring Boot 3, Spring Security, JWT, JPA, WebSocket | ✅ Đang chạy | `https://realestatemobile-project-production.up.railway.app` |
+| **Mobile App** | Flutter, Kotlin, Android App Bundle | ✅ Đã phát hành | Google Play Store (`com.ndnt.realestate`) |
+| **Core Backend** | Spring Boot 3, Spring Security, JWT, JPA, WebSocket | ✅ Đang chạy | `https://realestatemobile-project-production.up.railway.app` |
 | **AI RAG Service** | Python, FastAPI, LangChain, FAISS Vector DB, Gemini | ✅ Đang chạy | `https://real-estate-ai-production-e985.up.railway.app` |
-| **Cơ sở dữ liệu** | MySQL / PostgreSQL, FAISS Vector Store | ✅ Đang chạy | Railway Database Cloud |
+| **Cơ sở dữ liệu** | PostgreSQL, FAISS Vector Store | ✅ Đang chạy | Supabase Cloud Database |
 
 ---
 
-## 🏛️ 3. Kiến Trúc Hệ Thống (System Architecture)
+## 🏛️ 3. Kiến Trúc Hệ Thống
 
 ```mermaid
 flowchart TD
-    subgraph MobileApp["📱 Mobile Client (Flutter)"]
-        UI["Flutter UI Layer (Material 3)"]
-        AppConfig["AppConfig (Dev / Prod Switcher)"]
-        ChatModule["Chat Service (WebSocket / WSS)"]
-        RAGModule["RAG Chatbot Service (SSE / Stream)"]
+    subgraph MobileApp["📱 Mobile Client - Flutter"]
+        UI["Flutter UI Layer - Material 3"]
+        AppConfig["AppConfig - Dev / Prod Switcher"]
+        ChatModule["Chat Service - WebSocket / WSS"]
+        RAGModule["RAG Chatbot Service - SSE / Stream"]
         ApiServices["REST API Mixins & Services"]
     end
 
-    subgraph CloudHosting["☁️ Cloud Platform (Railway)"]
-        subgraph SpringBackend["🍃 Spring Boot Core Backend"]
+    subgraph CloudHosting["☁️ Cloud Platform - Railway & Supabase"]
+        subgraph SpringBackend["🍃 Spring Boot Core Backend - Railway"]
             AuthSec["Spring Security & JWT Auth"]
             PropController["Property Management APIs"]
             InteractionController["Interaction & Favorite APIs"]
             WsServer["WebSocket STOMP Server (/ws)"]
-            DB[(Relational Database)]
         end
 
-        subgraph AIBackend["🤖 AI Service (FastAPI)"]
+        subgraph DatabaseCloud["🗄️ Database Cloud - Supabase"]
+            DB[("PostgreSQL Database - Supabase")]
+        end
+
+        subgraph AIBackend["🤖 AI Service - FastAPI - Railway"]
             FastAPIEndpoint["FastAPI Streaming Endpoints"]
             LangChainEngine["LangChain Pipeline"]
             VectorDB[("FAISS Vector Database")]
@@ -66,7 +70,7 @@ flowchart TD
     end
 
     subgraph StoreDistribution["🛍️ Distribution"]
-        PlayStore["Google Play Store (CH Play)"]
+        PlayStore["Google Play Store - CH Play"]
     end
 
     %% Connections
@@ -92,31 +96,31 @@ flowchart TD
 
 ---
 
-## ✨ 4. Các Tính Năng Nổi Bật (Key Features)
+## ✨ 4. Các Tính Năng Nổi Bật
 
-### 4.1. Mobile Application (Flutter)
+### 4.1. Ứng Dụng Di Động Flutter
 - **Tìm kiếm & Lọc Bất Động Sản**: Lọc theo khu vực, mức giá, diện tích, loại bất động sản (nhà phố, căn hộ, biệt thự, đất nền...).
 - **Chi tiết Bất Động Sản**: Hiển thị bộ sưu tập hình ảnh, thông số kỹ thuật, tiện ích xung quanh, vị trí bản đồ và thông tin người bán.
-- **Trợ lý ảo AI tư vấn (RAG Chatbot)**: Giao diện chat thời gian thực hỗ trợ Server-Sent Events (SSE Streaming), phản hồi mượt mà từng từ kèm khả năng truy vấn ngữ nghĩa từ cơ sở dữ liệu tri thức.
+- **Trợ lý ảo AI tư vấn**: Giao diện chat thời gian thực hỗ trợ Server-Sent Events (SSE Streaming), phản hồi mượt mà từng từ kèm khả năng truy vấn ngữ nghĩa từ cơ sở dữ liệu tri thức.
 - **Chat trực tiếp thời gian thực**: Trò chuyện tức thì giữa người mua và người bán thông qua giao thức WebSocket bảo mật (`wss://`).
-- **Xác thực đa kênh (Authentication)**: Đăng nhập bằng tài khoản nội bộ (JWT), tài khoản Google (Google Sign-In) hoặc Facebook (Facebook Auth).
+- **Xác thực đa kênh**: Đăng nhập bằng tài khoản nội bộ (JWT), tài khoản Google (Google Sign-In) hoặc Facebook (Facebook Auth).
 - **Yêu thích & Đăng tin**: Lưu trữ danh sách bất động sản yêu thích, hỗ trợ người dùng đăng tin bán/cho thuê với tính năng tải ảnh từ thư viện hoặc camera.
-- **Hỗ trợ Đa môi trường (Environment Profiles)**: Tự động chuyển đổi thông minh giữa Local Dev (`10.0.2.2`) và Production Deploy (Railway HTTPS/WSS) dựa vào cờ compile hoặc chế độ build.
+- **Hỗ trợ Đa môi trường**: Tự động chuyển đổi thông minh giữa Local Dev (`10.0.2.2`) và Production Deploy (Railway HTTPS/WSS) dựa vào cờ compile hoặc chế độ build.
 
-### 4.2. Core Backend (Spring Boot)
+### 4.2. Hệ Thống Backend Spring Boot
 - **Kiến trúc phân tầng chuẩn**: Controller, Service, Repository, DTO, Entity và Mapper.
 - **Bảo mật Spring Security & JWT**: Quản lý phiên làm việc không trạng thái (Stateless), phân quyền Role-based Access Control (RBAC).
 - **WebSocket STOMP & Messaging**: Hỗ trợ nhắn tin riêng tư 1-1, đồng bộ trạng thái tin nhắn và thông báo tương tác.
-- **Quản lý dữ liệu quan hệ**: Tối ưu truy vấn dữ liệu bất động sản, quan hệ người dùng, lượt tương tác và danh sách bất động sản yêu thích.
+- **Quản lý dữ liệu trên Supabase**: Tối ưu truy vấn dữ liệu bất động sản, quan hệ người dùng, lượt tương tác và danh sách bất động sản yêu thích trên PostgreSQL Supabase.
 
-### 4.3. AI RAG Service (FastAPI & LangChain)
-- **Kỹ thuật RAG (Retrieval-Augmented Generation)**: Kết hợp LLM với kho dữ liệu văn bản pháp lý và thị trường bất động sản để cung cấp câu trả lời chính xác, tránh hiện tượng ảo giác (hallucination).
-- **Vector Database (FAISS)**: Tìm kiếm độ tương đồng vector (Similarity Search) siêu tốc.
+### 4.3. Dịch Vụ AI RAG Thông Minh
+- **Kỹ thuật RAG**: Kết hợp LLM với kho dữ liệu văn bản pháp lý và thị trường bất động sản để cung cấp câu trả lời chính xác, tránh hiện tượng ảo giác (hallucination).
+- **Vector Database**: Tìm kiếm độ tương đồng vector (Similarity Search) siêu tốc bằng FAISS.
 - **Streaming Response**: Trả về dữ liệu dạng luồng (Chunk stream) giúp người dùng không phải chờ đợi lâu khi AI phân tích câu hỏi.
 
 ---
 
-## 📁 5. Cấu Trúc Thư Mục Toàn Dự Án (Repository Structure)
+## 📁 5. Cấu Trúc Thư Mục Toàn Dự Án
 
 ```text
 RealEstateMobile-Project/
@@ -136,7 +140,7 @@ RealEstateMobile-Project/
 │
 ├── real-estate-backend/          # Backend chính viết bằng Spring Boot
 │   ├── src/main/java/com/ndnt/
-│   │   ├── config/               # Cấu hình Security, WebSocket, CORS...
+│   │   ├── config/               # Cấu hình Security, WebSocket, CORS, DataSource...
 │   │   ├── controller/           # REST Controllers
 │   │   ├── model/entity/         # JPA Entities (User, Property, Interaction...)
 │   │   ├── repository/           # Spring Data JPA Repositories
@@ -157,13 +161,13 @@ RealEstateMobile-Project/
 
 ---
 
-## 🛠️ 6. Hướng Dẫn Cài Đặt & Chạy Môi Trường Cục Bộ (Local Setup)
+## 🛠️ 6. Hướng Dẫn Cài Đặt & Chạy Cục Bộ
 
-### Yêu Cầu Tiên Quyết (Prerequisites)
+### Yêu Cầu Tiên Quyết
 - **Java**: JDK 17+
 - **Python**: 3.10+
 - **Flutter**: SDK 3.24+ (kèm Android SDK & cmdline-tools)
-- **Database**: MySQL 8.0+ hoặc PostgreSQL
+- **Database**: PostgreSQL (Supabase Cloud hoặc Local)
 
 ---
 
@@ -171,8 +175,12 @@ RealEstateMobile-Project/
 ```bash
 cd real-estate-backend
 
-# Cấu hình thông tin cơ sở dữ liệu trong src/main/resources/application.properties
-# Sau đó chạy bằng Maven:
+# Cấu hình thông tin kết nối Supabase PostgreSQL trong src/main/resources/application.properties:
+# spring.datasource.url=jdbc:postgresql://<supabase-host>:5432/<database>
+# spring.datasource.username=<username>
+# spring.datasource.password=<password>
+
+# Chạy ứng dụng bằng Maven:
 ./mvnw clean spring-boot:run
 ```
 *Backend mặc định khởi chạy tại: `http://localhost:8080` (hoặc `http://10.0.2.2:8080` trên Android Emulator).*
@@ -224,7 +232,7 @@ Dự án đã tích hợp sẵn cơ chế nhận biết môi trường tự đ�
 
 ---
 
-## 📦 7. Hướng Dẫn Đóng Gói & Phát Hành CH Play (Google Play Build)
+## 📦 7. Hướng Dẫn Đóng Gói & Phát Hành CH Play
 
 ### 1. Chuẩn bị Keystore & File Cấu Hình Ký Số
 File `key.properties` được đặt tại `real_estate_frontend/android/key.properties` (được bảo vệ tự động bằng `.gitignore`):
@@ -254,7 +262,7 @@ flutter build appbundle --release
 
 ---
 
-## 👨‍💻 9. Tác Giả & Đóng Góp (Author)
+## 👨‍💻 9. Tác Giả & Đóng Góp
 - **Tác giả**: [NhatTruong1905](https://github.com/NhatTruong1905)
 - **Dự án**: Real Estate Mobile Platform with AI & Spring Boot
 - **Liên hệ**: [tn696199@gmail.com](mailto:tn696199@gmail.com)
