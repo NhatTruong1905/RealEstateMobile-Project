@@ -257,7 +257,7 @@ flutter build appbundle --release
 ## 👨‍💻 9. Tác Giả & Đóng Góp (Author)
 - **Tác giả**: [NhatTruong1905](https://github.com/NhatTruong1905)
 - **Dự án**: Real Estate Mobile Platform with AI & Spring Boot
-- **Liên hệ**: nguyennhattruong1905@gmail.com
+- **Liên hệ**: [tn696199@gmail.com](mailto:tn696199@gmail.com)
 
 ---
 
