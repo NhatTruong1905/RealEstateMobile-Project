@@ -43,61 +43,22 @@
 
 ## 🏛️ 3. Kiến Trúc Toàn Hệ Thống
 
-```mermaid
-flowchart TD
-    subgraph MobileApp["📱 Mobile Client - Flutter (Android / iOS)"]
-        UI["Flutter UI Layer - Material 3"]
-        AppConfig["AppConfig - Tự Động Switch Dev (10.0.2.2) / Prod"]
-        ChatModule["Chat Service - WebSocket STOMP (/ws)"]
-        RAGModule["RAG Chatbot Service - SSE Stream (/ask)"]
-        ApiServices["REST API Mixins (Auth, Property, User, Interaction)"]
-    end
+<div align="center">
+  <img src="docs/system-architecture.png" alt="Sơ Đồ Kiến Trúc Hệ Thống Bất Động Sản" width="100%" />
+  <p><em>Hình 1: Sơ đồ kiến trúc tổng thể toàn diện của hệ thống (Actors, Client Apps, AI Assistant, Core Backend, Data Services & Identity Providers).</em></p>
+</div>
 
-    subgraph CloudPlatform["☁️ Cloud Platform - Railway & Supabase"]
-        subgraph SpringBackend["🍃 Spring Boot Core Backend (Cổng 8080)"]
-            AuthSec["Spring Security & JWT Authentication Filter"]
-            AdminController["Admin Web Controllers (Thymeleaf)"]
-            PropController["REST API Property / User / Favorite / Interaction"]
-            WsServer["WebSocket STOMP Broker (/ws)"]
-        end
+### Chi Tiết Các Khối Phân Hệ Trong Kiến Trúc
 
-        subgraph DatabaseCloud["🗄️ Dữ Liệu & Lưu Trữ"]
-            DB[("PostgreSQL Database - Supabase (Prod) / MySQL (Dev)")]
-            Cloudinary[("Cloudinary Cloud - Lưu Trữ & CDN Hình Ảnh")]
-        end
-
-        subgraph AIBackend["🤖 AI RAG Service - FastAPI (Cổng 8000)"]
-            FastAPIEndpoint["FastAPI Streaming Endpoints (/api/ask)"]
-            LangChainEngine["LangChain Pipeline & Prompt Templates"]
-            VectorDB[("FAISS Vector Index (index.faiss, docstore.pkl)")]
-            GeminiLLM["Google Gemini Generative AI (LLM)"]
-        end
-    end
-
-    subgraph StoreDistribution["🛍️ Kênh Phân Phối"]
-        PlayStore["Google Play Store (CH Play)"]
-    end
-
-    %% Connections
-    MobileApp -.->|Phát hành qua file .aab| PlayStore
-    UI --> AppConfig
-    AppConfig --> ApiServices
-    AppConfig --> ChatModule
-    AppConfig --> RAGModule
-
-    ApiServices -->|HTTPS/HTTP REST API| AuthSec
-    ApiServices -->|HTTPS/HTTP REST API| PropController
-    ChatModule -->|WSS/WS STOMP Protocol| WsServer
-    RAGModule -->|HTTPS/HTTP SSE Stream| FastAPIEndpoint
-
-    PropController --> DB
-    AdminController --> DB
-    PropController --> Cloudinary
-
-    FastAPIEndpoint --> LangChainEngine
-    LangChainEngine --> VectorDB
-    LangChainEngine --> GeminiLLM
-```
+| Phân hệ / Khối | Thành phần chi tiết | Công nghệ & Tập tin chính | Vai trò & Trách nhiệm |
+| :--- | :--- | :--- | :--- |
+| **Client Apps** | `Flutter App` | Flutter 3.24+, Dart, Material 3 | Ứng dụng di động phục vụ Người Mua / Người Bán (`Buyer Seller`), gọi REST API, gửi nhận STOMP messages qua WebSocket và giao tiếp SSE streaming với AI. |
+| **External Services** | `Google / Facebook Identity`, `Gemini LLM` | Google OAuth 2.0, Facebook Graph API, Google Gemini AI | Xác thực token người dùng không cần mật khẩu; sinh câu trả lời tự nhiên thông minh từ tri thức chuyên sâu BĐS. |
+| **AI Assistant** | `RAG API`, `RAG Pipeline` | FastAPI, LangChain, FAISS, Python (`routes.py`, `pipeline.py`) | Tiếp nhận truy vấn tư vấn pháp lý / định giá, trích xuất ngữ cảnh liên quan từ vector store FAISS và streaming kết quả về di động. |
+| **Core Backend** | `Admin Dashboard`, `Admin Properties`, `Admin Interactions` | Spring MVC, Thymeleaf | Giao diện và API dành cho `Admin Staff` theo dõi dữ liệu, kiểm duyệt tin đăng và quản lý lịch sử tương tác. |
+| **Core Backend** | `Property API`, `Interaction API`, `WebSocket Chat`, `Auth API` | Spring Boot REST Controller, WebSocket STOMP Message Broker | Xử lý các nghiệp vụ cốt lõi: đăng bài, lọc tin, ghi nhận tin yêu thích, nhắn tin trực tiếp 1-1 và xác thực tài khoản. |
+| **Service Layer** | `Property Service`, `Interaction Service`, `User Service`, `JWT Security` | Spring Data JPA Service, `JwtFilter.java`, `UserService.java` | Hiện thực hóa nghiệp vụ nghiệp vụ, điều phối đọc/ghi cơ sở dữ liệu, phân quyền tài khoản và cấp phát JWT Token. |
+| **Data Services** | `FAISS Index`, `Property Repo`, `Interaction Repo`, `Cloudinary`, `SQL Database` | FAISS (`index.faiss`), Spring Data JPA, Cloudinary CDN, MySQL / PostgreSQL | Lưu trữ vector ngữ cảnh, kho hình ảnh bất động sản và cơ sở dữ liệu quan hệ lưu trữ dữ liệu vĩnh viễn (users, properties, interactions). |
 
 ---
 
@@ -136,6 +97,10 @@ RealEstateMobile-Project/
 │
 ├── .vscode/                               # Cấu hình phát triển trên Visual Studio Code
 │   └── launch.json                        # Cấu hình 1-click debug Flutter (Dev Local vs Prod Railway)
+│
+├── docs/                                  # Tài liệu thiết kế & sơ đồ kiến trúc hệ thống
+│   ├── system-architecture.png            # Sơ đồ kiến trúc toàn diện hệ thống
+│   └── system-architecture-simplified.png # Sơ đồ phân tầng kiến trúc rút gọn
 │
 ├── real-estate-backend/                   # 🍃 DỊCH VỤ LÕI BACKEND (SPRING BOOT 3 / JAVA 21)
 │   ├── src/main/java/com/ndnt/
