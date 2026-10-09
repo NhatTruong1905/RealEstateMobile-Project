@@ -14,6 +14,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+
 app.include_router(api_router)
 
 if __name__ == "__main__":
@@ -22,4 +23,7 @@ if __name__ == "__main__":
 
 
 
-    
+
+
+
+
