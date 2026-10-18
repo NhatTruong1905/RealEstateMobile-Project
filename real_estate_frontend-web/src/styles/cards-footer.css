@@ -1,0 +1,231 @@
+.property-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+}
+.property-grid.two-cols {
+  grid-template-columns: repeat(2, 1fr);
+}
+.property-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  position: relative;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.save-property {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(23, 37, 31, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 252, 246, 0.94);
+  color: var(--forest);
+  box-shadow: 0 5px 18px rgba(23, 37, 31, 0.12);
+  transition: transform 0.18s, background 0.18s, color 0.18s;
+}
+.save-property:hover { transform: scale(1.06); background: #fff; }
+.save-property.saved { background: var(--forest); color: #fff; }
+.save-property:disabled { opacity: 0.65; cursor: wait; }
+.save-property svg { width: 20px; height: 20px; }
+.property-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 45px rgba(36, 47, 41, 0.1);
+}
+.property-image {
+  display: block;
+  position: relative;
+  aspect-ratio: 1.35;
+  overflow: hidden;
+}
+.property-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+.property-card:hover .property-image img {
+  transform: scale(1.03);
+}
+.property-type {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  background: rgba(255, 252, 246, 0.93);
+  padding: 7px 10px;
+  border-radius: 4px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.property-body {
+  padding: 22px;
+}
+.property-price {
+  color: var(--terra);
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.55rem;
+  margin-bottom: 8px;
+}
+.property-body h3 {
+  font-size: 1.15rem;
+  margin-bottom: 9px;
+  line-height: 1.35;
+}
+.location {
+  display: flex;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 18px;
+}
+.location svg {
+  width: 16px;
+  flex: 0 0 auto;
+}
+.property-meta {
+  display: flex;
+  border-top: 1px solid var(--line);
+  padding-top: 15px;
+  gap: 18px;
+  color: #53615b;
+  font-size: 0.78rem;
+}
+.property-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.property-meta svg {
+  width: 16px;
+}
+.editorial-empty,
+.state {
+  text-align: center;
+  padding: 70px 24px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.editorial-empty > div,
+.state-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #e2ece8;
+  color: var(--forest);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 20px;
+}
+.editorial-empty h3,
+.state h2 {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+.editorial-empty p,
+.state p {
+  color: var(--muted);
+  max-width: 520px;
+  margin: 0 auto 24px;
+}
+.manifesto {
+  background: var(--forest);
+  color: #fff;
+  padding: 110px 0;
+}
+.manifesto-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 100px;
+}
+.manifesto h2 {
+  font-size: clamp(3rem, 5vw, 5.8rem);
+  margin-top: 18px;
+}
+.manifesto h2 {
+  max-width: 720px;
+  font-size: clamp(2.8rem, 4.6vw, 5.2rem);
+}
+.principles {
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+.principles article {
+  display: grid;
+  grid-template-columns: 44px 180px 1fr;
+  gap: 20px;
+  padding: 26px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  align-items: start;
+}
+.principles article > span {
+  font-family: "Lora", Georgia, serif;
+  color: #b9d5cc;
+}
+.principles h3 {
+  font-size: 1.05rem;
+}
+.principles p {
+  color: #c7d6d1;
+  margin: 0;
+  font-size: 0.9rem;
+}
+.site-footer {
+  background: #13211c;
+  color: #d7dedb;
+  padding: 75px 0 24px;
+}
+.site-footer .logo {
+  color: #fff;
+}
+.footer-grid,
+.footer-bottom {
+  width: min(1280px, calc(100% - 48px));
+  margin: auto;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr;
+  gap: 60px;
+}
+.footer-grid > div:first-child p {
+  max-width: 320px;
+  color: #97a49f;
+  margin-top: 24px;
+}
+.footer-grid h3 {
+  color: #fff;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.footer-grid > div:not(:first-child) {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  font-size: 0.87rem;
+}
+.footer-grid a:hover {
+  color: #fff;
+}
+.footer-grid p {
+  color: #97a49f;
+}
+.footer-contact-link {
+  display: inline;
+  margin-left: 5px;
+  color: #fff;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.footer-bottom strong {
+  color: #fff;
+  font-weight: 600;
+}

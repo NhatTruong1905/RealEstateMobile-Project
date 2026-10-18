@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bath, BedDouble, Bookmark, Compass, MapPin } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { api, favoriteStore, session } from "../../api";
+import { api, favoriteStore, session } from "../../services/api/client";
 import { fallbackPropertyImage } from "../../config/assets";
 import type { Property } from "../../types";
 import { formatMoney } from "../../utils/format";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { session } from "../api";
+import { session } from "../services/api/client";
 
 export function useAuthenticated() {
   const [authenticated, setAuthenticated] = useState(Boolean(session.token));

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bookmark, ChevronDown, CircleUserRound, Menu } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { api } from "../api";
+import { api } from "../services/api/client";
 import { Logo } from "../components/brand/Logo";
 import { useAuthenticated } from "../hooks/useAuthenticated";
 
