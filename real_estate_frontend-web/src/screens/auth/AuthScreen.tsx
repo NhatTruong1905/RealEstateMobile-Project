@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { ChevronLeft, LoaderCircle } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../services/api/client";
@@ -12,12 +12,11 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
   const [error, setError] = useState("");
   const returnQuery = search.toString();
   const switchPath = `${mode === "login" ? "/register" : "/login"}${returnQuery ? `?${returnQuery}` : ""}`;
-  async function submit(e: FormEvent<HTMLFormElement>) {
+  async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError("");
-    const form = e.currentTarget as HTMLFormElement;
-    const data = Object.fromEntries(new FormData(form));
+    const data = Object.fromEntries(new FormData(e.currentTarget));
     try {
       if (mode === "login") {
         await api.login(String(data.username), String(data.password));

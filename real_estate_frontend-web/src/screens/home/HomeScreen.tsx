@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { ReactNode, SubmitEvent } from "react";
 import { ArrowRight, Building2, Compass, House, KeyRound, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../services/api/client";
@@ -19,7 +19,7 @@ function SearchBar({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
   const [term, setTerm] = useState("");
   const [type, setType] = useState("");
-  function submit(e: FormEvent) {
+  function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     const q = new URLSearchParams();
     if (term) q.set("title", term);
@@ -266,7 +266,7 @@ function SectionHeading({
   index: string;
   eyebrow: string;
   title: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <div className="section-heading">
