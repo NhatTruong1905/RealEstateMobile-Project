@@ -1,5 +1,5 @@
-import type { ApiEnvelope, Property, PropertyPage, UserProfile } from "./types";
-import { mockProfile, mockProperties } from "./mock-data";
+import type { ApiEnvelope, Property, PropertyPage, UserProfile } from "../../types";
+import { mockProfile, mockProperties } from "../../data/mockProperties";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api"

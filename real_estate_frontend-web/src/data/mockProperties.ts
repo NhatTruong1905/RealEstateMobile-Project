@@ -1,4 +1,4 @@
-import type { Property, UserProfile } from "./types";
+import type { Property, UserProfile } from "../types";
 
 const photos = [
   "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=82",

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { session } from "../api";
+import { session } from "../services/api/client";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation();

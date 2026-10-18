@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ChevronDown,
   FileText,
@@ -147,7 +148,7 @@ function LegalPage({
   eyebrow: string;
   title: string;
   introduction: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   sections: LegalSection[];
 }) {
   return (
