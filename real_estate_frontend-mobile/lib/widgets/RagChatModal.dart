@@ -48,7 +48,8 @@ class _RagChatModalState extends State<RagChatModal> {
         } else {
           _messages = [
             RagChatMessage(
-              text: "Xin chào! Tôi là Trợ lý AI Gợi ý Tòa nhà & Bất động sản. Bạn cần tìm tòa nhà hay căn hộ như thế nào?",
+              text:
+                  "Xin chào! Tôi là Trợ lý AI Gợi ý Tòa nhà & Bất động sản. Bạn cần tìm tòa nhà hay căn hộ như thế nào?",
               isUser: false,
             ),
           ];
@@ -99,7 +100,10 @@ class _RagChatModalState extends State<RagChatModal> {
     _scrollToBottom();
 
     try {
-      final stream = _ragChatService.streamQuestion(text, history: previousHistory);
+      final stream = _ragChatService.streamQuestion(
+        text,
+        history: previousHistory,
+      );
       await for (final token in stream) {
         if (!mounted) break;
         setState(() {
@@ -132,7 +136,8 @@ class _RagChatModalState extends State<RagChatModal> {
       setState(() {
         _messages = [
           RagChatMessage(
-            text: "Đã làm sạch cuộc trò chuyện. Hãy nhập câu hỏi mới cho AI nhé!",
+            text:
+                "Đã làm sạch cuộc trò chuyện. Hãy nhập câu hỏi mới cho AI nhé!",
             isUser: false,
           ),
         ];
@@ -227,7 +232,10 @@ class _RagChatModalState extends State<RagChatModal> {
                 ),
                 IconButton(
                   tooltip: "Reload & Xóa lịch sử chat",
-                  icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+                  icon: const Icon(
+                    Icons.refresh_rounded,
+                    color: Colors.white70,
+                  ),
                   onPressed: _clearHistory,
                 ),
                 IconButton(
@@ -290,9 +298,13 @@ class _RagChatModalState extends State<RagChatModal> {
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
                       final isLastMessage = index == _messages.length - 1;
-                      final isStreamingThisMsg = _isLoading && isLastMessage && !msg.isUser;
+                      final isStreamingThisMsg =
+                          _isLoading && isLastMessage && !msg.isUser;
 
-                      return _buildMessageBubble(msg, isStreamingThisMsg: isStreamingThisMsg);
+                      return _buildMessageBubble(
+                        msg,
+                        isStreamingThisMsg: isStreamingThisMsg,
+                      );
                     },
                   ),
           ),
@@ -370,7 +382,10 @@ class _RagChatModalState extends State<RagChatModal> {
     );
   }
 
-  Widget _buildMessageBubble(RagChatMessage msg, {bool isStreamingThisMsg = false}) {
+  Widget _buildMessageBubble(
+    RagChatMessage msg, {
+    bool isStreamingThisMsg = false,
+  }) {
     final timeStr = DateFormat('HH:mm').format(msg.timestamp);
 
     if (msg.isUser) {
@@ -403,10 +418,7 @@ class _RagChatModalState extends State<RagChatModal> {
             const SizedBox(height: 4),
             Text(
               timeStr,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Color(0xFF9CA3AF),
-              ),
+              style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
             ),
           ],
         ),
@@ -436,7 +448,10 @@ class _RagChatModalState extends State<RagChatModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4EEE6),
                     borderRadius: const BorderRadius.only(
@@ -445,11 +460,17 @@ class _RagChatModalState extends State<RagChatModal> {
                       bottomLeft: Radius.circular(18),
                       bottomRight: Radius.circular(18),
                     ),
-                    border: Border.all(color: const Color(0xFFE5DECE), width: 0.6),
+                    border: Border.all(
+                      color: const Color(0xFFE5DECE),
+                      width: 0.6,
+                    ),
                   ),
                   child: msg.text.isEmpty && isStreamingThisMsg
                       ? const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                          padding: EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 4,
+                          ),
                           child: _MessengerTypingDots(),
                         )
                       : Text(
@@ -529,7 +550,9 @@ class _MessengerTypingDotsState extends State<_MessengerTypingDots>
                 width: 7,
                 height: 7,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF64748B).withAlpha((255 * opacity).round()),
+                  color: const Color(
+                    0xFF64748B,
+                  ).withAlpha((255 * opacity).round()),
                   shape: BoxShape.circle,
                 ),
               ),
