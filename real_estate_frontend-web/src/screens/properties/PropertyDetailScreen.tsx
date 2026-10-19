@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bath, BedDouble, Building2, ChevronLeft, Compass, House, Layers3, LoaderCircle, MapPin, MessageCircle, Phone } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { api } from "../../services/api/client";
+import { propertyApi } from "../../services/api/property/propertyApi";
 import { fallbackPropertyImage } from "../../config/assets";
 import { State } from "../../components/ui/State";
 import type { Property } from "../../types";
@@ -12,8 +12,8 @@ export function PropertyDetailPage() {
   const [property, setProperty] = useState<Property>();
   const [error, setError] = useState("");
   useEffect(() => {
-    api
-      .property(id)
+    propertyApi
+      .getById(id)
       .then(setProperty)
       .catch((e) => setError(e.message));
   }, [id]);

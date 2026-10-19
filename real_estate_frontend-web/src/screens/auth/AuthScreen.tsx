@@ -2,7 +2,8 @@ import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { ChevronLeft, LoaderCircle } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { api } from "../../services/api/client";
+import { authApi } from "../../services/api/auth/authApi";
+import { favoriteApi } from "../../services/api/favorite/favoriteApi";
 import { Logo } from "../../components/brand/Logo";
 
 export function AuthPage({ mode }: { mode: "login" | "register" }) {
@@ -19,16 +20,18 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
     const data = Object.fromEntries(new FormData(e.currentTarget));
     try {
       if (mode === "login") {
-        await api.login(String(data.username), String(data.password));
+        await authApi.login(String(data.username), String(data.password));
         const pendingProperty = Number(search.get("saveProperty"));
-        if (pendingProperty) await api.setFavorite(pendingProperty, true);
+        if (pendingProperty) await favoriteApi.set(pendingProperty, true);
         navigate(search.get("returnTo") || "/");
       } else {
-        await api.register(
-          Object.fromEntries(
-            Object.entries(data).map(([k, v]) => [k, String(v)]),
-          ),
-        );
+        await authApi.register({
+          fullname: String(data.fullname),
+          username: String(data.username),
+          password: String(data.password),
+          email: String(data.email),
+          phone: String(data.phone),
+        });
         navigate(`/login${returnQuery ? `?${returnQuery}` : ""}`);
       }
     } catch (e) {

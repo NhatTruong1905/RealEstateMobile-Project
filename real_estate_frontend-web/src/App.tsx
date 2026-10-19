@@ -13,6 +13,7 @@ import { PostProperty } from "./screens/seller/PostPropertyScreen";
 import { SellerOverview } from "./screens/seller/SellerOverviewScreen";
 import { SellerProperties } from "./screens/seller/SellerPropertiesScreen";
 import { FAQPage, PrivacyPage, TermsPage } from "./screens/support/SupportScreens";
+import { ChatWidget } from "./components/chat/ChatWidget";
 import "./styles/index.css";
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <ChatWidget />
     </BrowserRouter>
   );
 }

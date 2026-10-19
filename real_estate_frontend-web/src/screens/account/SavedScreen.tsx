@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bookmark, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
-import { api } from "../../services/api/client";
+import { favoriteApi } from "../../services/api/favorite/favoriteApi";
 import { PropertyCard } from "../../components/property/PropertyCard";
 import { State } from "../../components/ui/State";
 import { LoadingGrid } from "../properties/PropertiesScreen";
@@ -12,7 +12,7 @@ export function SavedPage() {
     <DataPropertyPage
       title="Tin bạn đã lưu"
       eyebrow="Bộ sưu tập cá nhân"
-      loader={api.favorites}
+      loader={favoriteApi.list}
       empty="Bạn chưa lưu bất động sản nào."
     />
   );

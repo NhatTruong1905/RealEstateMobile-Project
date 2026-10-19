@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Bath, BedDouble, Bookmark, Compass, MapPin } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { api, favoriteStore, session } from "../../services/api/client";
+import { session } from "../../services/api/core/session";
+import { favoriteApi, favoriteStore } from "../../services/api/favorite/favoriteApi";
 import { fallbackPropertyImage } from "../../config/assets";
 import type { Property } from "../../types";
 import { formatMoney } from "../../utils/format";
@@ -32,7 +33,7 @@ export function PropertyCard({ property }: { property: Property }) {
     const next = !saved;
     setSaving(true);
     try {
-      await api.setFavorite(property.id, next);
+      await favoriteApi.set(property.id, next);
       setSaved(next);
     } finally {
       setSaving(false);
