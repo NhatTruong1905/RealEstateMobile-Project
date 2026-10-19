@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../../services/api/client";
+import { sellerApi } from "../../services/api/seller/sellerApi";
 import type { Property } from "../../types";
 import { House } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -24,7 +24,7 @@ export function SellerProperties() {
 function SellerPropertyList() {
   const [items, setItems] = useState<Property[]>();
   useEffect(() => {
-    api.myProperties().then(setItems);
+    sellerApi.listMyProperties().then(setItems);
   }, []);
   return items?.length ? (
     <div className="seller-list">

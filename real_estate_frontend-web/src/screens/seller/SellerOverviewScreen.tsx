@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../../services/api/client";
+import { sellerApi } from "../../services/api/seller/sellerApi";
 import type { Property } from "../../types";
 import { ArrowRight, House, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -9,7 +9,7 @@ import { State } from "../../components/ui/State";
 export function SellerOverview() {
   const [items, setItems] = useState<Property[]>();
   useEffect(() => {
-    api.myProperties().then(setItems);
+    sellerApi.listMyProperties().then(setItems);
   }, []);
   const published = items?.filter((i) => i.status === "PUBLISHED").length;
   return (

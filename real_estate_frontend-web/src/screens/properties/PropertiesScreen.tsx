@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Building2, ChevronLeft, ChevronRight, List, Map as MapIcon, Search, SlidersHorizontal, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { api } from "../../services/api/client";
+import { propertyApi } from "../../services/api/property/propertyApi";
 import { PropertyCard } from "../../components/property/PropertyCard";
 import { PropertyMap } from "../../components/property/PropertyMap";
 import { State } from "../../components/ui/State";
@@ -118,8 +118,8 @@ export function PropertiesPage() {
     const q = new URLSearchParams(query);
     if (!q.has("page")) q.set("page", "1");
     if (!q.has("limit")) q.set("limit", "6");
-    api
-      .properties(q)
+    propertyApi
+      .list(q)
       .then((r) => {
         setResult(r);
         setStatus("ready");

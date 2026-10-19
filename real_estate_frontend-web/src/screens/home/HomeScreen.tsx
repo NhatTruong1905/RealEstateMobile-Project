@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode, SubmitEvent } from "react";
 import { ArrowRight, Building2, Compass, House, KeyRound, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../services/api/client";
+import { propertyApi } from "../../services/api/property/propertyApi";
 import { PropertyCard } from "../../components/property/PropertyCard";
 import type { Property } from "../../types";
 
@@ -59,8 +59,8 @@ export function HomePage() {
   const [data, setData] = useState<Property[]>([]);
   useEffect(() => {
     const q = new URLSearchParams({ page: "1", limit: "6" });
-    api
-      .properties(q)
+    propertyApi
+      .list(q)
       .then((r) => setData(r.content))
       .catch(() => {});
   }, []);

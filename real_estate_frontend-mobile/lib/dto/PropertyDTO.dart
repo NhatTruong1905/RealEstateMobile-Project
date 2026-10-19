@@ -188,4 +188,3 @@ class PropertyDTO {
 
   Map<String, String> toFormData() => toFields();
 }
-

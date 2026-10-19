@@ -116,12 +116,44 @@
 .account-link {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
+  min-width: 0;
   font-weight: 600;
   font-size: 0.9rem;
 }
-.account-link svg {
-  width: 20px;
+.account-avatar {
+  position: relative;
+  display: grid;
+  width: 30px;
+  min-width: 30px;
+  max-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+}
+.account-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 30px;
+  max-width: none;
+  height: 30px;
+  object-fit: cover;
+}
+.account-avatar svg {
+  width: 19px;
+  height: 19px;
+}
+.account-username {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .menu-button {
   display: none;

@@ -10,7 +10,7 @@ copy .env.example .env
 npm run dev
 ```
 
-Backend mặc định chạy tại `http://localhost:8080/api`. Điều chỉnh các biến `VITE_*` trong `.env` nếu dịch vụ dùng địa chỉ khác.
+Backend chạy tại `http://localhost:8080/api`, được cấu hình trong `src/services/api/core/http.ts`.
 
 ## Kiểm tra
 
@@ -30,7 +30,7 @@ src/
 ├── layouts/           Header, footer và bố cục trang
 ├── routes/            Route guard
 ├── screens/           Giao diện theo từng màn hình/nghiệp vụ
-├── services/api/      API client và quản lý phiên
+├── services/api/      API tách theo auth, property, account, favorite và seller
 ├── styles/            CSS tách theo khu vực giao diện
 ├── utils/             Hàm tiện ích
 └── App.tsx            Khai báo route
@@ -46,8 +46,8 @@ src/
 
 ## Trạng thái tích hợp
 
-- Chế độ phát triển dùng dữ liệu fallback khi backend không phản hồi; đặt `VITE_USE_MOCKS=false` để kiểm thử lỗi API thật.
-- Trong chế độ mock, có thể dùng bất kỳ tên đăng nhập và mật khẩu từ 6 ký tự để thử các route được bảo vệ.
+- Mặc định frontend gọi backend thật. Chỉ đặt `VITE_USE_MOCKS=true` khi cần dữ liệu giả cho danh sách bất động sản.
+- Đăng nhập và đăng ký luôn gọi backend thật, kể cả khi chế độ mock được bật, để không tạo phiên đăng nhập giả.
 
 - Danh sách, đăng nhập, đăng ký, hồ sơ, tin đã lưu và tin của người bán dùng hợp đồng API hiện có.
 - Khách có thể xem danh sách và chi tiết; lưu tin và đăng tin yêu cầu đăng nhập rồi quay lại đúng trang.

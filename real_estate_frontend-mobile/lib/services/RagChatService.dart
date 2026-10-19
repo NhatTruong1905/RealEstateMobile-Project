@@ -30,25 +30,22 @@ class RagChatMessage {
 
   Map<String, String>? toApiMessage() {
     if (!isValidForHistory) return null;
-    return {
-      'role': isUser ? 'user' : 'assistant',
-      'content': text.trim(),
-    };
+    return {'role': isUser ? 'user' : 'assistant', 'content': text.trim()};
   }
 
   Map<String, dynamic> toJson() => {
-        'text': text,
-        'isUser': isUser,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'text': text,
+    'isUser': isUser,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   factory RagChatMessage.fromJson(Map<String, dynamic> json) => RagChatMessage(
-        text: json['text'] as String? ?? '',
-        isUser: json['isUser'] as bool? ?? false,
-        timestamp: json['timestamp'] != null
-            ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
-            : DateTime.now(),
-      );
+    text: json['text'] as String? ?? '',
+    isUser: json['isUser'] as bool? ?? false,
+    timestamp: json['timestamp'] != null
+        ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
+        : DateTime.now(),
+  );
 }
 
 class RagChatService {
@@ -63,7 +60,9 @@ class RagChatService {
     _baseUrl = "http://$host:$port/api";
   }
 
-  List<Map<String, String>>? _buildHistoryPayload(List<RagChatMessage>? history) {
+  List<Map<String, String>>? _buildHistoryPayload(
+    List<RagChatMessage>? history,
+  ) {
     if (history == null || history.isEmpty) return null;
 
     final validMessages = history
@@ -79,7 +78,10 @@ class RagChatService {
     return validMessages;
   }
 
-  Stream<String> streamQuestion(String question, {List<RagChatMessage>? history}) async* {
+  Stream<String> streamQuestion(
+    String question, {
+    List<RagChatMessage>? history,
+  }) async* {
     if (question.trim().isEmpty) {
       yield "Câu hỏi không được để trống.";
       return;
@@ -97,9 +99,7 @@ class RagChatService {
     bool streamSuccess = false;
     final historyList = _buildHistoryPayload(history);
 
-    final payloadMap = <String, dynamic>{
-      "question": question.trim(),
-    };
+    final payloadMap = <String, dynamic>{"question": question.trim()};
     if (historyList != null && historyList.isNotEmpty) {
       payloadMap["history"] = historyList;
     }
@@ -112,13 +112,17 @@ class RagChatService {
         request.headers['Content-Type'] = 'application/json; charset=UTF-8';
         request.body = jsonPayload;
 
-        final streamedResponse = await request.send().timeout(const Duration(seconds: 10));
+        final streamedResponse = await request.send().timeout(
+          const Duration(seconds: 10),
+        );
 
         if (streamedResponse.statusCode == 200) {
           _baseUrl = url.replaceAll('/chat-rag/stream', '');
           streamSuccess = true;
 
-          await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+          await for (final chunk in streamedResponse.stream.transform(
+            utf8.decoder,
+          )) {
             if (chunk.isNotEmpty) {
               yield chunk;
             }
@@ -137,7 +141,10 @@ class RagChatService {
     }
   }
 
-  Future<String> askQuestion(String question, {List<RagChatMessage>? history}) async {
+  Future<String> askQuestion(
+    String question, {
+    List<RagChatMessage>? history,
+  }) async {
     if (question.trim().isEmpty) {
       return "Câu hỏi không được để trống.";
     }
@@ -153,9 +160,7 @@ class RagChatService {
 
     final historyList = _buildHistoryPayload(history);
 
-    final payloadMap = <String, dynamic>{
-      "question": question.trim(),
-    };
+    final payloadMap = <String, dynamic>{"question": question.trim()};
     if (historyList != null && historyList.isNotEmpty) {
       payloadMap["history"] = historyList;
     }
@@ -164,11 +169,13 @@ class RagChatService {
     for (final url in candidateUrls) {
       try {
         debugPrint("Đang kết nối tới Chatbot RAG (Fallback): $url");
-        final response = await http.post(
-          Uri.parse(url),
-          headers: {"Content-Type": "application/json; charset=UTF-8"},
-          body: bodyJson,
-        ).timeout(const Duration(seconds: 15));
+        final response = await http
+            .post(
+              Uri.parse(url),
+              headers: {"Content-Type": "application/json; charset=UTF-8"},
+              body: bodyJson,
+            )
+            .timeout(const Duration(seconds: 15));
 
         if (response.statusCode == 200) {
           final decoded = utf8.decode(response.bodyBytes);
@@ -205,7 +212,11 @@ class RagChatService {
       final str = prefs.getString(_storageKey);
       if (str != null && str.isNotEmpty) {
         final list = jsonDecode(str) as List;
-        return list.map((item) => RagChatMessage.fromJson(item as Map<String, dynamic>)).toList();
+        return list
+            .map(
+              (item) => RagChatMessage.fromJson(item as Map<String, dynamic>),
+            )
+            .toList();
       }
     } catch (e) {
       debugPrint("Lỗi nạp lịch sử RAG chat: $e");
@@ -223,4 +234,3 @@ class RagChatService {
     }
   }
 }
-

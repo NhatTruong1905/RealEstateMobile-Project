@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { CircleUserRound, LogOut } from "lucide-react";
-import { api, session } from "../../services/api/client";
+import { accountApi } from "../../services/api/account/accountApi";
+import { session } from "../../services/api/core/session";
 import type { UserProfile } from "../../types";
 
 export function AccountPage() {
   const [profile, setProfile] = useState<UserProfile>();
   useEffect(() => {
-    api.profile().then(setProfile);
+    accountApi.getProfile().then(setProfile);
   }, []);
   return (
     <div className="page-shell">
