@@ -11,6 +11,23 @@ npm run dev
 ```
 
 Backend chạy tại `http://localhost:8080/api`, được cấu hình trong `src/services/api/core/http.ts`.
+Chatbot gọi FastAPI tại URL trong `VITE_AI_BASE_URL` (mặc định
+`http://localhost:8000/api`). API key 9Router chỉ nằm trong `.env` của
+`real-estate-ai`, tuyệt đối không đặt trong frontend.
+
+Để kiểm tra chatbot, chạy AI service trước:
+
+```powershell
+cd ..\real-estate-ai
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Sau đó chạy web trong terminal khác và mở nút chat ở góc phải dưới:
+
+```powershell
+cd ..\real_estate_frontend-web
+npm run dev
+```
 
 ## Kiểm tra
 
@@ -52,6 +69,7 @@ src/
 - Danh sách, đăng nhập, đăng ký, hồ sơ, tin đã lưu và tin của người bán dùng hợp đồng API hiện có.
 - Khách có thể xem danh sách và chi tiết; lưu tin và đăng tin yêu cầu đăng nhập rồi quay lại đúng trang.
 - UI đăng tin đã có cấu trúc/validation cơ bản; danh mục động và gửi multipart cần hoàn thiện khi nguồn danh mục API được xác nhận.
-- Chat WebSocket, khách hàng theo interaction và AI streaming đang chờ tích hợp backend tương ứng.
+- AI chatbot đã gọi FastAPI qua streaming tại `/api/chat-rag/stream`.
+- Chat WebSocket và khách hàng theo interaction đang chờ tích hợp backend tương ứng.
 
 Design direction và product truth nằm trong `DESIGN.md` và `PRODUCT.md`.

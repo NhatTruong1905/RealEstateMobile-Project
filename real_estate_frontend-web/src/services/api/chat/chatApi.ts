@@ -1,4 +1,6 @@
-const AI_API_BASE = "http://localhost:8000/api";
+const AI_API_BASE = (
+  import.meta.env.VITE_AI_BASE_URL || "http://localhost:8000/api"
+).replace(/\/+$/, "");
 
 export interface ChatHistoryItem {
   role: "user" | "assistant";
@@ -12,15 +14,25 @@ export const chatApi = {
     onChunk: (chunk: string) => void,
     signal?: AbortSignal,
   ): Promise<void> {
-    const response = await fetch(`${AI_API_BASE}/chat-rag/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=UTF-8" },
-      body: JSON.stringify({
-        question: question.trim(),
-        history: history.slice(-15),
-      }),
-      signal,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${AI_API_BASE}/chat-rag/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=UTF-8" },
+        body: JSON.stringify({
+          question: question.trim(),
+          history: history.slice(-15),
+        }),
+        signal,
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw error;
+      }
+      throw new Error(
+        "Không kết nối được dịch vụ AI. Hãy kiểm tra FastAPI đang chạy ở cổng 8000.",
+      );
+    }
 
     if (!response.ok) {
       const body = await response.json().catch(() => null);

@@ -12,12 +12,16 @@ from langchain_core.stores import InMemoryStore
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_openai import ChatOpenAI
 
 from api.schemas import RealEstateIntentSummary
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
+AI_BASE_URL = os.getenv("AI_BASE_URL", "https://ai-router.tailbcba85.ts.net/v1").rstrip("/")
+AI_API_KEY = os.getenv("AI_API_KEY")
+AI_MODEL = os.getenv("AI_MODEL")
 
 
 def is_pure_greeting(question: str) -> bool:
@@ -262,24 +266,37 @@ class RAGPipeline:
 
     def initialize(self):
         if not GEMINI_API_KEY:
-            raise ValueError("Không tìm thấy GOOGLE_API_KEY trong file .env!")
+            raise ValueError("Thiếu GOOGLE_API_KEY dùng cho Gemini embedding.")
+        if not AI_API_KEY:
+            raise ValueError("Thiếu AI_API_KEY dùng để xác thực với 9Router.")
+        if not AI_MODEL:
+            raise ValueError("Thiếu AI_MODEL. Hãy dùng đúng model ID lấy từ endpoint /v1/models của 9Router.")
 
-        print("[RAGPipeline] Đang khởi tạo Google Gemini (LLM: gemini-3.5-flash, Embedding: gemini-embedding-001)...",
-              flush=True)
+        print(
+            f"[RAGPipeline] Đang khởi tạo LLM qua 9Router (model: {AI_MODEL}) "
+            "và Gemini embedding (gemini-embedding-001)...",
+            flush=True,
+        )
 
         embedding = GoogleGenerativeAIEmbeddings(
             model="models/gemini-embedding-001",
             google_api_key=GEMINI_API_KEY
         )
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-3.1-flash-lite",
-            google_api_key=GEMINI_API_KEY,
-            temperature=0.0
+        llm = ChatOpenAI(
+            model=AI_MODEL,
+            base_url=AI_BASE_URL,
+            api_key=AI_API_KEY,
+            temperature=0.0,
+            timeout=120,
+            max_retries=2,
         )
-        summary_llm = ChatGoogleGenerativeAI(
-            model="gemini-3.1-flash-lite",
-            google_api_key=GEMINI_API_KEY,
-            temperature=0.0
+        summary_llm = ChatOpenAI(
+            model=AI_MODEL,
+            base_url=AI_BASE_URL,
+            api_key=AI_API_KEY,
+            temperature=0.0,
+            timeout=120,
+            max_retries=2,
         )
         self.summary_chain = summary_llm.with_structured_output(RealEstateIntentSummary)
 
