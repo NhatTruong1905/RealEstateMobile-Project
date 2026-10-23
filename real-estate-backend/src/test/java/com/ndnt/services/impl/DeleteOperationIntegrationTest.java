@@ -16,7 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(properties="spring.config.location=classpath:test.properties")
 @TestPropertySource("/test.properties")
 @Transactional
 public class DeleteOperationIntegrationTest {
@@ -110,7 +110,7 @@ public class DeleteOperationIntegrationTest {
     @DisplayName("Xóa mềm Property: Kiểm tra status = 'Đã xóa' (DELETED) trong DB")
     void testSoftDeleteProperty_StatusIsDeletedInDb() {
         RoleEntity role = new RoleEntity();
-        role.setCode("ROLE_TEST_SELLER");
+        role.setCode("ROLE_ADMIN");
         role.setName("Test Seller Role");
         role = roleRepository.save(role);
 
@@ -156,7 +156,11 @@ public class DeleteOperationIntegrationTest {
         property = propertyRepository.save(property);
 
         // Thực hiện xóa mềm
-        propertyService.deleteProperty(property.getId());
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(user.getUsername(), null,
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"))));
+        try { propertyService.deleteProperty(property.getId()); }
+        finally { org.springframework.security.core.context.SecurityContextHolder.clearContext(); }
 
         // Kiểm tra trong DB: Entity vẫn còn nhưng status = 'Đã xóa'
         Optional<PropertyEntity> updatedPropertyOpt = propertyRepository.findById(property.getId());

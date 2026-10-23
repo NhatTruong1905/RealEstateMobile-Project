@@ -46,6 +46,13 @@ public class PropertyDTO extends BaseDTO {
     @NotBlank(message = "Giấy tờ pháp lý không được trống!")
     private String legal;
     private String status;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String rejectionReason;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private Integer reviewedBy;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private java.util.Date reviewedAt;
+
     private List<String> images = new ArrayList<>();
     @JsonIgnore
     private List<MultipartFile> files = new ArrayList<>();

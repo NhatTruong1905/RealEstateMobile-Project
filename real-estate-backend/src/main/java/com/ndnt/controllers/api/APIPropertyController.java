@@ -37,6 +37,23 @@ public class APIPropertyController {
     @Autowired
     private UserService userService;
 
+    @Autowired private com.ndnt.services.PropertyTypeService propertyTypes;
+    @Autowired private com.ndnt.services.PropertyCategoryService propertyCategories;
+    @Autowired private com.ndnt.services.WardService wards;
+
+    public record Option(Integer id, String name) {}
+    public record WardOption(Integer id, String name, String districtName) {}
+
+    @GetMapping("/secure/property-options")
+    public ResponseEntity<?> options() {
+        ResponseDTO response = new ResponseDTO(); response.setMessage("Success");
+        response.setData(Map.of(
+            "types", propertyTypes.getPropertyTypes().stream().map(t -> new Option(t.getId(),t.getName())).toList(),
+            "categories", propertyCategories.getPropertyCategories().stream().map(c -> new Option(c.getId(),c.getName())).toList(),
+            "wards", wards.getWards().stream().map(w -> new WardOption(w.getId(),w.getName(),w.getDistrictName())).toList()));
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/properties")
     public ResponseEntity<?> getProperties(@ModelAttribute PropertyRequestDTO propertyRequestDTO,
                                            @RequestParam(defaultValue = "1") int page,
@@ -90,7 +107,7 @@ public class APIPropertyController {
         } else {
             propertyDTO.setUserId(currentUser.getId());
             ResponseDTO responseDTO = new ResponseDTO();
-            this.propertyService.createOrUpdateProperty(propertyDTO);
+            propertyDTO = this.propertyService.saveOwnedProperty(propertyDTO);
             responseDTO.setMessage("Success");
             responseDTO.setData(propertyDTO);
             return ResponseEntity.ok().body(responseDTO);
@@ -121,7 +138,7 @@ public class APIPropertyController {
             return ResponseEntity.badRequest().body(responseDTO);
         } else {
             responseDTO.setMessage("Success");
-            this.propertyService.deleteProperty(id);
+            this.propertyService.deleteOwnedProperty(id);
             return ResponseEntity.ok().body(responseDTO);
         }
     }
@@ -129,6 +146,7 @@ public class APIPropertyController {
     @GetMapping("/secure/favorite-properties")
     public ResponseEntity<?> getFavoriteProperties(Principal principal) {
         UserDTO currentUser = this.userService.findByUsername(principal.getName());
+        if (currentUser == null) throw com.ndnt.services.property.PropertyProblem.forbidden();
         List<PropertyDTO> propertyDTOS = this.propertyService.getFavoritePropertiesByUser(currentUser.getId());
 
         ResponseDTO responseDTO = new ResponseDTO();
@@ -144,7 +162,14 @@ public class APIPropertyController {
     @PostMapping("/secure/favorite-properties")
     public ResponseEntity<?> createOrUpdateFavoriteProperty(@RequestBody FavoritePropertyDTO favoritePropertyDTO, Principal principal) {
         UserDTO currentUser = this.userService.findByUsername(principal.getName());
+        if (currentUser == null) throw com.ndnt.services.property.PropertyProblem.forbidden();
         favoritePropertyDTO.setUserId(currentUser.getId());
+        if (favoritePropertyDTO.getPropertyIds() == null)
+            throw com.ndnt.services.property.PropertyProblem.invalid("propertyIds", "Cần danh sách bài đăng");
+        for (Integer propertyId : favoritePropertyDTO.getPropertyIds()) {
+            if (propertyId == null) throw com.ndnt.services.property.PropertyProblem.invalid("propertyIds", "Mã bài đăng không hợp lệ");
+            this.propertyService.findById(propertyId);
+        }
         this.favoritePropertyService.createOrUpdateFavoriteProperty(favoritePropertyDTO);
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setMessage("Success");
