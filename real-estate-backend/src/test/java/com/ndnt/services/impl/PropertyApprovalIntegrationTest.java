@@ -162,6 +162,43 @@ class PropertyApprovalIntegrationTest {
             .andExpect(jsonPath("$.data.wards[0].districtName").exists()).andExpect(jsonPath("$.data.wards[0].createdBy").doesNotExist());
     }
 
+    @Test void unicodeWhitespaceOnlyReasonIsRejectedWithoutMutationOrEvent() throws Exception {
+        PropertyDTO property=create(); assign(property.getId());
+        Date modified=properties.findById(property.getId()).orElseThrow().getModifiedDate();
+        for (String blank : List.of("\u00A0", "\u202F", "\uFEFF", " \t\n\u00A0\u202F\u2003\uFEFF ")) {
+            decision(property,StatusProperty.REJECTED.getStatus(),blank);
+            mvc.perform(post("/admin/api/properties").with(user(staff.getUsername()).roles("STAFF")).with(csrf())
+                .contentType("application/json").content(json.writeValueAsString(property)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.data.rejectionReason").exists());
+            PropertyEntity stored=properties.findById(property.getId()).orElseThrow();
+            assertEquals(StatusProperty.PENDING.getStatus(),stored.getStatus());
+            assertNull(stored.getRejectionReason()); assertNull(stored.getReviewedBy()); assertNull(stored.getReviewedAt());
+            assertEquals(modified,stored.getModifiedDate()); assertEquals(1,events.countByPropertyId(property.getId()));
+        }
+        verifyNoInteractions(mailer);
+    }
+
+    @Test void paddedUnicodeReasonIsNormalizedBeforeLengthCheckAndMailSnapshot() throws Exception {
+        PropertyDTO property=create(); assign(property.getId());
+        // Preserve interior spacing while removing edge padding, including no-break spaces and BOM.
+        String normalized="Thiếu\u00A0giấy\u202Ftờ <b> & xác nhận";
+        String padding="\u00A0\u202F\uFEFF \t\u2003";
+        decision(property,StatusProperty.REJECTED.getStatus(),padding.repeat(200)+normalized+padding.repeat(200));
+        mvc.perform(post("/admin/api/properties").with(user(staff.getUsername()).roles("STAFF")).with(csrf())
+            .contentType("application/json").content(json.writeValueAsString(property)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.rejectionReason").value(normalized));
+        PropertyEntity stored=properties.findById(property.getId()).orElseThrow();
+        assertEquals(normalized,stored.getRejectionReason()); assertEquals(staff.getId(),stored.getReviewedBy());
+        assertNotNull(stored.getReviewedAt()); assertEquals(StatusProperty.REJECTED.getStatus(),stored.getStatus());
+        PropertyMailEvent mail=event(property.getId(),"REJECTED");
+        assertTrue(mail.getTextBody().contains("Lý do: "+stored.getRejectionReason()+"."));
+        assertTrue(mail.getHtmlBody().contains("Lý do: "+org.springframework.web.util.HtmlUtils.htmlEscape(normalized,"UTF-8")+"."));
+        assertFalse(mail.getTextBody().contains("\uFEFF")); assertEquals(2,events.countByPropertyId(property.getId()));
+        verifyNoInteractions(mailer);
+    }
+
     @Test void rejectRequiresReasonAndAssignmentAndPreservesOwnerAuditOnEdit() throws Exception {
         PropertyDTO property = create(); assign(property.getId());
         decision(property,StatusProperty.REJECTED.getStatus(),"   ");

@@ -172,6 +172,20 @@ public class PropertyServiceImpl implements PropertyService {
         BeanUtils.copyProperties(saved, request);
     }
 
+    private String normalizeRejectionReason(String reason) {
+        if (reason == null) return "";
+        int start = 0, end = reason.length();
+        while (start < end && reasonWhitespace(reason.codePointAt(start)))
+            start += Character.charCount(reason.codePointAt(start));
+        while (end > start && reasonWhitespace(reason.codePointBefore(end)))
+            end -= Character.charCount(reason.codePointBefore(end));
+        return reason.substring(start, end);
+    }
+
+    private boolean reasonWhitespace(int codePoint) {
+        return Character.isWhitespace(codePoint) || Character.isSpaceChar(codePoint) || codePoint == 0xFEFF;
+    }
+
     private PropertyDTO save(PropertyDTO request, boolean adminRoute) {
         UserEntity actor = access.actor();
         if (adminRoute && !access.hasRole(actor, "ROLE_ADMIN") && !access.hasRole(actor, "ROLE_STAFF"))
@@ -191,7 +205,7 @@ public class PropertyServiceImpl implements PropertyService {
             if (!decision || !StatusProperty.PENDING.getStatus().equals(entity.getStatus()))
                 throw new PropertyProblem(409, "CONFLICT", "Trạng thái không cho phép xét duyệt");
             if (StatusProperty.REJECTED.getStatus().equals(desired)) {
-                String reason = request.getRejectionReason() == null ? "" : request.getRejectionReason().trim().strip();
+                String reason = normalizeRejectionReason(request.getRejectionReason());
                 if (reason.isEmpty() || reason.length() > 1000)
                     throw PropertyProblem.invalid("rejectionReason", "Lý do từ chối phải có từ 1 đến 1000 ký tự");
                 entity.setRejectionReason(reason);
