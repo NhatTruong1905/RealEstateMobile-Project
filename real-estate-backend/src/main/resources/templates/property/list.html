@@ -28,6 +28,15 @@
         <div class="card-body p-4">
             <h6 class="fw-bold text-dark mb-3"><i class="bi bi-funnel-fill me-1"></i> Bộ lọc tìm kiếm nâng cao</h6>
             <form th:action="@{/admin/properties-list}" method="get" id="filterForm">
+                <div class="mb-3"><label for="approval-filter">Trạng thái</label>
+                    <select id="approval-filter" name="status" class="form-select">
+                        <option value="">Tất cả</option>
+                        <option value="Chờ duyệt" th:selected="${param.status != null and param.status[0] == 'Chờ duyệt'}">Đang chờ duyệt</option>
+                        <option value="Đang mở bán" th:selected="${param.status != null and param.status[0] == 'Đang mở bán'}">Đã được duyệt</option>
+                        <option value="Từ chối" th:selected="${param.status != null and param.status[0] == 'Từ chối'}">Bị từ chối</option>
+                        <option value="Đã xóa" th:selected="${param.status != null and param.status[0] == 'Đã xóa'}">Đã xóa</option>
+                    </select>
+                </div>
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label small text-muted fw-medium">Tiêu đề tin đăng</label>
@@ -233,7 +242,7 @@
                     <ul class="pagination pagination-sm mb-0 shadow-sm">
                         <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
                             <a class="page-link"
-                               th:href="@{/admin/properties-list(page=${currentPage - 1}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}">Trước</a>
+                               th:href="@{/admin/properties-list(page=${currentPage - 1}, status=${param.status}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}">Trước</a>
                         </li>
                         <li class="page-item disabled" th:if="${startPage > 1}">
                             <span class="page-link border-0">...</span>
@@ -241,7 +250,7 @@
                         <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}"
                             th:classappend="${currentPage == i} ? 'active'">
                             <a class="page-link"
-                               th:href="@{/admin/properties-list(page=${i}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}"
+                               th:href="@{/admin/properties-list(page=${i}, status=${param.status}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}"
                                th:text="${i}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${endPage < totalPages}">
@@ -249,7 +258,7 @@
                         </li>
                         <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
                             <a class="page-link"
-                               th:href="@{/admin/properties-list(page=${currentPage + 1}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}">Sau</a>
+                               th:href="@{/admin/properties-list(page=${currentPage + 1}, status=${param.status}, title=${search.title}, address=${search.address}, staffId=${search.staffId}, districtId=${search.districtId}, wardId=${search.wardId}, fromPrice=${search.fromPrice}, toPrice=${search.toPrice}, area=${search.area}, direction=${search.direction}, legal=${search.legal}, floorCount=${search.floorCount}, bedroomCount=${search.bedroomCount}, bathroomCount=${search.bathroomCount})}">Sau</a>
                         </li>
                     </ul>
                 </nav>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout/base :: head}">
     <title>Cập nhật Tin Đăng</title>
 </head>
@@ -57,7 +57,7 @@
             <form id="formProperty" th:action="@{/admin/api/properties}" th:object="${property}" method="post">
 
                 <input type="hidden" th:field="*{id}"/>
-                <div id="form-error" class="alert alert-danger mb-4" style="display: none; font-size: 0.9rem;"></div>
+                <div role="alert" id="form-error" class="alert alert-danger mb-4" style="display: none; font-size: 0.9rem;"></div>
 
                 <div class="mb-4">
                     <label for="title" class="form-label fw-bold text-dark">Tiêu đề bài đăng <span
@@ -76,7 +76,8 @@
                             <label for="userId" class="form-label fw-bold text-dark">Người đăng (Khách hàng) <span
                                     class="text-danger">*</span></label>
 
-                            <select id="userId" th:field="*{userId}" placeholder="-- Chọn Người Đăng --" required>
+                            <input th:if="${property.id != null}" type="hidden" name="userId" th:value="*{userId}"/>
+                            <select id="userId" th:field="*{userId}" th:disabled="${property.id != null}" placeholder="-- Chọn Người Đăng --" required>
                                 <option value=""></option>
                                 <option th:each="user : ${users}" th:value="${user.id}"
                                         th:text="${user.fullname + ' (' + user.username + ')'}"></option>
@@ -143,13 +144,8 @@
                         <div class="mb-4">
                             <label for="status" class="form-label fw-bold text-dark">Trạng thái <span
                                     class="text-danger">*</span></label>
-                            <select class="form-select rounded-3 py-2 text-primary fw-bold" id="status"
-                                    th:field="*{status}" required>
-                                <option th:each="st : ${status}"
-                                        th:value="${st.status}"
-                                        th:text="${st.status}">
-                                </option>
-                            </select>
+                            <input type="hidden" id="status" th:field="*{status}" />
+                            <p class="form-control-plaintext" th:text="*{status}"></p>
                             <div id="error-status" class="text-danger fst-italic small mt-1 error-message"
                                  style="display: none;"></div>
                         </div>
@@ -204,6 +200,20 @@
                               placeholder="Nhập mô tả chi tiết tiện ích, vị trí, tình trạng nhà..."></textarea>
                 </div>
 
+                <section th:if="${property.id != null}" class="mb-4">
+                    <p th:if="${property.createdDate != null}" th:text="'Ngày đăng: ' + ${property.createdDate}"></p>
+                    <p th:if="${property.rejectionReason != null}" th:text="'Lý do từ chối: ' + ${property.rejectionReason}"></p>
+                    <p th:if="${property.reviewedAt != null}" th:text="'Xét duyệt: ' + ${property.reviewedAt} + ' - ' + ${property.reviewedBy}"></p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a th:each="image : ${property.images}" th:href="${image}" target="_blank" rel="noopener noreferrer"><img th:src="${image}" alt="Ảnh bất động sản" style="width:140px;height:100px;object-fit:cover"/></a>
+                    </div>
+                </section>
+                <p id="approval-loading" role="status" hidden>Đang xử lý...</p>
+                <button id="reload-property" type="button" class="btn btn-outline-secondary" hidden>Tải lại trạng thái</button>
+                <div th:if="${property.id != null and property.status == 'Chờ duyệt'}" sec:authorize="hasAnyRole('ADMIN','STAFF')" class="d-flex gap-2 mb-3">
+                    <button id="approve-property" type="button" class="btn btn-success">Phê duyệt</button>
+                    <button id="reject-property" type="button" class="btn btn-danger">Từ chối</button>
+                </div>
                 <div class="d-flex gap-2 pt-3 border-top mt-2">
                     <button type="submit" class="btn px-4 py-2 fw-medium text-white rounded-3 shadow-sm"
                             style="background-color: #1a2b4c;">
@@ -217,6 +227,17 @@
         </div>
     </div>
 
+    <dialog id="reject-dialog" aria-labelledby="reject-title" class="rounded-3 border p-4">
+        <h3 id="reject-title">Từ chối bài đăng</h3>
+        <p>Lý do sẽ được thông báo cho người đăng.</p>
+        <label for="rejection-reason">Lý do từ chối <span class="text-danger">*</span> (1–1000 ký tự)</label>
+        <textarea id="rejection-reason" rows="5" maxlength="1000" class="form-control" required></textarea>
+        <p id="error-rejectionReason" role="alert" class="text-danger error-message"></p>
+        <button type="button" id="cancel-reject" class="btn btn-light">Hủy</button>
+        <button type="button" id="confirm-reject" class="btn btn-danger" disabled>Xác nhận từ chối</button>
+    </dialog>
+    <script th:src="@{/js/property-approval.js}"></script>
+    <script>PropertyApproval.mount(document.getElementById('formProperty'));</script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             new TomSelect("#wardId", {
@@ -234,50 +255,6 @@
             });
         });
 
-        document.getElementById("formProperty").addEventListener("submit", function (event) {
-            event.preventDefault();
-
-            const data = Object.fromEntries(new FormData(this).entries());
-            const csrfToken = data._csrf;
-            delete data._csrf;
-
-            const formErrorDiv = document.getElementById("form-error");
-            formErrorDiv.style.display = "none";
-            formErrorDiv.innerText = "";
-            document.querySelectorAll('.error-message').forEach(el => {
-                el.style.display = 'none';
-                el.innerText = '';
-            });
-
-            fetch(this.action, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken},
-                body: JSON.stringify(data)
-            })
-                .then(async response => {
-                    const result = await response.json();
-                    if (response.ok) {
-                        alert(result.message || "Lưu thành công!");
-                        window.location.href = "/admin/properties-list";
-                    } else {
-                        if (result.message) {
-                            formErrorDiv.innerText = result.message;
-                            formErrorDiv.style.display = "block";
-                        } else if (typeof result === 'object' && !Array.isArray(result)) {
-                            for (const [field, errorMessage] of Object.entries(result)) {
-                                const errorDiv = document.getElementById(`error-${field}`);
-                                if (errorDiv) {
-                                    errorDiv.innerText = errorMessage;
-                                    errorDiv.style.display = "block";
-                                }
-                            }
-                        } else alert("LỖI:\n" + result.join("\n"));
-                    }
-                }).catch(error => {
-                console.error(error);
-                alert("Lỗi khi kết nối đến server!");
-            });
-        });
     </script>
 </div>
 </body>

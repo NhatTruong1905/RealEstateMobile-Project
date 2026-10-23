@@ -151,7 +151,7 @@ export const mockProperties: Property[] = seeds.map((s, index) => ({
   categoryName: index % 3 === 0 ? "Nhà phố" : "Căn hộ",
   direction: ["Đông Nam", "Nam", "Tây Bắc"][index % 3],
   legal: index % 2 ? "Hợp đồng mua bán" : "Sổ hồng riêng",
-  status: index % 5 ? "PUBLISHED" : "PENDING",
+  status: index % 5 ? "Đang mở bán" : "Chờ duyệt",
   userId: 101,
   userFullname: "Nguyễn Minh Anh",
   userEmail: "minhanh@example.com",
