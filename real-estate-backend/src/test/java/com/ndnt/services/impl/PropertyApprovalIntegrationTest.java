@@ -298,10 +298,24 @@ class PropertyApprovalIntegrationTest {
 
     @Test void adminTemplatesRenderUnderRealSecurity() throws Exception {
         PropertyDTO property=create(); assign(property.getId());
-        mvc.perform(get("/admin/properties-edit").with(user(admin.getUsername()).roles("ADMIN")))
-            .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("formProperty")));
-        mvc.perform(get("/admin/properties-edit-"+property.getId()).with(user(staff.getUsername()).roles("STAFF")))
-            .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("formProperty")));
+        String createHtml=mvc.perform(get("/admin/properties-edit").with(user(admin.getUsername()).roles("ADMIN")))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var createOwner=java.util.regex.Pattern.compile("<select\\b(?=[^>]*\\bid=\"userId\")[^>]*>").matcher(createHtml);
+        assertTrue(createOwner.find()); assertFalse(createOwner.group().contains("disabled"));
+        String editHtml=mvc.perform(get("/admin/properties-edit-"+property.getId()).with(user(staff.getUsername()).roles("STAFF")))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var editOwner=java.util.regex.Pattern.compile("<select\\b(?=[^>]*\\bid=\"userId\")[^>]*>").matcher(editHtml);
+        assertTrue(editOwner.find()); assertTrue(editOwner.group().contains("disabled"));
+        assertTrue(editHtml.contains("id=\"approve-property\""));
+        assertTrue(editHtml.contains("id=\"reject-dialog\""));
+        assertTrue(editHtml.contains("src=\"/js/property-approval.js\""));
+        mvc.perform(get("/js/property-approval.js").with(user(staff.getUsername()).roles("STAFF")))
+            .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("PropertyApproval")));
+        auth(staff); service.createOrUpdateProperty(decision(property,StatusProperty.REJECTED.getStatus(),"Lý do kiểm thử tích hợp"));
+        String rejectedHtml=mvc.perform(get("/admin/properties-edit-"+property.getId()).with(user(staff.getUsername()).roles("STAFF")))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(rejectedHtml.contains("Lý do từ chối: Lý do kiểm thử tích hợp"));
+        assertFalse(rejectedHtml.contains("id=\"approve-property\""));
     }
 
     @Test void concurrentDeliveriesSendOneApplicationEvent() throws Exception {
