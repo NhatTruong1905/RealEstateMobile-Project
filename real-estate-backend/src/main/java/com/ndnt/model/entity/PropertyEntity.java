@@ -81,10 +81,15 @@ public class PropertyEntity extends BaseEntity {
 
     @Column(name = "status")
     private String status = StatusProperty.PENDING.getStatus();
+    @Column(name = "rejection_reason", length = 1000)
+    private String rejectionReason;
+    @Column(name = "reviewed_by")
+    private Integer reviewedBy;
+    @Column(name = "reviewed_at")
+    private java.util.Date reviewedAt;
+
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "property")
     private List<AssignmentPropertyEntity> assignments = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PropertyImageEntity> images = new ArrayList<>();
 }

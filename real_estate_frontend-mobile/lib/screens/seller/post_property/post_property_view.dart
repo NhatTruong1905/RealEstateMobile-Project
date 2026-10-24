@@ -38,86 +38,45 @@ extension PostPropertyView on _PostPropertyScreenState {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionTitle('Loại giao dịch *'),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ChoiceChip(
-                              label: const Center(child: Text('Cho Bán')),
-                              selected: _typeId == 1,
-                              selectedColor: const Color(0xFF945331),
-                              backgroundColor: const Color(0xFFF4EEE6),
-                              labelStyle: TextStyle(
-                                color: _typeId == 1
-                                    ? Colors.white
-                                    : const Color(0xFF78736D),
-                                fontWeight: FontWeight.bold,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              onSelected: (val) {
-                                if (val) setState(() => _typeId = 1);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ChoiceChip(
-                              label: const Center(child: Text('Cho Thuê')),
-                              selected: _typeId == 2,
-                              selectedColor: const Color(0xFF2E7D32),
-                              backgroundColor: const Color(0xFFF4EEE6),
-                              labelStyle: TextStyle(
-                                color: _typeId == 2
-                                    ? Colors.white
-                                    : const Color(0xFF78736D),
-                                fontWeight: FontWeight.bold,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              onSelected: (val) {
-                                if (val) setState(() => _typeId = 2);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      _buildSectionTitle('Phân khúc / Loại BĐS *'),
-                      DropdownButtonFormField<int>(
-                        initialValue: _categoryId,
-                        isExpanded: true,
-                        decoration: _buildInputDecoration(
-                          hint: 'Chọn loại bất động sản',
-                          icon: Icons.category_outlined,
+                      if (_optionsLoading) const LinearProgressIndicator(),
+                      if (_optionsError != null) ...[
+                        Text(
+                          _optionsError!,
+                          style: const TextStyle(color: Colors.red),
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 1,
-                            child: Text('Căn hộ / Chung cư'),
-                          ),
-                          DropdownMenuItem(
-                            value: 2,
-                            child: Text('Nhà riêng / Nhà phố'),
-                          ),
-                          DropdownMenuItem(
-                            value: 3,
-                            child: Text('Biệt thự / Sân vườn'),
-                          ),
-                          DropdownMenuItem(
-                            value: 4,
-                            child: Text('Đất nền / Đất thổ cư'),
-                          ),
-                          DropdownMenuItem(
-                            value: 5,
-                            child: Text('Mặt bằng / Văn phòng / Shop'),
-                          ),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) setState(() => _categoryId = val);
-                        },
+                        TextButton(
+                          onPressed: _loadOptions,
+                          child: const Text('Tải lại danh mục'),
+                        ),
+                      ],
+                      _optionField(
+                        'types',
+                        'Loại giao dịch *',
+                        _typeId,
+                        (v) => setState(() => _typeId = v),
                       ),
+                      _optionField(
+                        'categories',
+                        'Phân khúc bất động sản *',
+                        _categoryId,
+                        (v) => setState(() => _categoryId = v),
+                      ),
+                      _optionField(
+                        'wards',
+                        'Phường / xã',
+                        _wardId,
+                        (v) => setState(() => _wardId = v),
+                        optional: true,
+                      ),
+                      const Text(
+                        'Chọn phường/xã hoặc nhập địa chỉ đầy đủ để hệ thống xác định.',
+                      ),
+                      if (_submitError != null)
+                        Text(
+                          _submitError!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
                       const SizedBox(height: 20),
-
                       _buildSectionTitle('Tiêu đề bài đăng *'),
                       TextFormField(
                         controller: _titleController,
@@ -463,7 +422,13 @@ extension PostPropertyView on _PostPropertyScreenState {
                         width: double.infinity,
                         height: 54,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitForm,
+                          onPressed:
+                              _isLoading ||
+                                  _optionsLoading ||
+                                  _options == null ||
+                                  _optionsError != null
+                              ? null
+                              : _submitForm,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF945331),
                             shape: RoundedRectangleBorder(

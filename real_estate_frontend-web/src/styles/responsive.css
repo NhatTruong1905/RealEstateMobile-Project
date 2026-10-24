@@ -309,11 +309,12 @@
     overflow: visible;
   }
   .gallery {
-    height: auto;
+    height: clamp(220px, 65vw, 360px);
     grid-template-columns: 1fr;
   }
   .gallery-main {
-    aspect-ratio: 1.15;
+    height: 100%;
+    min-height: 0;
   }
   .gallery-stack {
     display: none;

@@ -1,6 +1,7 @@
 import { mockProperties } from "../../../data/mockProperties";
 import type { ApiEnvelope, Property } from "../../../types";
 import { isMockMode, request } from "../core/http";
+import { session } from "../core/session";
 
 const FAVORITES_KEY = "real-estate-web-favorites";
 
@@ -20,12 +21,16 @@ export const favoriteStore = {
 
 export const favoriteApi = {
   async list(): Promise<Property[]> {
+    const token = session.token;
+    const generation = session.generation;
     try {
       const response = await request<ApiEnvelope<Property[]>>(
         "/secure/favorite-properties",
       );
       const properties = response.data || [];
-      favoriteStore.set(properties.map((property) => property.id));
+      if (session.token === token && session.generation === generation) {
+        favoriteStore.set(properties.map((property) => property.id));
+      }
       return properties;
     } catch (error) {
       if (!isMockMode) throw error;
@@ -35,6 +40,8 @@ export const favoriteApi = {
   },
 
   async set(propertyId: number, saved: boolean): Promise<number[]> {
+    const token = session.token;
+    const generation = session.generation;
     const ids = new Set(favoriteStore.get());
     if (saved) ids.add(propertyId);
     else ids.delete(propertyId);
@@ -47,7 +54,7 @@ export const favoriteApi = {
     } catch (error) {
       if (!isMockMode) throw error;
     }
-    favoriteStore.set(propertyIds);
+    if (session.token === token && session.generation === generation) favoriteStore.set(propertyIds);
     return propertyIds;
   },
 };

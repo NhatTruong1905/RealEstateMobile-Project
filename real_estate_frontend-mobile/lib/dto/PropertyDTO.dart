@@ -17,6 +17,13 @@ class PropertyDTO {
   final String? direction;
   final String? legal;
   final String? status;
+  final String? rejectionReason;
+  final Object? reviewedBy;
+  final DateTime? reviewedAt;
+  final DateTime? createdDate;
+  static DateTime? parseDate(dynamic value) => value is num
+      ? DateTime.fromMillisecondsSinceEpoch(value.toInt())
+      : DateTime.tryParse(value?.toString() ?? '');
   final List<String>? images;
   final String? _image;
   final String? userPhone;
@@ -51,6 +58,10 @@ class PropertyDTO {
     this.direction,
     this.legal,
     this.status,
+    this.rejectionReason,
+    this.reviewedBy,
+    this.reviewedAt,
+    this.createdDate,
     this.images,
     String? image,
     this.userPhone,
@@ -121,6 +132,10 @@ class PropertyDTO {
       direction: json['direction'] as String?,
       legal: json['legal'] as String?,
       status: json['status'] as String?,
+      rejectionReason: json['rejectionReason'] as String?,
+      reviewedBy: json['reviewedBy'],
+      reviewedAt: parseDate(json['reviewedAt']),
+      createdDate: parseDate(json['createdDate']),
       images: parsedImages,
       image: json['image'] as String?,
       userPhone: json['userPhone'] as String?,

@@ -7,7 +7,11 @@ export function useAuthenticated() {
   useEffect(() => {
     const sync = () => setAuthenticated(Boolean(session.token));
     addEventListener("session-change", sync);
-    return () => removeEventListener("session-change", sync);
+    addEventListener("storage", sync);
+    return () => {
+      removeEventListener("session-change", sync);
+      removeEventListener("storage", sync);
+    };
   }, []);
 
   return authenticated;

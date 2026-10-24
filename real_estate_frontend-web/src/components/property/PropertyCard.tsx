@@ -50,6 +50,7 @@ export function PropertyCard({ property }: { property: Property }) {
           }}
           alt=""
           loading="lazy"
+          decoding="async"
         />
         <span className="property-type">
           {property.typeId === 2 ? "Cho thuê" : "Mua bán"}

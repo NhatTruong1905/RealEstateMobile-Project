@@ -10,11 +10,13 @@ import { formatMoney } from "../../utils/format";
 export function PropertyDetailPage() {
   const { id = "" } = useParams();
   const [property, setProperty] = useState<Property>();
+  const [activeImage, setActiveImage] = useState(0);
+  const [compactGallery, setCompactGallery] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     propertyApi
       .getById(id)
-      .then(setProperty)
+      .then((value) => { setProperty(value); setActiveImage(0); })
       .catch((e) => setError(e.message));
   }, [id]);
   if (error)
@@ -47,11 +49,16 @@ export function PropertyDetailPage() {
         <Link className="back-link" to="/properties">
           <ChevronLeft /> Quay lại kết quả
         </Link>
-        <div className="gallery">
-          <img className="gallery-main" src={images[0]} alt="" />
-          <div className="gallery-stack">
+        <div className="gallery-toolbar">
+          <button type="button" className="button button-secondary" aria-controls="property-gallery" aria-pressed={compactGallery} onClick={() => setCompactGallery((compact) => !compact)}>
+            {compactGallery ? "Mở rộng ảnh" : "Thu nhỏ ảnh"}
+          </button>
+        </div>
+        <div id="property-gallery" className={`gallery${images.length === 1 ? " gallery-single" : ""}${compactGallery ? " gallery-compact" : ""}`}>
+          <img className="gallery-main" src={images[activeImage] || images[0]} alt={property.title} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = fallbackPropertyImage; }} />
+          <div className={`gallery-stack${images.length === 2 ? " gallery-stack-single" : ""}`}>
             {images.slice(1, 3).map((src, i) => (
-              <img key={i} src={src} alt="" />
+              <img key={i} src={src} alt={`${property.title} - ảnh ${i + 2}`} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = fallbackPropertyImage; }} />
             ))}
             {images.length < 2 && (
               <div className="gallery-placeholder">
@@ -60,6 +67,15 @@ export function PropertyDetailPage() {
             )}
           </div>
         </div>
+        {images.length > 1 && (
+          <div className="gallery-thumbnails" role="group" aria-label="Chọn ảnh bất động sản">
+            {images.map((src, i) => (
+              <button key={i} type="button" aria-label={`Xem ảnh ${i + 1}`} aria-pressed={activeImage === i} onClick={() => setActiveImage(i)}>
+                <img src={src} alt="" loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = fallbackPropertyImage; }} />
+              </button>
+            ))}
+          </div>
+        )}
         <div className="detail-layout">
           <article>
             <div className="detail-kicker">

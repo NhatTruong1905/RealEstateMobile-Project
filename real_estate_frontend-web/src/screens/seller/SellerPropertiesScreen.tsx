@@ -23,9 +23,42 @@ export function SellerProperties() {
 }
 function SellerPropertyList() {
   const [items, setItems] = useState<Property[]>();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  function reload() {
+    setLoading(true);
+    setError("");
+    sellerApi
+      .listMyProperties()
+      .then(setItems)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
   useEffect(() => {
-    sellerApi.listMyProperties().then(setItems);
+    let active = true;
+    sellerApi
+      .listMyProperties()
+      .then((value) => {
+        if (active) setItems(value);
+      })
+      .catch((e: Error) => {
+        if (active) setError(e.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
+  if (loading) return <p role="status">Đang tải tin đăng...</p>;
+  if (error)
+    return (
+      <div role="alert">
+        {error}
+        <button onClick={reload}>Tải lại</button>
+      </div>
+    );
   return items?.length ? (
     <div className="seller-list">
       {items.map((p) => (

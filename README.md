@@ -135,7 +135,6 @@ RealEstateMobile-Project/
 │   │   │   ├── entity/                    # Các thực thể cơ sở dữ liệu JPA (ORM)
 │   │   │   │   ├── UserEntity.java        # Bảng người dùng
 │   │   │   │   ├── PropertyEntity.java    # Bảng thông tin bất động sản
-│   │   │   │   ├── PropertyImageEntity.java # Bảng danh sách ảnh BĐS
 │   │   │   │   ├── FavoritePropertyEntity.java # Bảng BĐS yêu thích
 │   │   │   │   ├── InteractionEntity.java # Bảng tương tác, bình luận, đánh giá
 │   │   │   │   ├── DistrictEntity.java    # Bảng Quận / Huyện

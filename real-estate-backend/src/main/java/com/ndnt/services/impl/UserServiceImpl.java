@@ -1,7 +1,8 @@
 package com.ndnt.services.impl;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
+import com.ndnt.services.storage.ImageStorageService;
+import com.ndnt.services.storage.StorageProblem;
+import com.ndnt.model.dto.ProfileUpdateDTO;
 import com.ndnt.controlleradvices.exceptions.DuplicateEmailException;
 import com.ndnt.controlleradvices.exceptions.DuplicatePhoneException;
 import com.ndnt.controlleradvices.exceptions.DuplicateUsernameException;
@@ -48,7 +49,7 @@ public class UserServiceImpl implements UserService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Autowired
-    private Cloudinary cloudinary;
+    private ImageStorageService imageStorage;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -178,15 +179,10 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        if (userDTO.getFile() != null && !userDTO.getFile().isEmpty()) {
-            try {
-                Map res = this.cloudinary.uploader().upload(userDTO.getFile().getBytes(),
-                        ObjectUtils.asMap("resource_type", "auto"));
-                userEntity.setAvatar(res.get("secure_url").toString());
-            } catch (IOException ex) {
-                Logger.getLogger(UserServiceImpl.class.getName()).log(Level.SEVERE, "Lỗi upload avatar", ex);
-                throw new RuntimeException("Lỗi hệ thống: Không thể tải lên ảnh đại diện!", ex);
-            }
+        if (hasImage(userDTO.getFile())) {
+            String oldAvatar = userDTO.getId() == null ? null : userRepository.findById(userDTO.getId()).orElseThrow().getAvatar();
+            userEntity.setAvatar(imageStorage.uploadAvatar(userDTO.getFile()));
+            if (oldAvatar != null) imageStorage.retire(oldAvatar);
         } else {
             if (userDTO.getId() != null) {
                 UserEntity oldUser = this.userRepository.findById(userDTO.getId()).get();
@@ -231,13 +227,8 @@ public class UserServiceImpl implements UserService {
             newUser.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
             newUser.setRole(this.roleRepository.getByCode("ROLE_USER"));
 
-            if (userDTO.getFile() != null && !userDTO.getFile().isEmpty()) {
-                try {
-                    Map res = this.cloudinary.uploader().upload(userDTO.getFile().getBytes(), ObjectUtils.asMap("resource_type", "auto"));
-                    newUser.setAvatar(res.get("secure_url").toString());
-                } catch (IOException ex) {
-                    throw new RuntimeException("Lỗi hệ thống: Không thể tải lên ảnh đại diện!", ex);
-                }
+            if (hasImage(userDTO.getFile())) {
+                newUser.setAvatar(imageStorage.uploadAvatar(userDTO.getFile()));
             }
             this.userRepository.save(newUser);
         } else {
@@ -263,16 +254,43 @@ public class UserServiceImpl implements UserService {
                 existingUser.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
             }
 
-            if (userDTO.getFile() != null && !userDTO.getFile().isEmpty()) {
-                try {
-                    Map res = this.cloudinary.uploader().upload(userDTO.getFile().getBytes(), ObjectUtils.asMap("resource_type", "auto"));
-                    existingUser.setAvatar(res.get("secure_url").toString());
-                } catch (IOException ex) {
-                    throw new RuntimeException("Lỗi hệ thống: Không thể tải lên ảnh đại diện!", ex);
-                }
+            if (hasImage(userDTO.getFile())) {
+                String oldAvatar = existingUser.getAvatar();
+                existingUser.setAvatar(imageStorage.uploadAvatar(userDTO.getFile()));
+                if (oldAvatar != null) imageStorage.retire(oldAvatar);
             }
             this.userRepository.save(existingUser);
         }
+    }
+
+    @Override
+    public void updateProfile(String authenticatedUsername, ProfileUpdateDTO profile) {
+        UserEntity user = userRepository.findActiveLocked(authenticatedUsername)
+                .orElseThrow(() -> new StorageProblem(403, "FORBIDDEN", "Tài khoản không hợp lệ"));
+        String phone = profile.getPhone();
+        if (phone != null && !Objects.equals(phone.trim(), user.getPhone())) {
+            phone = phone.trim();
+            if (!phone.matches("0[0-9]{9}")) throw new StorageProblem(400, "INVALID_PHONE", "Số điện thoại phải bắt đầu bằng 0 và đủ 10 số");
+            if (userRepository.existsByPhone(phone)) throw new DuplicatePhoneException("Số điện thoại đã được sử dụng");
+            user.setPhone(phone);
+        }
+        if (profile.getFullname() != null) user.setFullname(profile.getFullname());
+        if (profile.getEmail() != null && !Objects.equals(profile.getEmail().trim(), user.getEmail())) {
+            String email = profile.getEmail().trim();
+            if (userRepository.existsByEmail(email)) throw new DuplicateEmailException("Email đã được sử dụng");
+            user.setEmail(email);
+        }
+        var file = profile.getFile();
+        if (file != null && (!file.isEmpty() || (file.getOriginalFilename() != null && !file.getOriginalFilename().isBlank()))) {
+            String oldAvatar = user.getAvatar();
+            user.setAvatar(imageStorage.uploadAvatar(file));
+            if (oldAvatar != null) imageStorage.retire(oldAvatar);
+        }
+        userRepository.saveAndFlush(user);
+    }
+
+    private boolean hasImage(org.springframework.web.multipart.MultipartFile file) {
+        return file != null && (!file.isEmpty() || (file.getOriginalFilename() != null && !file.getOriginalFilename().isBlank()));
     }
 
     @Override

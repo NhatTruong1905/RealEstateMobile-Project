@@ -134,13 +134,13 @@ public class APIPropertyControllerTest {
     @Test
     @DisplayName("DELETE /api/secure/properties/{id} - Xóa tin thành công")
     void deleteProperty_Success() throws Exception {
-        doNothing().when(propertyService).deleteProperty(5);
+        doNothing().when(propertyService).deleteOwnedProperty(5);
 
         mockMvc.perform(delete("/api/secure/properties/{id}", 5))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Success"));
 
-        verify(propertyService, times(1)).deleteProperty(5);
+        verify(propertyService, times(1)).deleteOwnedProperty(5);
     }
 
     @Test
@@ -152,7 +152,7 @@ public class APIPropertyControllerTest {
         user.setUsername("testuser");
 
         FavoritePropertyDTO favDTO = new FavoritePropertyDTO();
-        favDTO.setPropertyId(10);
+        favDTO.setPropertyIds(List.of(10));
 
         when(userService.findByUsername("testuser")).thenReturn(user);
         doNothing().when(favoritePropertyService).createOrUpdateFavoriteProperty(any(FavoritePropertyDTO.class));

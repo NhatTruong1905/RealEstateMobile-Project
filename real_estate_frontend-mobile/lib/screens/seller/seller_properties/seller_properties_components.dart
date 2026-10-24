@@ -4,28 +4,18 @@ part of '../SellerProperties.dart';
 
 extension SellerPropertiesComponents on _SellerPropertiesScreenState {
   Widget _buildStatusTag(String? statusStr) {
-    final s = (statusStr ?? '').toLowerCase();
-    Color color = const Color(0xFF2E7D32);
-    String label = statusStr ?? 'Đang hiển thị';
-
-    if (s == 'chờ duyệt' || s == 'pending') {
-      color = const Color(0xFFE65100);
-      label = 'Chờ duyệt';
-    } else if (s == 'từ chối' ||
-        s == 'rejected' ||
-        s == 'đã xóa' ||
-        s == 'deleted' ||
-        s == 'đã ẩn') {
-      color = const Color(0xFFC62828);
-      if (s == 'từ chối' || s == 'rejected') {
-        label = 'Từ chối';
-      } else {
-        label = 'Đã xóa';
-      }
-    } else if (s == 'published' || s == 'đang mở bán') {
-      color = const Color(0xFF2E7D32);
-      label = 'Đang hiển thị';
-    }
+    const labels = {
+      'Chờ duyệt': 'Đang chờ duyệt',
+      'Đang mở bán': 'Đã được duyệt',
+      'Từ chối': 'Bị từ chối',
+      'Đã xóa': 'Đã xóa',
+    };
+    final label = labels[statusStr] ?? 'Chưa rõ';
+    final color = statusStr == 'Đang mở bán'
+        ? const Color(0xFF2E7D32)
+        : statusStr == 'Chờ duyệt'
+        ? const Color(0xFFE65100)
+        : const Color(0xFFC62828);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -157,6 +147,13 @@ extension SellerPropertiesComponents on _SellerPropertiesScreenState {
               ),
             ],
           ),
+          if (item.createdDate != null)
+            Text('Ngày đăng: ${item.createdDate!.toLocal()}'),
+          if (item.status == 'Từ chối' && item.rejectionReason != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Lý do từ chối: ${item.rejectionReason}'),
+            ),
           const SizedBox(height: 12),
           const Divider(color: Color(0xFFE8E3DC), height: 1),
           const SizedBox(height: 10),
@@ -212,13 +209,7 @@ extension SellerPropertiesComponents on _SellerPropertiesScreenState {
   Future<void> _confirmAndDeleteProperty(PropertyDTO item) async {
     if (item.id == null) return;
 
-    final s = (item.status ?? '').toLowerCase();
-    final isAlreadyDeleted =
-        s == 'đã xóa' ||
-        s == 'deleted' ||
-        s == 'từ chối' ||
-        s == 'rejected' ||
-        s == 'đã ẩn';
+    final isAlreadyDeleted = item.status == 'Đã xóa';
 
     if (isAlreadyDeleted) {
       ScaffoldMessenger.of(context).showSnackBar(

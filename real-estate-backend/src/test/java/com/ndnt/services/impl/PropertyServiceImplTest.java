@@ -1,6 +1,5 @@
 package com.ndnt.services.impl;
 
-import com.cloudinary.Cloudinary;
 import com.ndnt.converter.PropertyConverter;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.entity.DistrictEntity;
@@ -28,6 +27,9 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PropertyServiceImplTest {
+    @Mock private com.ndnt.services.property.PropertyAccess access;
+    @Mock private com.ndnt.services.storage.ImageStorageService imageStorage;
+
 
     @Mock
     private PropertyRepository propertyRepository;
@@ -37,9 +39,6 @@ public class PropertyServiceImplTest {
 
     @Mock
     private FavoritePropertyService favoritePropertyService;
-
-    @Mock
-    private Cloudinary cloudinary;
 
     @Mock
     private AddressParseService addressParseService;
@@ -62,6 +61,7 @@ public class PropertyServiceImplTest {
 
         PropertyEntity propertyEntity = new PropertyEntity();
         propertyEntity.setId(1);
+        propertyEntity.setStatus(StatusProperty.PUBLISHED.getStatus());
         propertyEntity.setAddress("123 Lê Lợi");
         propertyEntity.setCity("Hồ Chí Minh");
         propertyEntity.setWard(ward);
@@ -88,14 +88,14 @@ public class PropertyServiceImplTest {
         PropertyEntity propertyEntity = new PropertyEntity();
         propertyEntity.setId(1);
         propertyEntity.setStatus(StatusProperty.PUBLISHED.getStatus());
+        propertyEntity.setStatus(StatusProperty.PUBLISHED.getStatus());
 
-        when(propertyRepository.findById(1)).thenReturn(Optional.of(propertyEntity));
-        when(propertyRepository.save(propertyEntity)).thenReturn(propertyEntity);
+        when(propertyRepository.findLockedById(1)).thenReturn(Optional.of(propertyEntity));
 
         propertyService.deleteProperty(1);
 
         assertEquals(StatusProperty.DELETED.getStatus(), propertyEntity.getStatus());
-        verify(propertyRepository, times(1)).save(propertyEntity);
+        verify(propertyRepository, times(1)).findLockedById(1);
     }
 
     @Test
@@ -110,6 +110,7 @@ public class PropertyServiceImplTest {
 
         PropertyEntity propertyEntity = new PropertyEntity();
         propertyEntity.setId(1);
+        propertyEntity.setStatus(StatusProperty.PUBLISHED.getStatus());
         propertyEntity.setAddress("123 Lê Lợi");
         propertyEntity.setCity("Hồ Chí Minh");
         propertyEntity.setWard(ward);
@@ -118,6 +119,8 @@ public class PropertyServiceImplTest {
         PropertyDTO propertyDTO = new PropertyDTO();
         propertyDTO.setId(1);
 
+        com.ndnt.model.entity.UserEntity actor = new com.ndnt.model.entity.UserEntity(); actor.setId(10);
+        when(access.actor()).thenReturn(actor);
         when(propertyRepository.findByUser_IdOrderByIdDesc(10)).thenReturn(List.of(propertyEntity));
         when(propertyConverter.toPropertyDTO(propertyEntity)).thenReturn(propertyDTO);
 

@@ -149,6 +149,24 @@
   display: grid;
   place-items: center;
 }
+.avatar-form {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.avatar-form input {
+  width: 100%;
+  min-width: 0;
+}
+.avatar-form small {
+  color: var(--muted);
+}
+.avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 .avatar img {
   width: 100%;
   height: 100%;
@@ -352,6 +370,22 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+.property-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.property-form [aria-invalid="true"] {
+  border-color: #a63624;
+}
+.property-form [role="alert"] {
+  color: #a63624;
+}
+.seller-row p {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 .upload-box {
   border: 1px dashed #9ca7a1;

@@ -16,7 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(properties="spring.config.location=classpath:test.properties")
 @TestPropertySource("/test.properties")
 @Transactional
 public class DeleteOperationIntegrationTest {
@@ -75,9 +75,9 @@ public class DeleteOperationIntegrationTest {
     @Autowired
     private InteractionService interactionService;
 
-    // ==========================================
-    // CÁC TEST XÓA MỀM (Soft Delete: Kiểm tra status = 0 hoặc DELETED)
-    // ==========================================
+
+
+
 
     @Test
     @DisplayName("Xóa mềm User: Kiểm tra status = 0 trong DB sau khi xóa")
@@ -97,10 +97,10 @@ public class DeleteOperationIntegrationTest {
         user.setStatus(1);
         user = userRepository.save(user);
 
-        // Thực hiện xóa mềm
+
         userService.deleteUser(user.getId());
 
-        // Kiểm tra trong DB: Entity vẫn còn nhưng status = 0
+
         Optional<UserEntity> updatedUserOpt = userRepository.findById(user.getId());
         assertTrue(updatedUserOpt.isPresent(), "User vẫn còn trong DB");
         assertEquals(0, updatedUserOpt.get().getStatus(), "Status của User phải là 0 sau khi xóa mềm");
@@ -110,7 +110,7 @@ public class DeleteOperationIntegrationTest {
     @DisplayName("Xóa mềm Property: Kiểm tra status = 'Đã xóa' (DELETED) trong DB")
     void testSoftDeleteProperty_StatusIsDeletedInDb() {
         RoleEntity role = new RoleEntity();
-        role.setCode("ROLE_TEST_SELLER");
+        role.setCode("ROLE_ADMIN");
         role.setName("Test Seller Role");
         role = roleRepository.save(role);
 
@@ -155,10 +155,14 @@ public class DeleteOperationIntegrationTest {
         property.setStatus(StatusProperty.PUBLISHED.getStatus());
         property = propertyRepository.save(property);
 
-        // Thực hiện xóa mềm
-        propertyService.deleteProperty(property.getId());
 
-        // Kiểm tra trong DB: Entity vẫn còn nhưng status = 'Đã xóa'
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(user.getUsername(), null,
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"))));
+        try { propertyService.deleteProperty(property.getId()); }
+        finally { org.springframework.security.core.context.SecurityContextHolder.clearContext(); }
+
+
         Optional<PropertyEntity> updatedPropertyOpt = propertyRepository.findById(property.getId());
         assertTrue(updatedPropertyOpt.isPresent(), "Property vẫn còn trong DB");
         assertEquals(StatusProperty.DELETED.getStatus(), updatedPropertyOpt.get().getStatus(), "Status phải là 'Đã xóa'");
@@ -234,18 +238,18 @@ public class DeleteOperationIntegrationTest {
         interaction.setStatus(1);
         interaction = interactionRepository.save(interaction);
 
-        // Thực hiện xóa mềm
+
         interactionService.deleteInteraction(interaction.getId());
 
-        // Kiểm tra trong DB: Entity vẫn còn nhưng status = 0
+
         Optional<InteractionEntity> updatedOpt = interactionRepository.findById(interaction.getId());
         assertTrue(updatedOpt.isPresent(), "Interaction vẫn còn trong DB");
         assertEquals(0, updatedOpt.get().getStatus(), "Status của Interaction phải là 0 sau khi xóa mềm");
     }
 
-    // ==========================================
-    // CÁC TEST XÓA CỨNG (Hard Delete: Kiểm tra KHÔNG CÒN trong DB)
-    // ==========================================
+
+
+
 
     @Test
     @DisplayName("Xóa cứng Ward: Kiểm tra không còn tồn tại trong DB sau khi xóa")
@@ -262,10 +266,10 @@ public class DeleteOperationIntegrationTest {
         ward = wardRepository.save(ward);
         Integer wardId = ward.getId();
 
-        // Thực hiện xóa cứng
+
         wardService.deleteWard(wardId);
 
-        // Tìm thử trong DB -> Phải trống (empty)
+
         Optional<WardEntity> found = wardRepository.findById(wardId);
         assertTrue(found.isEmpty(), "Ward không còn tồn tại trong DB sau khi xóa cứng");
     }
@@ -279,10 +283,10 @@ public class DeleteOperationIntegrationTest {
         district = districtRepository.save(district);
         Integer districtId = district.getId();
 
-        // Thực hiện xóa cứng
+
         districtService.deleteDistrict(districtId);
 
-        // Tìm thử trong DB -> Phải trống (empty)
+
         Optional<DistrictEntity> found = districtRepository.findById(districtId);
         assertTrue(found.isEmpty(), "District không còn tồn tại trong DB sau khi xóa cứng");
     }
@@ -296,10 +300,10 @@ public class DeleteOperationIntegrationTest {
         role = roleRepository.save(role);
         Integer roleId = role.getId();
 
-        // Thực hiện xóa cứng
+
         roleService.deleteRole(roleId);
 
-        // Tìm thử trong DB -> Phải trống (empty)
+
         Optional<RoleEntity> found = roleRepository.findById(roleId);
         assertTrue(found.isEmpty(), "Role không còn tồn tại trong DB sau khi xóa cứng");
     }
@@ -313,10 +317,10 @@ public class DeleteOperationIntegrationTest {
         type = propertyTypeRepository.save(type);
         Integer typeId = type.getId();
 
-        // Thực hiện xóa cứng
+
         propertyTypeService.deletePropertyType(typeId);
 
-        // Tìm thử trong DB -> Phải trống (empty)
+
         Optional<PropertyTypeEntity> found = propertyTypeRepository.findById(Integer.valueOf(typeId));
         assertTrue(found.isEmpty(), "PropertyType không còn tồn tại trong DB sau khi xóa cứng");
     }
@@ -330,10 +334,10 @@ public class DeleteOperationIntegrationTest {
         category = propertyCategoryRepository.save(category);
         Integer categoryId = category.getId();
 
-        // Thực hiện xóa cứng
+
         propertyCategoryService.deletePropertyCategory(categoryId);
 
-        // Tìm thử trong DB -> Phải trống (empty)
+
         Optional<PropertyCategoryEntity> found = propertyCategoryRepository.findById(Integer.valueOf(categoryId));
         assertTrue(found.isEmpty(), "PropertyCategory không còn tồn tại trong DB sau khi xóa cứng");
     }
@@ -347,10 +351,10 @@ public class DeleteOperationIntegrationTest {
         type = interactionTypeRepository.save(type);
         Integer typeId = type.getId();
 
-        // Thực hiện xóa cứng
+
         interactionTypeService.deleteInteractionType(typeId);
 
-        // Tìm thử trong DB -> Phải trống (empty)
+
         Optional<InteractionTypeEntity> found = interactionTypeRepository.findById(typeId);
         assertTrue(found.isEmpty(), "InteractionType không còn tồn tại trong DB sau khi xóa cứng");
     }

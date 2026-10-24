@@ -1,7 +1,7 @@
 package com.ndnt.controllers.api;
 
 import com.ndnt.model.dto.UserDTO;
-import com.ndnt.model.dto.UserInfoDTO;
+import com.ndnt.model.dto.ProfileUpdateDTO;
 import com.ndnt.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -62,12 +62,7 @@ public class APIUserControllerTest {
     @DisplayName("POST /api/secure/update/profile - Cập nhật thông tin profile thành công")
     void updateProfile_Success() throws Exception {
         Principal principal = () -> "testuser";
-        UserDTO currentUser = new UserDTO();
-        currentUser.setId(1);
-        currentUser.setUsername("testuser");
-
-        when(userService.findByUsername("testuser")).thenReturn(currentUser);
-        doNothing().when(userService).createOrUpdateUser(any(UserInfoDTO.class));
+        doNothing().when(userService).updateProfile(eq("testuser"), any(ProfileUpdateDTO.class));
 
         mockMvc.perform(multipart("/api/secure/update/profile")
                         .param("username", "testuser")
@@ -77,7 +72,6 @@ public class APIUserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Success"));
 
-        verify(userService, times(1)).findByUsername("testuser");
-        verify(userService, times(1)).createOrUpdateUser(any(UserInfoDTO.class));
+        verify(userService, times(1)).updateProfile(eq("testuser"), any(ProfileUpdateDTO.class));
     }
 }

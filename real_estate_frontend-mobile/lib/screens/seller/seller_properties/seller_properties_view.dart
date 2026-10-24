@@ -79,8 +79,9 @@ extension SellerPropertiesView on _SellerPropertiesScreenState {
             child: Row(
               children: [
                 _buildStatusChip('Tất cả'),
-                _buildStatusChip('Đang hiển thị'),
-                _buildStatusChip('Chờ duyệt'),
+                _buildStatusChip('Đã được duyệt'),
+                _buildStatusChip('Đang chờ duyệt'),
+                _buildStatusChip('Bị từ chối'),
                 _buildStatusChip('Đã xóa'),
               ],
             ),
@@ -92,6 +93,19 @@ extension SellerPropertiesView on _SellerPropertiesScreenState {
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFF945331)),
+                  )
+                : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!),
+                        TextButton(
+                          onPressed: _fetchMyProperties,
+                          child: const Text('Tải lại'),
+                        ),
+                      ],
+                    ),
                   )
                 : displayList.isEmpty
                 ? Center(

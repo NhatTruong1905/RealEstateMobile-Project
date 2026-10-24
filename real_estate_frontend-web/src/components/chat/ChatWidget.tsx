@@ -34,9 +34,36 @@ export function ChatWidget() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-30)));
+    if (messages.every((message) => message.id === "welcome")) {
+      localStorage.removeItem(STORAGE_KEY);
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-30)));
+    }
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    function resetSession() {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setSending(false);
+      setMessages([WELCOME_MESSAGE]);
+      setDraft("");
+      setOpen(false);
+    }
+    function syncLogout(event: StorageEvent) {
+      if (event.storageArea === localStorage &&
+          (event.key === null || (event.key === "real-estate-web-token" && event.newValue === null))) {
+        resetSession();
+      }
+    }
+    window.addEventListener("session-cleared", resetSession);
+    window.addEventListener("storage", syncLogout);
+    return () => {
+      window.removeEventListener("session-cleared", resetSession);
+      window.removeEventListener("storage", syncLogout);
+    };
+  }, []);
 
   useEffect(() => {
     if (open) window.setTimeout(() => inputRef.current?.focus(), 80);
@@ -82,6 +109,7 @@ export function ChatWidget() {
         question,
         history,
         (chunk) => {
+          if (controller.signal.aborted) return;
           setMessages((current) =>
             current.map((message) =>
               message.id === assistantId
@@ -109,13 +137,16 @@ export function ChatWidget() {
         ),
       );
     } finally {
-      setSending(false);
-      abortRef.current = null;
+      if (abortRef.current === controller) {
+        setSending(false);
+        abortRef.current = null;
+      }
     }
   }
 
   function clearConversation() {
     abortRef.current?.abort();
+    abortRef.current = null;
     setSending(false);
     setMessages([WELCOME_MESSAGE]);
     setDraft("");
