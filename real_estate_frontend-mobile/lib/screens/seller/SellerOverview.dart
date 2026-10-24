@@ -47,7 +47,10 @@ class _SellerOverviewScreenState extends State<SellerOverviewScreen>
   }
 
   Future<void> _loadMyProperties() async {
-    final list = await fetchMyProperties();
+    final list = await fetchMyProperties().catchError((Object e) {
+      debugPrint(e.toString());
+      return <PropertyDTO>[];
+    });
     if (mounted) {
       setState(() {
         _myProperties = list;

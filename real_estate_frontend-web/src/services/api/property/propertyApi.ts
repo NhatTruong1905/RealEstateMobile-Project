@@ -20,8 +20,10 @@ export const propertyApi = {
       const limit = Number(params.get("limit") || 6);
       const filtered = mockProperties.filter(
         (property) =>
+          property.status === "Đang mở bán" &&
           (!title || property.title.toLocaleLowerCase("vi").includes(title)) &&
-          (!address || property.address?.toLocaleLowerCase("vi").includes(address)) &&
+          (!address ||
+            property.address?.toLocaleLowerCase("vi").includes(address)) &&
           (!typeId || property.typeId === typeId),
       );
       return {
@@ -51,7 +53,9 @@ export const propertyApi = {
       return property;
     } catch (error) {
       if (!isMockMode) throw error;
-      const property = mockProperties.find((item) => item.id === Number(id));
+      const property = mockProperties.find(
+        (item) => item.id === Number(id) && item.status === "Đang mở bán",
+      );
       if (!property) throw error;
       return property;
     }

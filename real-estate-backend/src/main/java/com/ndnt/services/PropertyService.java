@@ -14,6 +14,10 @@ public interface PropertyService {
 
     PropertyDTO findById(Integer id);
 
+    PropertyDTO saveOwnedProperty(PropertyDTO propertyDTO);
+
+    void deleteOwnedProperty(Integer id);
+
     void createOrUpdateProperty(PropertyDTO propertyDTO);
 
     void deleteProperty(Integer id);

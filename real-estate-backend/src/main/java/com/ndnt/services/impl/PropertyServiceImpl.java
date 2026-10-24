@@ -4,15 +4,21 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.ndnt.converter.PropertyConverter;
 import com.ndnt.model.dto.AddressParseResult;
-import com.ndnt.model.dto.FavoritePropertyDTO;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.dto.request.PropertyRequestDTO;
-import com.ndnt.model.entity.AssignmentPropertyEntity;
 import com.ndnt.model.entity.PropertyEntity;
 import com.ndnt.model.entity.PropertyImageEntity;
 import com.ndnt.model.entity.WardEntity;
 import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.repositories.PropertyRepository;
+import com.ndnt.repositories.UserRepository;
+import com.ndnt.repositories.PropertyTypeRepository;
+import com.ndnt.repositories.PropertyCategoryRepository;
+import com.ndnt.model.entity.UserEntity;
+import com.ndnt.services.property.*;
+import java.util.Date;
+import java.util.Objects;
+import org.springframework.beans.BeanUtils;
 import com.ndnt.repositories.WardRepository;
 import com.ndnt.services.AddressParseService;
 import com.ndnt.services.FavoritePropertyService;
@@ -32,8 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Service
 @Transactional
@@ -56,22 +60,33 @@ public class PropertyServiceImpl implements PropertyService {
     @Autowired
     private WardRepository wardRepository;
 
+    @Autowired private PropertyAccess access;
+    @Autowired private PropertyMailOutbox mailOutbox;
+    @Autowired private UserRepository users;
+    @Autowired private PropertyTypeRepository types;
+    @Autowired private PropertyCategoryRepository categories;
+
+    private PropertyEntity locked(Integer id) {
+        return propertyRepository.findLockedById(id).orElseThrow(PropertyProblem::missing);
+    }
+    private boolean published(PropertyEntity property) {
+        return StatusProperty.PUBLISHED.getStatus().equals(property.getStatus());
+    }
+    private PropertyDTO dto(PropertyEntity entity, boolean privateReview) {
+        PropertyDTO dto = propertyConverter.toPropertyDTO(entity);
+        dto.setAssignmentIds(entity.getAssignments().stream().map(com.ndnt.model.entity.AssignmentPropertyEntity::getId).toList());
+        String ward = entity.getWard() == null ? "" : entity.getWard().getName();
+        String district = entity.getWard() == null || entity.getWard().getDistrict() == null ? "" : entity.getWard().getDistrict().getName();
+        dto.setAddressDetail(Objects.toString(entity.getAddress(), "") + ", " + ward + ", " + district + ", " + Objects.toString(entity.getCity(), ""));
+        if (!privateReview) { dto.setRejectionReason(null); dto.setReviewedAt(null); dto.setReviewedBy(null); }
+        return dto;
+    }
+
     @Override
     public List<PropertyDTO> getProperties() {
         List<PropertyEntity> propertyEntities = propertyRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
 
-        List<PropertyDTO> propertyDTOs = new ArrayList<>();
-        for (PropertyEntity pEntity : propertyEntities) {
-            PropertyDTO pDTO = this.propertyConverter.toPropertyDTO(pEntity);
-            pDTO.setAddressDetail(pEntity.getAddress() + ", " + pEntity.getWard().getName() + ", " + pEntity.getWard().getDistrict().getName() + ", " + pEntity.getCity());
-            if (!pEntity.getAssignments().isEmpty()) {
-                for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
-                    pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
-                }
-            }
-            propertyDTOs.add(pDTO);
-        }
-        return propertyDTOs;
+        return propertyEntities.stream().map(p -> dto(p, false)).toList();
     }
 
     @Override
@@ -126,184 +141,155 @@ public class PropertyServiceImpl implements PropertyService {
                     predicates.add(builder.equal(root.join("type").get("id"), searchDTO.getTypeId()));
                 }
                 if (searchDTO.getStatus() != null && !searchDTO.getStatus().isBlank()) {
-                    predicates.add(builder.like(root.get("status"), "%" + searchDTO.getStatus().trim() + "%"));
+                    predicates.add(builder.equal(root.get("status"), searchDTO.getStatus().trim()));
                 }
             }
 
             return builder.and(predicates.toArray(new Predicate[0]));
         };
 
-        return this.propertyRepository.findAll(spec, pageable).map(pEntity -> {
-            PropertyDTO pDTO = this.propertyConverter.toPropertyDTO(pEntity);
-
-            String address = pEntity.getAddress() != null ? pEntity.getAddress() : "";
-            String wardName = (pEntity.getWard() != null) ? pEntity.getWard().getName() : "";
-            String city = pEntity.getCity() != null ? pEntity.getCity() : "";
-            String districtName = pEntity.getWard().getDistrict().getName() != null ? pEntity.getWard().getDistrict().getName() : "";
-            pDTO.setAddressDetail(address + ", " + wardName + ", " + districtName + ", " + city);
-
-            if (pEntity.getAssignments() != null && !pEntity.getAssignments().isEmpty()) {
-                for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
-                    pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
-                }
-            }
-            return pDTO;
-        });
+        // Search DTOs never expose review metadata; owner/reviewer detail is the private channel.
+        return this.propertyRepository.findAll(spec, pageable).map(p -> dto(p, false));
     }
 
     @Override
     public PropertyDTO findById(Integer id) {
-        PropertyEntity propertyEntity = this.propertyRepository.findById(id).get();
-        PropertyDTO propertyDTO = this.propertyConverter.toPropertyDTO(propertyEntity);
-        propertyDTO.setAddressDetail(propertyEntity.getAddress() + ", " + propertyEntity.getWard().getName() + ", " + propertyEntity.getWard().getDistrict().getName() + ", " + propertyEntity.getCity());
-
-        return propertyDTO;
+        UserEntity actor = access.actor();
+        PropertyEntity property = propertyRepository.findById(id).orElseThrow(PropertyProblem::missing);
+        boolean privateReview = access.owner(actor, property) || access.reviewer(actor, property);
+        if (!published(property) && !privateReview) throw PropertyProblem.missing();
+        return dto(property, privateReview);
     }
 
     @Override
-    public void createOrUpdateProperty(PropertyDTO propertyDTO) {
-        String rawAddress = (propertyDTO.getAddressDetail() != null && !propertyDTO.getAddressDetail().isBlank())
-                ? propertyDTO.getAddressDetail()
-                : propertyDTO.getAddress();
+    public PropertyDTO saveOwnedProperty(PropertyDTO request) {
+        return save(request, false);
+    }
 
-        if (rawAddress != null && !rawAddress.isBlank()) {
+    @Override
+    public void createOrUpdateProperty(PropertyDTO request) {
+        PropertyDTO saved = save(request, true);
+        BeanUtils.copyProperties(saved, request);
+    }
+
+    private String normalizeRejectionReason(String reason) {
+        if (reason == null) return "";
+        int start = 0, end = reason.length();
+        while (start < end && reasonWhitespace(reason.codePointAt(start)))
+            start += Character.charCount(reason.codePointAt(start));
+        while (end > start && reasonWhitespace(reason.codePointBefore(end)))
+            end -= Character.charCount(reason.codePointBefore(end));
+        return reason.substring(start, end);
+    }
+
+    private boolean reasonWhitespace(int codePoint) {
+        return Character.isWhitespace(codePoint) || Character.isSpaceChar(codePoint) || codePoint == 0xFEFF;
+    }
+
+    private PropertyDTO save(PropertyDTO request, boolean adminRoute) {
+        UserEntity actor = access.actor();
+        if (adminRoute && !access.hasRole(actor, "ROLE_ADMIN") && !access.hasRole(actor, "ROLE_STAFF"))
+            throw PropertyProblem.forbidden();
+        boolean create = request.getId() == null;
+        PropertyEntity entity = create ? new PropertyEntity() : locked(request.getId());
+        if (!create) {
+            if (adminRoute) access.requireReviewer(actor, entity); else access.requireOwner(actor, entity);
+            if (StatusProperty.DELETED.getStatus().equals(entity.getStatus()))
+                throw new PropertyProblem(409, "CONFLICT", "Bài đăng đã xóa");
+        }
+        String desired = request.getStatus();
+        boolean decision = adminRoute && !create && desired != null &&
+                (StatusProperty.PUBLISHED.getStatus().equals(desired) || StatusProperty.REJECTED.getStatus().equals(desired));
+        boolean transitioned = decision && !desired.equals(entity.getStatus());
+        if (adminRoute && !create && desired != null && !desired.equals(entity.getStatus())) {
+            if (!decision || !StatusProperty.PENDING.getStatus().equals(entity.getStatus()))
+                throw new PropertyProblem(409, "CONFLICT", "Trạng thái không cho phép xét duyệt");
+            if (StatusProperty.REJECTED.getStatus().equals(desired)) {
+                String reason = normalizeRejectionReason(request.getRejectionReason());
+                if (reason.isEmpty() || reason.length() > 1000)
+                    throw PropertyProblem.invalid("rejectionReason", "Lý do từ chối phải có từ 1 đến 1000 ký tự");
+                entity.setRejectionReason(reason);
+            } else entity.setRejectionReason(null);
+            entity.setStatus(desired); entity.setReviewedBy(actor.getId()); entity.setReviewedAt(new Date());
+        }
+        if (create) {
+            // Admin retains the ability to create on behalf of a selected account.
+            UserEntity owner = actor;
+            if (adminRoute && request.getUserId() != null) {
+                owner = users.findById(request.getUserId()).orElseThrow(() -> PropertyProblem.invalid("userId", "Tài khoản không tồn tại"));
+            }
+            if (!Integer.valueOf(1).equals(owner.getStatus())) throw PropertyProblem.invalid("userId", "Tài khoản không hợp lệ");
+            entity.setUser(owner); entity.setStatus(StatusProperty.PENDING.getStatus());
+        }
+        Integer wardId = request.getWardId();
+        String rawAddress = request.getAddressDetail() != null && !request.getAddressDetail().isBlank() ? request.getAddressDetail() : request.getAddress();
+        if (wardId == null && rawAddress != null && !rawAddress.isBlank()) {
             try {
-                AddressParseResult parseResult = this.addressParseService.parseAddress(rawAddress);
-                if (parseResult != null) {
-                    if (parseResult.addressDetail() != null && !parseResult.addressDetail().isBlank()) {
-                        propertyDTO.setAddress(parseResult.addressDetail());
-                    }
-
-                    if (parseResult.wardName() != null && !parseResult.wardName().isBlank()) {
-                        Optional<WardEntity> wardOpt = this.wardRepository.findFirstByMatchingName(parseResult.wardName().trim());
-                        wardOpt.ifPresent(wardEntity -> propertyDTO.setWardId(wardEntity.getId()));
-                    }
-
-                    if (parseResult.cityName() != null && !parseResult.cityName().isBlank()) {
-                        propertyDTO.setCity(parseResult.cityName());
-                    }
+                AddressParseResult parsed = addressParseService.parseAddress(rawAddress);
+                if (parsed != null && parsed.wardName() != null) {
+                    Optional<WardEntity> ward = wardRepository.findFirstByMatchingName(parsed.wardName().trim());
+                    if (ward.isPresent()) wardId = ward.get().getId();
+                    if (parsed.cityName() != null && !parsed.cityName().isBlank()) request.setCity(parsed.cityName());
+                    if (parsed.addressDetail() != null && !parsed.addressDetail().isBlank()) request.setAddress(parsed.addressDetail());
                 }
-            } catch (Exception ex) {
-                Logger.getLogger(PropertyServiceImpl.class.getName()).log(Level.WARNING, "Không thể phân tích địa chỉ bằng AI, sử dụng dữ liệu mặc định.", ex);
-            }
+            } catch (Exception ignored) { /* Explicit wardId is the safe fallback; do not log address/provider payload. */ }
         }
-
-        PropertyEntity pEntity = this.propertyConverter.toPropertyEntity(propertyDTO);
-
-        if (pEntity.getWard() == null && propertyDTO.getWardId() != null) {
-            pEntity.setWard(this.wardRepository.findById(propertyDTO.getWardId()).orElse(null));
+        if (wardId == null) throw PropertyProblem.invalid("wardId", "Cần phường hợp lệ hoặc địa chỉ có thể xác định phường");
+        entity.setWard(wardRepository.findById(wardId).orElseThrow(() -> PropertyProblem.invalid("wardId", "Phường không tồn tại")));
+        if (request.getTypeId() == null) throw PropertyProblem.invalid("typeId", "Cần loại hình hợp lệ");
+        entity.setType(types.findById(request.getTypeId()).orElseThrow(() -> PropertyProblem.invalid("typeId", "Loại hình không tồn tại")));
+        if (request.getCategoryId() == null) throw PropertyProblem.invalid("categoryId", "Cần danh mục hợp lệ");
+        entity.setCategory(categories.findById(request.getCategoryId()).orElseThrow(() -> PropertyProblem.invalid("categoryId", "Danh mục không tồn tại")));
+        entity.setTitle(request.getTitle()); entity.setDescription(request.getDescription()); entity.setAddress(request.getAddress());
+        entity.setCity(request.getCity() == null || request.getCity().isBlank() ? "Hồ Chí Minh" : request.getCity());
+        entity.setPrice(request.getPrice()); entity.setArea(request.getArea()); entity.setLegal(request.getLegal());
+        entity.setFloorCount(request.getFloorCount()); entity.setBedroomCount(request.getBedroomCount()); entity.setBathroomCount(request.getBathroomCount());
+        entity.setDirection(request.getDirection());
+        // Retain existing managed images unless an explicit nonempty list chooses a subset.
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            entity.getImages().removeIf(image -> !request.getImages().contains(image.getUrlImage()));
         }
-        if (pEntity.getCity() == null || pEntity.getCity().isBlank()) {
-            pEntity.setCity("Hồ Chí Minh");
+        if (request.getFiles() != null) for (MultipartFile file : request.getFiles()) {
+            if (file == null || file.isEmpty()) continue;
+            try {
+                Map result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", "auto"));
+                PropertyImageEntity image = new PropertyImageEntity();
+                image.setUrlImage(result.get("secure_url").toString()); image.setProperty(entity); entity.getImages().add(image);
+            } catch (IOException ex) { throw new PropertyProblem(422, "UPLOAD_FAILED", "Không thể tải ảnh lên"); }
         }
-        if (propertyDTO.getImages() == null) {
-            propertyDTO.setImages(new ArrayList<>());
-        }
-
-        List<PropertyImageEntity> finalImages = new ArrayList<>();
-        boolean hasNewFiles = propertyDTO.getFiles() != null
-                && !propertyDTO.getFiles().isEmpty()
-                && !propertyDTO.getFiles().get(0).isEmpty();
-        if (propertyDTO.getId() != null) {
-            if (propertyDTO.getStatus() != null) {
-                pEntity.setStatus(propertyDTO.getStatus());
-            }
-            PropertyEntity oldProperty = this.propertyRepository.findById(propertyDTO.getId()).orElse(null);
-            if (oldProperty != null) {
-                pEntity.setAssignments(oldProperty.getAssignments());
-                if (pEntity.getUser() == null) pEntity.setUser(oldProperty.getUser());
-                if (pEntity.getWard() == null) pEntity.setWard(oldProperty.getWard());
-                if (pEntity.getType() == null) pEntity.setType(oldProperty.getType());
-                if (pEntity.getCategory() == null) pEntity.setCategory(oldProperty.getCategory());
-
-                List<String> keptImageUrls = propertyDTO.getImages();
-                if (keptImageUrls != null && !keptImageUrls.isEmpty()) {
-                    for (PropertyImageEntity oldImg : oldProperty.getImages()) {
-                        if (keptImageUrls.contains(oldImg.getUrlImage())) {
-                            oldImg.setProperty(pEntity);
-                            finalImages.add(oldImg);
-                        }
-                    }
-                } else if (!hasNewFiles && oldProperty.getImages() != null) {
-                    for (PropertyImageEntity oldImg : oldProperty.getImages()) {
-                        oldImg.setProperty(pEntity);
-                        finalImages.add(oldImg);
-                    }
-                }
-            }
-        } else {
-            pEntity.setStatus(StatusProperty.PENDING.getStatus());
-        }
-
-        if (hasNewFiles) {
-            for (MultipartFile file : propertyDTO.getFiles()) {
-                try {
-                    Map res = this.cloudinary.uploader().upload(file.getBytes(),
-                            ObjectUtils.asMap("resource_type", "auto"));
-                    String imgUrl = res.get("secure_url").toString();
-
-                    PropertyImageEntity newImage = new PropertyImageEntity();
-                    newImage.setUrlImage(imgUrl);
-                    newImage.setProperty(pEntity);
-
-                    finalImages.add(newImage);
-
-                    if (!propertyDTO.getImages().contains(imgUrl)) {
-                        propertyDTO.getImages().add(imgUrl);
-                    }
-                } catch (IOException ex) {
-                    Logger.getLogger(PropertyServiceImpl.class.getName()).log(Level.SEVERE, "Lỗi upload image", ex);
-                    throw new RuntimeException("Lỗi hệ thống: Không thể tải lên ảnh!", ex);
-                }
-            }
-        }
-
-        pEntity.setImages(finalImages);
-        this.propertyRepository.save(pEntity);
+        propertyRepository.saveAndFlush(entity);
+        if (create) mailOutbox.enqueue(entity, "RECEIVED");
+        else if (transitioned) mailOutbox.enqueue(entity, StatusProperty.REJECTED.getStatus().equals(desired) ? "REJECTED" : "APPROVED");
+        return dto(entity, true);
     }
 
     @Override
     public void deleteProperty(Integer id) {
-        PropertyEntity propertyEntity = this.propertyRepository.findById(id).get();
-        propertyEntity.setStatus(StatusProperty.DELETED.getStatus());
-        this.propertyRepository.save(propertyEntity);
+        UserEntity actor = access.actor();
+        PropertyEntity property = locked(id); access.requireReviewer(actor, property);
+        property.setStatus(StatusProperty.DELETED.getStatus());
+    }
+
+    @Override
+    public void deleteOwnedProperty(Integer id) {
+        UserEntity actor = access.actor();
+        PropertyEntity property = locked(id); access.requireOwner(actor, property);
+        property.setStatus(StatusProperty.DELETED.getStatus());
     }
 
     @Override
     public List<PropertyDTO> getPropertyOfUser(Integer userId) {
-        List<PropertyEntity> propertyEntities = this.propertyRepository.findByUser_IdOrderByIdDesc(userId);
-
-        List<PropertyDTO> propertyDTOs = new ArrayList<>();
-        for (PropertyEntity pEntity : propertyEntities) {
-            PropertyDTO pDTO = this.propertyConverter.toPropertyDTO(pEntity);
-            pDTO.setAddressDetail(pEntity.getAddress() + "," + pEntity.getWard().getName() + "," + pEntity.getWard().getDistrict().getName() + ", " + pEntity.getCity());
-            if (!pEntity.getAssignments().isEmpty()) {
-                for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
-                    pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
-                }
-            }
-            propertyDTOs.add(pDTO);
-        }
-        return propertyDTOs;
+        UserEntity actor = access.actor();
+        if (!actor.getId().equals(userId)) throw PropertyProblem.forbidden();
+        return propertyRepository.findByUser_IdOrderByIdDesc(userId).stream().map(p -> dto(p, true)).toList();
     }
 
     @Override
     public List<PropertyDTO> getFavoritePropertiesByUser(Integer id) {
-        List<Integer> favoritePropertyDTOS = this.favoritePropertyService.getFavoritePropertyIdsByUserId(id);
-
-        List<PropertyEntity> propertyEntities = this.propertyRepository.findById_In(favoritePropertyDTOS);
-
-        List<PropertyDTO> propertyDTOs = new ArrayList<>();
-        for (PropertyEntity pEntity : propertyEntities) {
-            PropertyDTO pDTO = this.propertyConverter.toPropertyDTO(pEntity);
-            pDTO.setAddressDetail(pEntity.getAddress() + "," + pEntity.getWard().getName() + "," + pEntity.getWard().getDistrict().getName() + ", " + pEntity.getCity());
-            if (!pEntity.getAssignments().isEmpty()) {
-                for (AssignmentPropertyEntity assignmentPropertyEntity : pEntity.getAssignments()) {
-                    pDTO.getAssignmentIds().add(assignmentPropertyEntity.getId());
-                }
-            }
-            propertyDTOs.add(pDTO);
-        }
-        return propertyDTOs;
+        UserEntity actor = access.actor();
+        if (!actor.getId().equals(id)) throw PropertyProblem.forbidden();
+        List<Integer> favorites = favoritePropertyService.getFavoritePropertyIdsByUserId(id);
+        return propertyRepository.findById_In(favorites).stream().filter(p -> published(p) || access.owner(actor,p) || access.reviewer(actor,p))
+                .map(p -> dto(p, access.owner(actor,p) || access.reviewer(actor,p))).toList();
     }
 }

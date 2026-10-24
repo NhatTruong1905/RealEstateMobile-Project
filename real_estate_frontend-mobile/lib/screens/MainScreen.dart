@@ -24,6 +24,7 @@ class _MainScreenState extends State<MainScreen> {
   bool _isSellerMode = false;
   int _buyerIndex = 0;
   int _sellerIndex = 0;
+  int _propertyRevision = 0;
 
   final ChatService _chatService = ChatService();
   StreamSubscription<ChatMessageDTO>? _globalMsgSubscription;
@@ -76,7 +77,9 @@ class _MainScreenState extends State<MainScreen> {
       MaterialPageRoute(builder: (context) => const PostPropertyScreen()),
     );
     if (res == true && mounted) {
-      setState(() {});
+      setState(() {
+        _propertyRevision++;
+      });
     }
   }
 
@@ -147,13 +150,15 @@ class _MainScreenState extends State<MainScreen> {
         index: _sellerIndex,
         children: [
           SellerOverviewScreen(
-            key: ValueKey('seller_overview_$_sellerIndex'),
+            key: ValueKey('seller_overview_${_sellerIndex}_$_propertyRevision'),
             onPostNewProperty: _openPostModal,
             onManageProperties: () => setState(() => _sellerIndex = 1),
             onManageCustomers: () => setState(() => _sellerIndex = 3),
           ),
           SellerPropertiesScreen(
-            key: ValueKey('seller_properties_$_sellerIndex'),
+            key: ValueKey(
+              'seller_properties_${_sellerIndex}_$_propertyRevision',
+            ),
             onPostNewProperty: _openPostModal,
           ),
           SellerOverviewScreen(
