@@ -30,3 +30,8 @@ replay_pid*
 key.properties
 *.keystore
 *.jks
+
+# Local agent instructions and skills
+/AGENTS.md
+/.agents/
+/docs/agent-rules/
