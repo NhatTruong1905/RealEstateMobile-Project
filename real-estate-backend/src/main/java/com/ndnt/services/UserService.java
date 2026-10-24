@@ -33,6 +33,8 @@ public interface UserService extends UserDetailsService {
 
     void createOrUpdateUser(UserInfoDTO userDTO);
 
+    void updateProfile(String authenticatedUsername, com.ndnt.model.dto.ProfileUpdateDTO profile);
+
     UserEntity findEntityByIdentifier(String identifier);
 
     void resetPassword(String identifier, String newPassword, String newEmail);

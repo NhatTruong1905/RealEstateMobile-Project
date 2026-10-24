@@ -49,7 +49,7 @@
         data._csrf || doc.querySelector('meta[name="_csrf"]')?.content || "";
       delete data._csrf;
       data.status = status;
-      // Audit belongs to the server. Ordinary edits preserve the stored reason.
+
       delete data.reviewedBy;
       delete data.reviewedAt;
       delete data.createdDate;

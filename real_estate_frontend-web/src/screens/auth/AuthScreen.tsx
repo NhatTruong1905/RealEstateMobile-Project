@@ -11,13 +11,34 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
   const [search] = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const returnQuery = search.toString();
   const switchPath = `${mode === "login" ? "/register" : "/login"}${returnQuery ? `?${returnQuery}` : ""}`;
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    setBusy(true);
+    if (busy) return;
     setError("");
     const data = Object.fromEntries(new FormData(e.currentTarget));
+    if (mode === "register") {
+      if (String(data.username).length < 3) {
+        setUsernameError("Tên đăng nhập phải có ít nhất 3 ký tự.");
+        return;
+      }
+      if (!/^0[0-9]{9}$/.test(String(data.phone))) {
+        setError("Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng số 0.");
+        return;
+      }
+      if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/.test(String(data.email))) {
+        setError("Vui lòng nhập địa chỉ email có đuôi @gmail.com.");
+        return;
+      }
+      if (data.password !== data.confirmPassword) {
+        setError("Mật khẩu xác nhận không khớp. Vui lòng nhập lại.");
+        return;
+      }
+    }
+    setBusy(true);
     try {
       if (mode === "login") {
         await authApi.login(String(data.username), String(data.password));
@@ -75,7 +96,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
           {mode === "register" && (
             <label>
               Họ và tên
-              <input name="fullname" required autoComplete="name" />
+              <input name="fullname" required autoComplete="name" placeholder="Full name" />
             </label>
           )}
           <label>
@@ -84,19 +105,72 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
               name="username"
               required
               minLength={3}
+              placeholder="Username"
               autoComplete="username"
+              aria-invalid={mode === "register" && Boolean(usernameError)}
+              aria-describedby={mode === "register" && usernameError ? "register-username-error" : undefined}
+              onChange={(event) => {
+                if (mode === "register") {
+                  setUsernameError(event.currentTarget.value.length < 3
+                    ? "Tên đăng nhập phải có ít nhất 3 ký tự."
+                    : "");
+                }
+              }}
             />
           </label>
+          {mode === "register" && usernameError && (
+            <div id="register-username-error" className="form-error" role="alert">
+              {usernameError}
+            </div>
+          )}
           {mode === "register" && (
             <>
               <label>
                 Email
-                <input type="email" name="email" autoComplete="email" />
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  pattern=".+@gmail[.]com"
+                  title="Vui lòng nhập email có đuôi @gmail.com"
+                  placeholder="name@gmail.com"
+                  autoComplete="email"
+                  aria-invalid={Boolean(emailError)}
+                  aria-describedby={emailError ? "register-email-error" : undefined}
+                  onBlur={(event) => {
+                    const input = event.currentTarget;
+                    setEmailError(input.value && !input.validity.valid
+                      ? "Vui lòng nhập địa chỉ email hợp lệ có đuôi @gmail.com."
+                      : "");
+                  }}
+                  onChange={(event) => {
+                    if (emailError) {
+                      setEmailError(event.currentTarget.validity.valid
+                        ? ""
+                        : "Vui lòng nhập địa chỉ email hợp lệ có đuôi @gmail.com.");
+                    }
+                  }}
+                />
               </label>
+              {emailError && (
+                <div id="register-email-error" className="form-error" role="alert">
+                  {emailError}
+                </div>
+              )}
               <label>
                 Số điện thoại
                 <input
+                  type="tel"
                   name="phone"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="0912345678"
+                  title="Số điện thoại gồm 10 chữ số, bắt đầu bằng số 0"
+                  onInput={(event) => {
+                    const input = event.currentTarget;
+                    const digits = input.value.replace(/[^0-9]/g, "");
+                    input.value = digits.startsWith("0") ? digits.slice(0, 10) : "";
+                  }}
                   required
                   pattern="0[0-9]{9}"
                   autoComplete="tel"
@@ -108,6 +182,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
             Mật khẩu
             <input
               type="password"
+              placeholder={mode === "register" ? "Password (at least 6 characters)" : "Password"}
               name="password"
               required
               minLength={6}
@@ -116,6 +191,19 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
               }
             />
           </label>
+          {mode === "register" && (
+            <label>
+              Xác nhận mật khẩu
+              <input
+                type="password"
+                name="confirmPassword"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                placeholder="Confirm password"
+              />
+            </label>
+          )}
           {mode === "login" && (
             <Link className="forgot-link" to="/forgot-password">
               Quên mật khẩu?

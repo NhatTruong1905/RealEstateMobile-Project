@@ -14,7 +14,7 @@ public class APIChatController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    /* /app/chat */
+
     @MessageMapping("/chat")
     public void processMessage(@Payload ChatMessageDTO messageDTO) {
         if (messageDTO.getPropertyId() != null) {
@@ -37,7 +37,7 @@ public class APIChatController {
         }
     }
 
-    /* /app/chat/accept */
+
     @MessageMapping("/chat/accept")
     public void processAcceptance(@Payload ChatMessageDTO messageDTO) {
         if (messageDTO.getPropertyId() != null) {

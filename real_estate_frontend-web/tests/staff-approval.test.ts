@@ -27,7 +27,7 @@ function mount(status = "Chờ duyệt") {
     "beforeend",
     '<input name="_csrf" value="csrf-test"><input name="id" value="45"><input name="title" value="Tin thật"><input name="status" value="ignored">',
   );
-  // Thymeleaf emits the field name at render time; emulate that binding.
+
   el<HTMLInputElement>("status").name = "status";
   form.querySelector('input[name="status"][value="ignored"]')?.remove();
   vi.spyOn(form, "reportValidity").mockReturnValue(true);
@@ -162,7 +162,7 @@ describe("Staff UI thực thi trên template hiện có", () => {
     "owner selector create/edit (edit=%s) giữ đúng owner trong payload",
     (editing) => {
       document.body.innerHTML = template;
-      // Materialize only the owner Thymeleaf bindings for the two server model cases.
+
       const form = el<HTMLFormElement>("formProperty");
       const owner = el<HTMLSelectElement>("userId");
       expect(owner.getAttribute("th:field")).toBe("*{userId}");

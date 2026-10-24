@@ -1,6 +1,5 @@
 package com.ndnt.services.impl;
 
-import com.cloudinary.Cloudinary;
 import com.ndnt.controlleradvices.exceptions.DuplicateEmailException;
 import com.ndnt.controlleradvices.exceptions.DuplicatePhoneException;
 import com.ndnt.controlleradvices.exceptions.DuplicateUsernameException;
@@ -38,9 +37,6 @@ public class UserServiceImplTest {
 
     @Mock
     private BCryptPasswordEncoder bCryptPasswordEncoder;
-
-    @Mock
-    private Cloudinary cloudinary;
 
     @Mock
     private RoleRepository roleRepository;

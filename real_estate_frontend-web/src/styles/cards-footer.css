@@ -7,6 +7,8 @@
   grid-template-columns: repeat(2, 1fr);
 }
 .property-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: var(--surface);
   border: 1px solid var(--line);
   position: relative;
@@ -41,7 +43,8 @@
 .property-image {
   display: block;
   position: relative;
-  aspect-ratio: 1.35;
+  aspect-ratio: 3 / 2;
+  max-height: 300px;
   overflow: hidden;
 }
 .property-image img {
@@ -91,6 +94,7 @@
   flex: 0 0 auto;
 }
 .property-meta {
+  flex-wrap: wrap;
   display: flex;
   border-top: 1px solid var(--line);
   padding-top: 15px;

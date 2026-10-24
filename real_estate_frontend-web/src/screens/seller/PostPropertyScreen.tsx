@@ -8,6 +8,7 @@ import {
 import { ApiError } from "../../services/api/core/http";
 import { receivedMessage, statusLabel } from "../../utils/format";
 import type { Property } from "../../types";
+import { resizePropertyImage } from "../../utils/propertyImage";
 
 export function PostProperty() {
   const submitting = useRef(false);
@@ -85,13 +86,13 @@ export function PostProperty() {
     if (files.some((file) => !["image/jpeg", "image/png"].includes(file.type)))
       errors.files = "Chỉ chọn ảnh JPG hoặc PNG.";
     data.delete("files");
-    files.forEach((file) => data.append("files", file));
     setFields(errors);
     setError("");
     if (Object.keys(errors).length) return;
     submitting.current = true;
     setLoading(true);
     try {
+      for (const file of files) data.append("files", await resizePropertyImage(file));
       setSaved(await sellerApi.create(data));
     } catch (failure) {
       setError(
@@ -222,6 +223,7 @@ export function PostProperty() {
               multiple
               accept="image/png,image/jpeg"
             />
+              <small>Ảnh lớn sẽ được thu nhỏ tối đa 1.920 px mỗi cạnh, giữ nguyên tỷ lệ.</small>
             <small role={fields.files ? "alert" : undefined}>
               {fields.files}
             </small>

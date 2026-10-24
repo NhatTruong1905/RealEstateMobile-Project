@@ -1,9 +1,9 @@
--- Manual MySQL 8 / H2 MODE=MySQL forward migration. No live execution by application.
--- Deploy schema first, then application. Nullable columns preserve existing properties.
+
+
 ALTER TABLE property ADD COLUMN rejection_reason VARCHAR(1000) NULL;
 ALTER TABLE property ADD COLUMN reviewed_by INTEGER NULL;
 ALTER TABLE property ADD COLUMN reviewed_at TIMESTAMP(6) NULL;
--- reviewed_by is an audit identifier snapshot, intentionally no cascading FK.
+
 CREATE TABLE property_mail_outbox (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     property_id INTEGER NOT NULL,
@@ -22,4 +22,3 @@ CREATE TABLE property_mail_outbox (
     CONSTRAINT uk_property_mail_event_key UNIQUE (event_key)
 );
 CREATE INDEX ix_property_mail_due ON property_mail_outbox (state, next_attempt_at);
--- No FK on property_id: preserve durable event snapshots if legacy hard deletion occurs.

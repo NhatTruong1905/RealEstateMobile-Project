@@ -1,7 +1,7 @@
 package com.ndnt.controllers.api;
 
 import com.ndnt.model.dto.UserDTO;
-import com.ndnt.model.dto.UserInfoDTO;
+import com.ndnt.model.dto.ProfileUpdateDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
 import com.ndnt.services.UserService;
 import com.ndnt.utils.JwtUtils;
@@ -37,7 +37,7 @@ public class APIUserController {
 
     @PostMapping(path = "/update/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> addOrUpdateUser(@Valid @ModelAttribute UserInfoDTO infoDTO, Principal principal, BindingResult bindingResult) {
+    public ResponseEntity<?> addOrUpdateUser(@Valid @ModelAttribute ProfileUpdateDTO infoDTO, BindingResult bindingResult, Principal principal) {
         if (bindingResult.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
             for (FieldError fieldError : bindingResult.getFieldErrors()) {
@@ -46,11 +46,7 @@ public class APIUserController {
             return ResponseEntity.badRequest().body(errors);
         }
 
-        UserDTO currentUser = this.userService.findByUsername(principal.getName());
-        infoDTO.setId(currentUser.getId());
-        infoDTO.setUsername(currentUser.getUsername());
-
-        this.userService.createOrUpdateUser(infoDTO);
+        this.userService.updateProfile(principal.getName(), infoDTO);
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setMessage("Success");
         return ResponseEntity.ok().body(responseDTO);

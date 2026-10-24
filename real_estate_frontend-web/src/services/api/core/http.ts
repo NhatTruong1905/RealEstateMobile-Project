@@ -1,6 +1,6 @@
 import { session } from "./session";
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api").replace(/\/+$/, "");
 
 export const isMockMode = import.meta.env.VITE_USE_MOCKS === "true";
 

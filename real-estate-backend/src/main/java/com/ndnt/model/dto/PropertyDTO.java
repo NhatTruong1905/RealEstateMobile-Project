@@ -53,7 +53,7 @@ public class PropertyDTO extends BaseDTO {
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.util.Date reviewedAt;
 
-    private List<String> images = new ArrayList<>();
+    private List<String> images;
     @JsonIgnore
     private List<MultipartFile> files = new ArrayList<>();
     private List<Integer> assignmentIds = new ArrayList<>();

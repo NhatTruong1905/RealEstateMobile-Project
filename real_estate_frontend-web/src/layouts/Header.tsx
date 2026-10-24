@@ -15,6 +15,7 @@ export function Header() {
     profile: UserProfile | null;
   } | null>(null);
   const [failedAvatarUrl, setFailedAvatarUrl] = useState("");
+  const [profileVersion, setProfileVersion] = useState(0);
   const propertyMenu = useRef<HTMLDetailsElement>(null);
   const authenticated = useAuthenticated();
   const location = useLocation();
@@ -26,6 +27,12 @@ export function Header() {
     setOpen(false);
     propertyMenu.current?.removeAttribute("open");
   }
+
+  useEffect(() => {
+    const refresh = () => setProfileVersion((version) => version + 1);
+    window.addEventListener("profile-change", refresh);
+    return () => window.removeEventListener("profile-change", refresh);
+  }, []);
 
   useEffect(() => {
     if (!authenticated) {
@@ -48,7 +55,7 @@ export function Header() {
     return () => {
       active = false;
     };
-  }, [authenticated]);
+  }, [authenticated, profileVersion]);
 
   return (
     <header className="site-header">

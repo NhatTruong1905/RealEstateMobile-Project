@@ -19,7 +19,7 @@ public class PropertyMailOutbox {
         UserEntity owner = property.getUser();
         PropertyMailEvent event = new PropertyMailEvent();
         event.setPropertyId(property.getId()); event.setEventKey(property.getId()+":"+type); event.setEventType(type);
-        // Snapshot trusted account + committed decision in the same transaction as the property.
+
         event.setRecipient(owner.getEmail() == null ? "" : owner.getEmail());
         String name = owner.getFullname() == null ? owner.getUsername() : owner.getFullname();
         String when = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm z").withZone(ZoneId.of(zone))

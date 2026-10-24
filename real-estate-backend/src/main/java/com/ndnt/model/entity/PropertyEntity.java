@@ -92,6 +92,4 @@ public class PropertyEntity extends BaseEntity {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "property")
     private List<AssignmentPropertyEntity> assignments = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PropertyImageEntity> images = new ArrayList<>();
 }

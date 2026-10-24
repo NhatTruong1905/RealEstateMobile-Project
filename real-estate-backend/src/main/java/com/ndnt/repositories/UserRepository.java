@@ -26,6 +26,12 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer>, User
 
     boolean existsByEmail(String email);
 
+    boolean existsByAvatar(String avatar);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from UserEntity u where u.username=:username and u.status=1")
+    java.util.Optional<UserEntity> findActiveLocked(@Param("username") String username);
+
     UserEntity findByUsername(String username);
 
     UserEntity findByPhone(String phone);

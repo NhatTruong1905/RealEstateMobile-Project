@@ -1,13 +1,11 @@
 package com.ndnt.services.impl;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
+import com.ndnt.services.storage.ImageStorageService;
 import com.ndnt.converter.PropertyConverter;
 import com.ndnt.model.dto.AddressParseResult;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.dto.request.PropertyRequestDTO;
 import com.ndnt.model.entity.PropertyEntity;
-import com.ndnt.model.entity.PropertyImageEntity;
 import com.ndnt.model.entity.WardEntity;
 import com.ndnt.model.enums.StatusProperty;
 import com.ndnt.repositories.PropertyRepository;
@@ -52,7 +50,7 @@ public class PropertyServiceImpl implements PropertyService {
     private FavoritePropertyService favoritePropertyService;
 
     @Autowired
-    private Cloudinary cloudinary;
+    private ImageStorageService imageStorage;
 
     @Autowired
     private AddressParseService addressParseService;
@@ -73,7 +71,11 @@ public class PropertyServiceImpl implements PropertyService {
         return StatusProperty.PUBLISHED.getStatus().equals(property.getStatus());
     }
     private PropertyDTO dto(PropertyEntity entity, boolean privateReview) {
+        return dto(entity, privateReview, imageStorage.propertyImages(entity.getId()));
+    }
+    private PropertyDTO dto(PropertyEntity entity, boolean privateReview, List<String> images) {
         PropertyDTO dto = propertyConverter.toPropertyDTO(entity);
+        dto.setImages(images);
         dto.setAssignmentIds(entity.getAssignments().stream().map(com.ndnt.model.entity.AssignmentPropertyEntity::getId).toList());
         String ward = entity.getWard() == null ? "" : entity.getWard().getName();
         String district = entity.getWard() == null || entity.getWard().getDistrict() == null ? "" : entity.getWard().getDistrict().getName();
@@ -148,7 +150,7 @@ public class PropertyServiceImpl implements PropertyService {
             return builder.and(predicates.toArray(new Predicate[0]));
         };
 
-        // Search DTOs never expose review metadata; owner/reviewer detail is the private channel.
+
         return this.propertyRepository.findAll(spec, pageable).map(p -> dto(p, false));
     }
 
@@ -213,7 +215,7 @@ public class PropertyServiceImpl implements PropertyService {
             entity.setStatus(desired); entity.setReviewedBy(actor.getId()); entity.setReviewedAt(new Date());
         }
         if (create) {
-            // Admin retains the ability to create on behalf of a selected account.
+
             UserEntity owner = actor;
             if (adminRoute && request.getUserId() != null) {
                 owner = users.findById(request.getUserId()).orElseThrow(() -> PropertyProblem.invalid("userId", "Tài khoản không tồn tại"));
@@ -232,7 +234,7 @@ public class PropertyServiceImpl implements PropertyService {
                     if (parsed.cityName() != null && !parsed.cityName().isBlank()) request.setCity(parsed.cityName());
                     if (parsed.addressDetail() != null && !parsed.addressDetail().isBlank()) request.setAddress(parsed.addressDetail());
                 }
-            } catch (Exception ignored) { /* Explicit wardId is the safe fallback; do not log address/provider payload. */ }
+            } catch (Exception ignored) {                                                                                  }
         }
         if (wardId == null) throw PropertyProblem.invalid("wardId", "Cần phường hợp lệ hoặc địa chỉ có thể xác định phường");
         entity.setWard(wardRepository.findById(wardId).orElseThrow(() -> PropertyProblem.invalid("wardId", "Phường không tồn tại")));
@@ -245,22 +247,21 @@ public class PropertyServiceImpl implements PropertyService {
         entity.setPrice(request.getPrice()); entity.setArea(request.getArea()); entity.setLegal(request.getLegal());
         entity.setFloorCount(request.getFloorCount()); entity.setBedroomCount(request.getBedroomCount()); entity.setBathroomCount(request.getBathroomCount());
         entity.setDirection(request.getDirection());
-        // Retain existing managed images unless an explicit nonempty list chooses a subset.
-        if (request.getImages() != null && !request.getImages().isEmpty()) {
-            entity.getImages().removeIf(image -> !request.getImages().contains(image.getUrlImage()));
-        }
-        if (request.getFiles() != null) for (MultipartFile file : request.getFiles()) {
-            if (file == null || file.isEmpty()) continue;
-            try {
-                Map result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", "auto"));
-                PropertyImageEntity image = new PropertyImageEntity();
-                image.setUrlImage(result.get("secure_url").toString()); image.setProperty(entity); entity.getImages().add(image);
-            } catch (IOException ex) { throw new PropertyProblem(422, "UPLOAD_FAILED", "Không thể tải ảnh lên"); }
-        }
+
         propertyRepository.saveAndFlush(entity);
+        List<String> existing = create ? List.of() : imageStorage.propertyImages(entity.getId());
+        List<String> retained = existing;
+        if (request.getImages() != null) {
+            if (!existing.containsAll(request.getImages()))
+                throw PropertyProblem.invalid("images", "Ảnh không thuộc bài đăng này");
+            retained = existing.stream().filter(request.getImages()::contains).toList();
+        }
+        List<String> imageUrls = new ArrayList<>(retained);
+        imageUrls.addAll(imageStorage.uploadProperty(entity.getId(), request.getFiles(), retained.size()));
+        for (String url : existing) if (!retained.contains(url)) imageStorage.retire(url);
         if (create) mailOutbox.enqueue(entity, "RECEIVED");
         else if (transitioned) mailOutbox.enqueue(entity, StatusProperty.REJECTED.getStatus().equals(desired) ? "REJECTED" : "APPROVED");
-        return dto(entity, true);
+        return dto(entity, true, imageUrls);
     }
 
     @Override

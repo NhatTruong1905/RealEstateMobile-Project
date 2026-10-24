@@ -14,8 +14,8 @@ public class PropertyMailDelivery {
     private final PropertyMailer mailer;
     @Value("${property.mail.max-attempts:5}") private int maxAttempts;
     @Value("${property.mail.retry-seconds:60}") private long retrySeconds;
-    // A separate transaction sees only committed events. Row lock serializes competing workers.
-    // The SMTP request is bounded by provider timeouts; ACK loss still has external duplicate risk.
+
+
     @Transactional(propagation=Propagation.REQUIRES_NEW)
     public void deliver(Long id) {
         var event = events.findLocked(id).orElse(null);

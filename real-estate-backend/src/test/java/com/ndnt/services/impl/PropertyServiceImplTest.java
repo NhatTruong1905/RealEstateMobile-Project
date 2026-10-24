@@ -1,6 +1,5 @@
 package com.ndnt.services.impl;
 
-import com.cloudinary.Cloudinary;
 import com.ndnt.converter.PropertyConverter;
 import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.entity.DistrictEntity;
@@ -29,6 +28,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class PropertyServiceImplTest {
     @Mock private com.ndnt.services.property.PropertyAccess access;
+    @Mock private com.ndnt.services.storage.ImageStorageService imageStorage;
 
 
     @Mock
@@ -39,9 +39,6 @@ public class PropertyServiceImplTest {
 
     @Mock
     private FavoritePropertyService favoritePropertyService;
-
-    @Mock
-    private Cloudinary cloudinary;
 
     @Mock
     private AddressParseService addressParseService;

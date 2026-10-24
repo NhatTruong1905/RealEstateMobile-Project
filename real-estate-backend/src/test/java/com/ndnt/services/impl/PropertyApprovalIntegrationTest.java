@@ -1,6 +1,5 @@
 package com.ndnt.services.impl;
 
-import com.cloudinary.Cloudinary;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ndnt.model.dto.*;
 import com.ndnt.model.entity.*;
@@ -54,8 +53,9 @@ class PropertyApprovalIntegrationTest {
     @Autowired FavoritePropertyService favorites;
     @Autowired JwtUtils jwt;
     @MockitoBean AddressParseService parser;
-    @MockitoBean Cloudinary cloudinary;
+
     @MockitoBean PropertyMailer mailer;
+    @MockitoBean com.ndnt.services.storage.ObjectStorage objectStorage;
     MockMvc mvc;
     ObjectMapper json = new ObjectMapper();
     UserEntity owner, other, staff, unassigned, admin;
@@ -77,7 +77,7 @@ class PropertyApprovalIntegrationTest {
     }
     @AfterEach void clear() { SecurityContextHolder.clearContext(); }
     RoleEntity role(String code, String suffix) {
-        // Canonical roles are shared across fixtures, matching real account authority codes.
+
         return roles.findAll().stream().filter(r -> r.getCode().equals("ROLE_"+code)).findFirst().orElseGet(() -> {
             RoleEntity r = new RoleEntity(); r.setCode("ROLE_"+code); r.setName(code); return roles.save(r);
         });
@@ -182,7 +182,7 @@ class PropertyApprovalIntegrationTest {
 
     @Test void paddedUnicodeReasonIsNormalizedBeforeLengthCheckAndMailSnapshot() throws Exception {
         PropertyDTO property=create(); assign(property.getId());
-        // Preserve interior spacing while removing edge padding, including no-break spaces and BOM.
+
         String normalized="Thiếu\u00A0giấy\u202Ftờ <b> & xác nhận";
         String padding="\u00A0\u202F\uFEFF \t\u2003";
         decision(property,StatusProperty.REJECTED.getStatus(),padding.repeat(200)+normalized+padding.repeat(200));
@@ -294,6 +294,31 @@ class PropertyApprovalIntegrationTest {
         PropertyDTO second=create(); var success=event(second.getId(),"RECEIVED"); reset(mailer);
         delivery.deliver(success.getId()); delivery.deliver(success.getId()); verify(mailer,times(1)).send(any());
         assertEquals("SENT",events.findById(success.getId()).orElseThrow().getState());
+    }
+
+    @Test void propertyGalleryUsesR2AndRejectsAnotherPropertyImage() throws Exception {
+        PropertyDTO property = create();
+        auth(owner);
+        when(objectStorage.provider()).thenReturn("r2");
+        when(objectStorage.publicUrl(anyString())).thenAnswer(call -> "https://images.example.invalid/" + call.getArgument(0));
+        var output = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(8, 8, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", output);
+        PropertyDTO update = form();
+        update.setId(property.getId());
+        update.setFiles(List.of(new org.springframework.mock.web.MockMultipartFile("files", "house.png", "image/png", output.toByteArray())));
+        PropertyDTO saved = service.saveOwnedProperty(update);
+        assertEquals(1, saved.getImages().size());
+        String url = saved.getImages().getFirst();
+        assertTrue(url.startsWith("https://images.example.invalid/properties/" + property.getId() + "/"));
+        verify(objectStorage).put(startsWith("properties/" + property.getId() + "/"), any());
+        when(objectStorage.listPropertyImages(property.getId())).thenReturn(List.of(url));
+        assertEquals(List.of(url), service.findById(property.getId()).getImages());
+        PropertyDTO invalid = form();
+        invalid.setId(property.getId());
+        invalid.setImages(List.of("https://images.example.invalid/properties/999/foreign.jpg"));
+        assertEquals(422, assertThrows(PropertyProblem.class, () -> service.saveOwnedProperty(invalid)).getStatus());
+        auth(other);
+        assertEquals(404, assertThrows(PropertyProblem.class, () -> service.findById(property.getId())).getStatus());
     }
 
     @Test void adminTemplatesRenderUnderRealSecurity() throws Exception {

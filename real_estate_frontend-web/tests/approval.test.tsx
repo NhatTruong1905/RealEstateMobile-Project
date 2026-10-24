@@ -18,6 +18,7 @@ import { session } from "../src/services/api/core/session";
 vi.mock("../src/services/api/seller/sellerApi", () => ({
   sellerApi: { options: vi.fn(), create: vi.fn(), listMyProperties: vi.fn() },
 }));
+vi.mock("../src/utils/propertyImage", () => ({ resizePropertyImage: async (file: File) => file }));
 const options = {
   types: [{ id: 17, name: "Bán" }],
   categories: [{ id: 35, name: "Căn hộ" }],
@@ -88,7 +89,7 @@ describe("form đăng tin", () => {
     const element = view.container.querySelector("form")!;
     fireEvent.submit(element);
     fireEvent.submit(element);
-    expect(sellerApi.create).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(sellerApi.create).toHaveBeenCalledTimes(1));
     const payload = vi.mocked(sellerApi.create).mock.calls[0][0];
     expect(payload.get("title")).toBe("Nhà mới");
     expect(payload.get("wardId")).toBe("91");
