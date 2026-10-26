@@ -8,6 +8,17 @@ const profile = { id: 7, username: "owner", phone: "0912345678", avatar: "https:
 const file = new File(["image"], "avatar.webp", { type: "image/webp" });
 beforeEach(() => { vi.resetAllMocks(); session.set("test-token"); });
 afterEach(() => session.clear());
+it("loads the current user's profile from the protected API", async () => {
+  vi.mocked(request).mockResolvedValueOnce({ data: profile });
+  await expect(accountApi.getProfile()).resolves.toEqual(profile);
+  expect(request).toHaveBeenCalledWith("/secure/profile");
+});
+it("reports profile failures instead of returning mock data", async () => {
+  vi.mocked(request).mockRejectedValueOnce(new Error("Offline"));
+  await expect(accountApi.getProfile()).rejects.toThrow("Offline");
+  vi.mocked(request).mockResolvedValueOnce({ data: null });
+  await expect(accountApi.getProfile()).rejects.toThrow("Không tải được hồ sơ.");
+});
 it("sends the actual multipart fields then confirms the new profile URL", async () => {
   vi.mocked(request).mockResolvedValueOnce({ message: "Success" }).mockResolvedValueOnce({ data: { ...profile, avatar: "https://images.example/new.webp" } });
   const changed = vi.fn(); window.addEventListener("profile-change", changed);

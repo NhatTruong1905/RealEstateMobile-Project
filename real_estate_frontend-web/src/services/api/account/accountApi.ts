@@ -1,6 +1,5 @@
-import { mockProfile } from "../../../data/mockProperties";
 import type { ApiEnvelope, UserProfile } from "../../../types";
-import { isMockMode, request } from "../core/http";
+import { request } from "../core/http";
 import { session } from "../core/session";
 
 export const accountApi = {
@@ -30,13 +29,8 @@ export const accountApi = {
     return response.data;
   },
   async getProfile(): Promise<UserProfile> {
-    try {
-      const response = await request<ApiEnvelope<UserProfile>>("/secure/profile");
-      if (!response.data) throw new Error("Không tải được hồ sơ.");
-      return response.data;
-    } catch (error) {
-      if (!isMockMode) throw error;
-      return mockProfile;
-    }
+    const response = await request<ApiEnvelope<UserProfile>>("/secure/profile");
+    if (!response.data) throw new Error("Không tải được hồ sơ.");
+    return response.data;
   },
 };

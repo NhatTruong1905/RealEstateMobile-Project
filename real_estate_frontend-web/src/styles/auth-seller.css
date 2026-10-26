@@ -155,6 +155,112 @@
   gap: 12px;
   min-width: 0;
 }
+.avatar-editor {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.avatar-editor .avatar {
+  width: 100%;
+  height: 100%;
+}
+.avatar-edit-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: inherit;
+  background: rgba(16, 59, 51, 0.88);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.avatar-edit-overlay svg {
+  width: 24px;
+  height: 24px;
+}
+.avatar-editor:hover:not(:disabled) .avatar-edit-overlay,
+.avatar-editor:focus-visible .avatar-edit-overlay {
+  opacity: 1;
+}
+.avatar-editor:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 5px;
+}
+.avatar-editor:disabled {
+  cursor: wait;
+}
+.avatar-edit-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--forest);
+  color: #fff;
+  pointer-events: none;
+}
+.avatar-edit-badge svg {
+  width: 16px;
+  height: 16px;
+}
+.profile-identity {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.profile-card .profile-contact {
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+.profile-contact dd {
+  overflow-wrap: anywhere;
+}
+.avatar-form[hidden] {
+  display: none;
+}
+.avatar-selection {
+  display: grid;
+  gap: 12px;
+}
+.profile-card .avatar-preview-note {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+.profile-card .avatar-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--forest);
+  font-size: 0.88rem;
+}
+.avatar-success svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+@media (max-width: 480px) {
+  .profile-card {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
 .avatar-form input {
   width: 100%;
   min-width: 0;

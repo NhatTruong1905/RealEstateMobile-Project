@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CircleUserRound, LoaderCircle, LogOut } from "lucide-react";
+import { Camera, Check, CircleUserRound, LoaderCircle, LogOut } from "lucide-react";
 import { accountApi } from "../../services/api/account/accountApi";
 import { session } from "../../services/api/core/session";
 import type { UserProfile } from "../../types";
@@ -78,26 +78,53 @@ export function AccountPage() {
           <h1>Hồ sơ của bạn</h1>
         </div>
         <div className="profile-card">
-          <div className="avatar">
+          <button
+            type="button"
+            className="avatar-editor"
+            aria-label="Đổi ảnh đại diện"
+            disabled={!profile || saving}
+            onClick={() => fileInput.current?.click()}
+          >
+            <span className="avatar">
             {avatar && avatar !== failedImage ? (
               <img src={avatar} alt="Ảnh đại diện" decoding="async" onError={() => setFailedImage(avatar)} />
             ) : (
               <CircleUserRound />
             )}
+            </span>
+            <span className="avatar-edit-overlay" aria-hidden="true">
+              <Camera />
+              <span>Đổi ảnh</span>
+            </span>
+            <span className="avatar-edit-badge" aria-hidden="true">
+              {saving ? <LoaderCircle className="spin" /> : <Camera />}
+            </span>
+          </button>
+          <div className="profile-identity">
+            <h2>{profile ? profile.fullname || profile.username : error ? "Không tải được hồ sơ" : "Đang tải..."}</h2>
+            {profile && <>
+              <p>@{profile.username}</p>
+              <dl className="profile-contact">
+                <div>
+                  <dt>Email</dt>
+                  <dd>{profile.email || "Chưa cập nhật"}</dd>
+                </div>
+                <div>
+                  <dt>Số điện thoại</dt>
+                  <dd>{profile.phone || "Chưa cập nhật"}</dd>
+                </div>
+              </dl>
+            </>}
           </div>
-          <div>
-            <h2>{profile?.fullname || "Đang tải..."}</h2>
-            <p>@{profile?.username}</p>
-          </div>
-          <form className="avatar-form" onSubmit={saveAvatar}>
-            <label htmlFor="avatar-file">Thay đổi ảnh đại diện</label>
+          <form className="avatar-form" onSubmit={saveAvatar} hidden={!file && !error && !success}>
             <input
+              hidden
+              aria-label="Thay đổi ảnh đại diện"
               ref={fileInput}
               id="avatar-file"
               type="file"
               accept="image/jpeg,image/png,image/webp"
               disabled={!profile || saving}
-              aria-describedby="avatar-file-hint"
               onChange={(event) => {
                 const selected = event.currentTarget.files?.[0];
                 resetSelection();
@@ -117,27 +144,19 @@ export function AccountPage() {
                 setFile(selected);
               }}
             />
-            <small id="avatar-file-hint">JPG, PNG hoặc WebP · Tối đa 5 MB</small>
             {error && <div className="form-error" role="alert">{error}</div>}
-            {success && <p role="status">{success}</p>}
-            <div className="avatar-actions">
-              <button className="button button-primary" disabled={!file || saving}>
+            {success && <p className="avatar-success" role="status"><Check aria-hidden="true" />{success}</p>}
+            {file && <div className="avatar-selection">
+              <p className="avatar-preview-note" role="status">Ảnh mới đang được xem trước. Nhấn lưu để cập nhật.</p>
+              <div className="avatar-actions">
+              <button className="button button-primary" disabled={saving}>
                 {saving && <LoaderCircle className="spin" />}
                 {saving ? "Đang lưu..." : "Lưu ảnh đại diện"}
               </button>
-              {file && <button type="button" className="button button-secondary" disabled={saving} onClick={resetSelection}>Hủy</button>}
-            </div>
+              <button type="button" className="button button-secondary" disabled={saving} onClick={() => { resetSelection(); setError(""); setSuccess(""); }}>Hủy</button>
+              </div>
+            </div>}
           </form>
-          <dl>
-            <div>
-              <dt>Email</dt>
-              <dd>{profile?.email || "Chưa cập nhật"}</dd>
-            </div>
-            <div>
-              <dt>Số điện thoại</dt>
-              <dd>{profile?.phone || "Chưa cập nhật"}</dd>
-            </div>
-          </dl>
           <button
             className="button button-secondary"
             onClick={() => {

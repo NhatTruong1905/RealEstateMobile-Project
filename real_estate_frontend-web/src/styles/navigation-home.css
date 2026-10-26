@@ -113,6 +113,33 @@
   align-items: center;
   gap: 13px;
 }
+.header-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--forest);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--forest);
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+.header-login:hover {
+  background: var(--forest);
+  color: var(--surface);
+}
+.header-login:active {
+  background: var(--forest-dark);
+  color: var(--surface);
+}
+.header-login:focus-visible {
+  outline: 3px solid var(--forest);
+  outline-offset: 3px;
+}
 .account-link {
   display: flex;
   align-items: center;

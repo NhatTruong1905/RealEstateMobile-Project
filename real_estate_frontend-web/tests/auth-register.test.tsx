@@ -71,3 +71,59 @@ it("submits valid registration without confirmation in payload", async () => {
   fireEvent.submit(form);
   await waitFor(() => expect(authApi.register).toHaveBeenCalledWith({ fullname: "Nguyen Van An", username: "nguyenvanan", email: "an@gmail.com", phone: "0912345678", password: "secret123" }));
 });
+
+it("normalizes whitespace before validating and sending registration, preserving passwords", async () => {
+  const { form, field } = setup();
+  const values = { fullname: "  Nguyễn\u00a0  Văn\tAn  ", username: "  buyer  ", email: "  buyer@gmail.com  ", phone: " 0912 345 678 ", password: " secret123 ", confirmPassword: " secret123 " };
+  for (const [name, value] of Object.entries(values)) fireEvent.change(field(name), { target: { value } });
+  fireEvent.submit(form);
+  await waitFor(() => expect(authApi.register).toHaveBeenCalledWith({ fullname: "Nguyễn Văn An", username: "buyer", email: "buyer@gmail.com", phone: "0912345678", password: " secret123 " }));
+  expect(field("fullname").value).toBe("Nguyễn Văn An");
+  expect(field("password").value).toBe(" secret123 ");
+});
+
+it("rejects whitespace-only names and focuses the field", () => {
+  const { form, field } = setup();
+  fireEvent.change(field("fullname"), { target: { value: " \t\u00a0 " } });
+  fireEvent.submit(form);
+  expect(screen.getByRole("alert").textContent).toBe("Vui lòng nhập họ và tên.");
+  expect(document.activeElement).toBe(field("fullname"));
+  expect(authApi.register).not.toHaveBeenCalled();
+});
+
+it("rejects internal whitespace in usernames without silently changing the account", () => {
+  const { form, field } = setup();
+  fireEvent.change(field("username"), { target: { value: "buyer name" } });
+  fireEvent.submit(form);
+  expect(screen.getByRole("alert").textContent).toContain("không được chứa khoảng trắng");
+  expect(authApi.register).not.toHaveBeenCalled();
+});
+
+it("requires confirmation and compares passwords without trimming", () => {
+  const { form, field } = setup();
+  fireEvent.change(field("confirmPassword"), { target: { value: "" } });
+  fireEvent.submit(form);
+  expect(screen.getByRole("alert").textContent).toBe("Vui lòng xác nhận mật khẩu.");
+  fireEvent.change(field("confirmPassword"), { target: { value: " secret123 " } });
+  fireEvent.submit(form);
+  expect(screen.getByRole("alert").textContent).toContain("không khớp");
+  expect(authApi.register).not.toHaveBeenCalled();
+});
+
+it("shows Vietnamese required errors on login and clears stale server errors when editing", async () => {
+  const view = render(<MemoryRouter><AuthPage mode="login" /></MemoryRouter>);
+  const form = view.container.querySelector("form")!;
+  expect(form.noValidate).toBe(true);
+  fireEvent.submit(form);
+  expect(screen.getByRole("alert").textContent).toBe("Vui lòng nhập tên đăng nhập.");
+  fireEvent.change(screen.getByLabelText("Tên đăng nhập"), { target: { value: "  buyer  " } });
+  fireEvent.submit(form);
+  expect(screen.getByRole("alert").textContent).toBe("Vui lòng nhập mật khẩu.");
+  fireEvent.change(screen.getByLabelText("Mật khẩu"), { target: { value: " secret123 " } });
+  vi.mocked(authApi.login).mockRejectedValueOnce(new Error("Sai thông tin đăng nhập"));
+  fireEvent.submit(form);
+  await screen.findByText("Sai thông tin đăng nhập");
+  expect(authApi.login).toHaveBeenCalledWith("buyer", " secret123 ");
+  fireEvent.change(screen.getByLabelText("Tên đăng nhập"), { target: { value: "other" } });
+  expect(screen.queryByRole("alert")).toBeNull();
+});

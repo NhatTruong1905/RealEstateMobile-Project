@@ -25,7 +25,9 @@ export async function request<T>(
   if (!(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
-  if (session.token) headers.set("Authorization", `Bearer ${session.token}`);
+  const token = session.token;
+  const generation = session.generation;
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   let response: Response;
   try {
@@ -33,7 +35,9 @@ export async function request<T>(
   } catch {
     throw new ApiError(
       0,
-      init.method === "POST"
+      path.startsWith("/auth/")
+        ? "Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối và thử lại."
+        : init.method === "POST"
         ? "Lỗi kết nối. Hãy kiểm tra Tin đăng trước khi thử lại để tránh tạo trùng."
         : "Không thể kết nối máy chủ. Vui lòng thử tải lại.",
     );
@@ -50,6 +54,9 @@ export async function request<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401 && token && session.token === token && session.generation === generation) {
+      session.clear();
+    }
     let message = "Không thể hoàn tất yêu cầu.";
     if (typeof body === "string") {
       message = body;
@@ -81,9 +88,15 @@ export async function request<T>(
       404: "Không tìm thấy tin đăng.",
       409: "Tin đã thay đổi. Vui lòng tải lại trước khi thao tác.",
     };
+    const authHints: Record<number, string> = path === "/auth/login" ? {
+      401: "Tên đăng nhập hoặc mật khẩu không chính xác.",
+      404: "Tài khoản không tồn tại. Vui lòng kiểm tra tên đăng nhập hoặc đăng ký tài khoản.",
+    } : {};
     throw new ApiError(
       response.status,
-      hints[response.status] || message,
+      path.startsWith("/auth/")
+        ? authHints[response.status] || message
+        : hints[response.status] || message,
       fields,
     );
   }
