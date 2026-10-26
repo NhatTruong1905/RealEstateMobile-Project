@@ -126,7 +126,7 @@ export function Header() {
               </span>
             </Link>
           ) : (
-            <Link className="text-link" to="/login">
+            <Link className="header-login" to="/login">
               Đăng nhập
             </Link>
           )}

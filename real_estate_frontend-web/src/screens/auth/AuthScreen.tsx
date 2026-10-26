@@ -5,36 +5,82 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authApi } from "../../services/api/auth/authApi";
 import { favoriteApi } from "../../services/api/favorite/favoriteApi";
 import { Logo } from "../../components/brand/Logo";
+import { normalizeAuthField } from "../../services/api/auth/normalizeAuth";
 
 export function AuthPage({ mode }: { mode: "login" | "register" }) {
+  return <AuthForm key={mode} mode={mode} />;
+}
+
+function AuthForm({ mode }: { mode: "login" | "register" }) {
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [usernameError, setUsernameError] = useState("");
+  const [errorField, setErrorField] = useState("");
   const returnQuery = search.toString();
   const switchPath = `${mode === "login" ? "/register" : "/login"}${returnQuery ? `?${returnQuery}` : ""}`;
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
     setError("");
+    setErrorField("");
+    setUsernameError("");
+    setEmailError("");
+    const form = e.currentTarget;
+    for (const input of Array.from(form.elements)) {
+      if (input instanceof HTMLInputElement) input.value = normalizeAuthField(input.name, input.value);
+    }
     const data = Object.fromEntries(new FormData(e.currentTarget));
+    const fail = (name: string, message: string) => {
+      setErrorField(name);
+      if (name === "username") setUsernameError(message);
+      else if (name === "email") setEmailError(message);
+      else setError(message);
+      (form.elements.namedItem(name) as HTMLInputElement | null)?.focus();
+    };
+    if (mode === "register" && !data.fullname) {
+      fail("fullname", "Vui lòng nhập họ và tên.");
+      return;
+    }
+    if (!data.username) {
+      fail("username", "Vui lòng nhập tên đăng nhập.");
+      return;
+    }
+    if (/\s/u.test(String(data.username))) {
+      fail("username", "Tên đăng nhập không được chứa khoảng trắng.");
+      return;
+    }
     if (mode === "register") {
       if (String(data.username).length < 3) {
-        setUsernameError("Tên đăng nhập phải có ít nhất 3 ký tự.");
+        fail("username", "Tên đăng nhập phải có ít nhất 3 ký tự.");
         return;
       }
       if (!/^0[0-9]{9}$/.test(String(data.phone))) {
-        setError("Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng số 0.");
+        fail("phone", "Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng số 0.");
         return;
       }
       if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/.test(String(data.email))) {
-        setError("Vui lòng nhập địa chỉ email có đuôi @gmail.com.");
+        fail("email", data.email ? "Vui lòng nhập địa chỉ email có đuôi @gmail.com." : "Vui lòng nhập email.");
+        return;
+      }
+    }
+    if (!data.password) {
+      fail("password", "Vui lòng nhập mật khẩu.");
+      return;
+    }
+    if (mode === "register") {
+      if (String(data.password).length < 6) {
+        fail("password", "Mật khẩu phải có ít nhất 6 ký tự.");
+        return;
+      }
+      if (!data.confirmPassword) {
+        fail("confirmPassword", "Vui lòng xác nhận mật khẩu.");
         return;
       }
       if (data.password !== data.confirmPassword) {
-        setError("Mật khẩu xác nhận không khớp. Vui lòng nhập lại.");
+        fail("confirmPassword", "Mật khẩu xác nhận không khớp. Vui lòng nhập lại.");
         return;
       }
     }
@@ -78,7 +124,14 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
         <Link className="back-link" to="/">
           <ChevronLeft /> Về trang chủ
         </Link>
-        <form className="auth-form" onSubmit={submit} key={mode}>
+        <form className="auth-form" onSubmit={submit} key={mode} noValidate
+          onBlurCapture={(event) => {
+            if (event.target instanceof HTMLInputElement) {
+              event.target.value = normalizeAuthField(event.target.name, event.target.value);
+            }
+          }}
+          onChangeCapture={() => { setError(""); setErrorField(""); }}
+        >
           <span className="eyebrow">
             {mode === "login" ? "Chào mừng trở lại" : "Bắt đầu với Nhà Việt"}
           </span>
@@ -89,14 +142,16 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
               : "Lưu lựa chọn, liên hệ và đăng tin bất động sản."}
           </p>
           {error && (
-            <div className="form-error" role="alert">
+            <div id="auth-form-error" className="form-error" role="alert">
               {error}
             </div>
           )}
           {mode === "register" && (
             <label>
               Họ và tên
-              <input name="fullname" required autoComplete="name" placeholder="Full name" />
+              <input name="fullname" required autoComplete="name" placeholder="Full name"
+                aria-invalid={errorField === "fullname"}
+                aria-describedby={errorField === "fullname" ? "auth-form-error" : undefined} />
             </label>
           )}
           <label>
@@ -107,19 +162,22 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
               minLength={3}
               placeholder="Username"
               autoComplete="username"
-              aria-invalid={mode === "register" && Boolean(usernameError)}
-              aria-describedby={mode === "register" && usernameError ? "register-username-error" : undefined}
+              aria-invalid={Boolean(usernameError)}
+              aria-describedby={usernameError ? "auth-username-error" : undefined}
               onChange={(event) => {
                 if (mode === "register") {
-                  setUsernameError(event.currentTarget.value.length < 3
+                  const username = normalizeAuthField("username", event.currentTarget.value);
+                  setUsernameError(/\s/u.test(username)
+                    ? "Tên đăng nhập không được chứa khoảng trắng."
+                    : username.length < 3
                     ? "Tên đăng nhập phải có ít nhất 3 ký tự."
                     : "");
-                }
+                } else setUsernameError("");
               }}
             />
           </label>
-          {mode === "register" && usernameError && (
-            <div id="register-username-error" className="form-error" role="alert">
+          {usernameError && (
+            <div id="auth-username-error" className="form-error" role="alert">
               {usernameError}
             </div>
           )}
@@ -145,7 +203,8 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
                   }}
                   onChange={(event) => {
                     if (emailError) {
-                      setEmailError(event.currentTarget.validity.valid
+                      const email = normalizeAuthField("email", event.currentTarget.value);
+                      setEmailError(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/.test(email)
                         ? ""
                         : "Vui lòng nhập địa chỉ email hợp lệ có đuôi @gmail.com.");
                     }
@@ -162,6 +221,8 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
                 <input
                   type="tel"
                   name="phone"
+                  aria-invalid={errorField === "phone"}
+                  aria-describedby={errorField === "phone" ? "auth-form-error" : undefined}
                   inputMode="numeric"
                   maxLength={10}
                   placeholder="0912345678"
@@ -186,6 +247,8 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
               name="password"
               required
               minLength={6}
+              aria-invalid={errorField === "password"}
+              aria-describedby={errorField === "password" ? "auth-form-error" : undefined}
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
@@ -199,6 +262,8 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
                 name="confirmPassword"
                 required
                 minLength={6}
+                aria-invalid={errorField === "confirmPassword"}
+                aria-describedby={errorField === "confirmPassword" ? "auth-form-error" : undefined}
                 autoComplete="new-password"
                 placeholder="Confirm password"
               />

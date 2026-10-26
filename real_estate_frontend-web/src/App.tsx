@@ -23,7 +23,7 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route index element={<HomePage />} />
           <Route path="properties" element={<PropertiesPage />} />
-          <Route path="properties/:id" element={<PropertyDetailPage />} />
+          <Route path="properties/:id" element={<ProtectedRoute><PropertyDetailPage /></ProtectedRoute>} />
           <Route path="saved" element={<ProtectedRoute><SavedPage /></ProtectedRoute>} />
           <Route path="account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
           <Route path="messages" element={<ProtectedRoute><SimplePage type="messages" /></ProtectedRoute>} />
