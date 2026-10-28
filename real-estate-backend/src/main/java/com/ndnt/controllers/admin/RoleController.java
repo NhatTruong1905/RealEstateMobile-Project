@@ -1,7 +1,6 @@
 package com.ndnt.controllers.admin;
 
 
-import com.ndnt.model.dto.PropertyCategoryDTO;
 import com.ndnt.model.dto.RoleDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
 import com.ndnt.services.RoleService;

@@ -2,8 +2,6 @@ import { session } from "./session";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api").replace(/\/+$/, "");
 
-export const isMockMode = import.meta.env.VITE_USE_MOCKS === "true";
-
 export class ApiError extends Error {
   status: number;
   fields: Record<string, string>;

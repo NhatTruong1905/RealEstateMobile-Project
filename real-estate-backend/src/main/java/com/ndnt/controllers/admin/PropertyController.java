@@ -85,7 +85,6 @@ public class PropertyController {
         mav.addObject("types", this.propertyTypeService.getPropertyTypes());
         mav.addObject("categories", this.propertyCategoryService.getPropertyCategories());
         mav.addObject("wards", this.wardService.getWards());
-        mav.addObject("users", this.userService.getUsers());
         mav.addObject("status", StatusProperty.values());
         return mav;
     }

@@ -1,7 +1,6 @@
 package com.ndnt.services;
 
 import com.ndnt.model.dto.RoleDTO;
-import com.ndnt.model.entity.RoleEntity;
 
 import java.util.List;
 

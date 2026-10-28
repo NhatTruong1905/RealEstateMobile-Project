@@ -1,6 +1,5 @@
-import { mockProperties } from "../../../data/mockProperties";
 import type { ApiEnvelope, Property } from "../../../types";
-import { isMockMode, request } from "../core/http";
+import { request } from "../core/http";
 
 export interface PropertyOption {
   id: number;
@@ -33,13 +32,8 @@ export const sellerApi = {
     return response.data;
   },
   async listMyProperties(): Promise<Property[]> {
-    try {
-      const response =
-        await request<ApiEnvelope<Property[]>>("/secure/properties");
-      return response.data || [];
-    } catch (error) {
-      if (!isMockMode) throw error;
-      return mockProperties.slice(0, 7);
-    }
+    const response =
+      await request<ApiEnvelope<Property[]>>("/secure/properties");
+    return response.data || [];
   },
 };

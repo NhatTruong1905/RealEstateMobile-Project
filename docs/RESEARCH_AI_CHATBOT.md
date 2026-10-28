@@ -17,7 +17,7 @@ Mục tiêu của hệ thống mới:
 
 Tên hướng nghiên cứu đề xuất:
 
-> Xây dựng hệ thống tìm kiếm và gợi ý bất động sản hội thoại dựa trên Microservices, truy hồi lai đa tầng và mô hình ngôn ngữ lớn triển khai cục bộ.
+> Xây dựng hệ thống tìm kiếm và gợi ý bất động sản hội thoại dựa trên Microservices, truy hồi lai đa tầng và mô hình ngôn ngữ lớn tích hợp qua API.
 
 Phương pháp trung tâm có thể đặt tên:
 
@@ -54,6 +54,17 @@ Các hạn chế chính:
 
 ## 3. Kiến trúc mục tiêu
 
+Định hướng cập nhật ngày 27/10/2026:
+
+| Thành phần | Research | Production dự kiến |
+|---|---|---|
+| Embedding | Tự chạy Qwen Embedding | Gọi Embedding API; model/provider cuối cùng chưa chốt |
+| LLM | Gọi API qua gateway trên máy ảo, được người dùng mô tả là “9 router antigravity” | Gọi LLM API; model/provider cuối cùng chưa chốt |
+| Reranker | Thực nghiệm Qwen Reranker | Chọn API hoặc tự host sau benchmark |
+| vLLM | Tùy chọn khi tự phục vụ model | Không bắt buộc cho LLM/embedding khi dùng API bên ngoài |
+
+Tên gọi, giao thức và upstream của gateway máy ảo cần xác minh khi tích hợp. Phần hiện trạng ở mục 2 mô tả baseline trước chuyển đổi, chưa phải xác nhận lại mã nguồn ở lần cập nhật tài liệu này.
+
 ```text
 Flutter Mobile Application
         |
@@ -70,9 +81,9 @@ API Gateway
         |
         +--> AI Orchestrator Service
                 |
-                +--> vLLM Generation Service
-                +--> vLLM Embedding Service
-                +--> Re-ranker Service
+                +--> LLM Client -------> LLM API / Gateway
+                +--> Embedding Client -> Embedding API
+                +--> Re-ranker Service (API hoặc self-host)
                 +--> Qdrant Vector Database
                 +--> Property Search API
                 +--> Recommendation API
@@ -87,7 +98,7 @@ Property Service
                 v
         AI Indexing Worker
                 |
-                +--> Embedding Service
+                +--> Embedding Client -> Embedding API
                 +--> Qdrant
 ```
 
@@ -106,15 +117,15 @@ Nguyên tắc sở hữu dữ liệu:
 
 ### 4.1. Lựa chọn
 
-Mô hình đề xuất ban đầu:
+Phương án triển khai hiện tại:
 
 ```text
-Primary generation model: Qwen3 8B hoặc model Qwen Instruct phù hợp phần cứng
-Comparison model:         DeepSeek-R1 Distill 7B/8B
-Inference engine:         vLLM
+Research:    LLM API qua gateway trên máy ảo
+Production:  LLM API qua adapter tại AI Orchestrator
+Model:       Chọn bằng benchmark, chưa chốt nhà cung cấp/model
 ```
 
-Qwen được ưu tiên cho chatbot chính vì hệ thống cần:
+Tiêu chí lựa chọn model qua API:
 
 - Hội thoại tiếng Việt.
 - Structured output.
@@ -123,7 +134,9 @@ Qwen được ưu tiên cho chatbot chính vì hệ thống cần:
 - Xử lý hội thoại nhiều lượt.
 - Khả năng bật/tắt reasoning tùy loại tác vụ.
 
-DeepSeek-R1 Distill phù hợp làm model đối chứng hoặc xử lý tác vụ suy luận phức tạp. Không nên dùng reasoning model cho mọi request vì có thể làm tăng latency, token và độ khó khi ép output JSON.
+Ngoài chất lượng, cần so sánh streaming, latency, quota, chi phí, chính sách dữ liệu và độ ổn định. Qwen Instruct hoặc DeepSeek-R1 Distill có thể làm model đối chứng khi có điều kiện tự host; không phải lựa chọn production đã chốt.
+
+Đổi LLM không yêu cầu xây lại embedding index, nhưng phải đánh giá lại intent extraction, JSON/schema, tool calling và grounding. Nếu gateway định tuyến nhiều model, cần cố định model trong từng thực nghiệm và ghi nhận model/upstream thực tế khi có thông tin để tái lập kết quả.
 
 ### 4.2. Nhiệm vụ của LLM
 
@@ -192,6 +205,8 @@ Nếu confidence thấp hoặc thiếu tiêu chí quan trọng, chatbot cần h�
 
 ### 5.1. Lựa chọn
 
+Research ưu tiên tự chạy Qwen Embedding. Production dự kiến gọi Embedding API qua adapter độc lập; ưu tiên giữ model và cấu hình đã benchmark nếu nhà cung cấp hỗ trợ. Model/API production cuối cùng chưa chốt.
+
 Mô hình đề xuất:
 
 ```text
@@ -241,6 +256,12 @@ Không được:
 
 Khi đổi model cần tạo collection mới, re-index, benchmark rồi đổi alias.
 
+Khi chuyển từ local sang API, kiểm tra model/revision, số chiều, query instruction, preprocessing, pooling và normalization; benchmark retrieval trước khi tái sử dụng index. Cùng tên model chưa đủ để khẳng định đầu ra tương thích.
+
+Không fallback sang embedding model khác rồi tìm trên index cũ, kể cả khi số chiều giống nhau. Khi API lỗi, có thể dùng SQL/BM25 ở chế độ suy giảm; Indexing Worker giữ công việc để retry. Chỉ chuyển sang endpoint dự phòng dùng cùng cấu hình embedding khi đã kiểm chứng tương thích.
+
+Embedding dữ liệu chạy nền theo batch, dùng content hash để chỉ tính lại nội dung thay đổi. Query được embedding khi tìm kiếm; cache phải gắn với model/version và cấu hình xử lý.
+
 ### 5.4. Field-aware chunking
 
 Thay vì chỉ chunk theo số ký tự, dữ liệu property được chia theo trường:
@@ -263,9 +284,15 @@ Cần thực nghiệm:
 
 ---
 
-## 6. vLLM
+## 6. Tích hợp API và vai trò tùy chọn của vLLM
 
-vLLM được dùng như inference layer độc lập. Nên tách hai service:
+Production dùng hai client độc lập tại backend: LLM Client và Embedding Client. Mỗi client cấu hình provider, endpoint, model, thông tin xác thực, timeout và concurrency theo môi trường. Flutter gọi backend; API key upstream không được đưa vào ứng dụng mobile.
+
+Chỉ dùng giao thức tương thích OpenAI nếu endpoint thực tế hỗ trợ; vẫn phải kiểm tra structured output, tool calling và streaming. Gateway máy ảo cần được đánh giá cả upstream, quota, độ ổn định và chính sách dữ liệu trước khi dùng production.
+
+Khi LLM và embedding đều dùng API bên ngoài, dự án không cần triển khai vLLM cho hai tác vụ này. vLLM chỉ là lựa chọn khi tự host; cần xác minh model và phiên bản hỗ trợ, kể cả với reranker. Cách phục vụ reranker hiện chưa chốt.
+
+Ví dụ tùy chọn nếu sau này tự host, không phải kiến trúc production mặc định:
 
 ```text
 vLLM Generation Service
@@ -287,7 +314,7 @@ AI Orchestrator
     +--> http://vllm-embedding:8002/v1
 ```
 
-Lợi ích:
+Lợi ích khi tự host và tách service:
 
 - Scale generation và embedding độc lập.
 - Đổi model không ảnh hưởng logic nghiệp vụ.
@@ -313,6 +340,8 @@ Các cơ chế cần bổ sung:
 - Request cancellation.
 - Circuit breaker.
 - Fallback model.
+
+Khi dùng API, cần thêm retry có giới hạn với backoff/jitter cho lỗi tạm thời, tôn trọng Retry-After khi có, theo dõi lỗi 429/5xx và giới hạn theo quota upstream. Fallback LLM chỉ dùng model đã kiểm thử; fallback embedding tuân thủ mục 5.3. GPU sizing và model warm-up chỉ áp dụng cho model tự host.
 
 ---
 
@@ -700,7 +729,7 @@ K được điều chỉnh theo:
 - Phân phối score.
 - Token budget.
 - Latency budget.
-- GPU load.
+- Quota, concurrency và ngân sách chi phí API; GPU load nếu tự host.
 
 Các mức phát triển:
 
@@ -971,7 +1000,9 @@ Dữ liệu property trên Flutter phải lấy từ Property Service, không pa
 
 - Xác thực JWT tại Gateway.
 - Service-to-service authentication.
-- Qdrant và vLLM nằm trong private network.
+- Qdrant và inference service tự host (nếu có) nằm trong private network.
+- API key upstream chỉ lưu tại backend/secret manager; gọi API qua TLS.
+- Giảm thiểu dữ liệu cá nhân gửi đến gateway và nhà cung cấp API.
 - API key/TLS cho internal service.
 - Rate limit theo user và IP.
 - Giới hạn input, history, context và output.
@@ -991,7 +1022,12 @@ Dữ liệu property trên Flutter phải lấy từ Property Service, không pa
 Mỗi request có `traceId` xuyên suốt:
 
 ```text
-Flutter -> Gateway -> AI -> Property -> vLLM -> Qdrant -> Reranker
+Flutter -> Gateway -> AI Orchestrator
+                        +--> Property/Search API
+                        +--> Qdrant
+                        +--> LLM API / Gateway
+                        +--> Embedding API
+                        +--> Reranker
 ```
 
 Theo dõi:
@@ -1003,7 +1039,8 @@ Theo dõi:
 - Qdrant latency.
 - Reranker latency.
 - Input/output tokens.
-- GPU utilization.
+- GPU utilization nếu tự host.
+- API latency, quota/rate-limit errors và chi phí theo provider/model.
 - Queue length.
 - Error rate.
 - Empty-result rate.
@@ -1012,7 +1049,8 @@ Theo dõi:
 
 Log version:
 
-- LLM model.
+- LLM provider, model yêu cầu và model/upstream thực tế nếu gateway cung cấp.
+- Endpoint alias và phiên bản adapter; không log secret.
 - Embedding model.
 - Reranker model.
 - Prompt version.
@@ -1087,7 +1125,8 @@ Hiệu năng:
 - Time to first token.
 - P50/P95 latency.
 - Throughput.
-- GPU/RAM usage.
+- GPU/RAM usage nếu tự host.
+- Chi phí API/request, token và tỷ lệ lỗi quota/rate limit.
 - Context tokens.
 
 Người dùng:
@@ -1110,7 +1149,7 @@ context_k in {3, 5, 7}
 output_k in {5, 10}
 ```
 
-Chọn K nhỏ nhất mà việc tăng K tiếp theo không cải thiện đáng kể Recall/nDCG nhưng làm tăng latency hoặc GPU cost.
+Chọn K nhỏ nhất mà việc tăng K tiếp theo không cải thiện đáng kể Recall/nDCG nhưng làm tăng latency hoặc chi phí API/tài nguyên tự host.
 
 ### 16.5. Ablation study
 
@@ -1135,7 +1174,9 @@ Lần lượt loại bỏ:
 - Chuẩn hóa Search API.
 - Chuyển dữ liệu thật sang PostgreSQL/PostGIS.
 - Triển khai Qdrant.
-- Triển khai vLLM Embedding Service.
+- Tạo Embedding Client cho Qwen local ở research và Embedding API ở production.
+- Tạo LLM Client cho gateway máy ảo ở research và LLM API ở production.
+- Chốt model/provider bằng benchmark và kiểm tra tương thích embedding khi chuyển môi trường.
 - Thiết kế collection/payload/version.
 - Xây bộ 100 truy vấn baseline đầu tiên.
 
@@ -1158,7 +1199,7 @@ Lần lượt loại bỏ:
 
 ### Giai đoạn 4 - Ranking
 
-- Qwen3 Reranker.
+- Thực nghiệm Qwen3 Reranker; chọn API hoặc tự host sau benchmark.
 - Constraint coverage.
 - Business score.
 - Near-duplicate detection.
@@ -1192,16 +1233,22 @@ Lần lượt loại bỏ:
 ```yaml
 ai:
   generation:
-    provider: vllm
-    model: Qwen3-8B
+    provider: api
+    base_url_env: LLM_API_BASE_URL
+    api_key_env: LLM_API_KEY
+    model_env: LLM_MODEL
     temperature: 0
 
   embedding:
-    provider: vllm
-    model: Qwen/Qwen3-Embedding-0.6B
+    provider: api
+    base_url_env: EMBEDDING_API_BASE_URL
+    api_key_env: EMBEDDING_API_KEY
+    model_env: EMBEDDING_MODEL
+    # Ưu tiên Qwen đã benchmark nếu API hỗ trợ và tương thích.
     version: v1
 
   reranker:
+    deployment: undecided  # API hoặc tự host sau benchmark
     model: Qwen/Qwen3-Reranker-0.6B
     input_k: 50
     output_k: 10
@@ -1231,6 +1278,8 @@ ai:
     page_size: 5
 ```
 
+YAML trên minh họa production dự kiến, chưa phải contract cấu hình đã triển khai. Các trường `_env` là tên biến môi trường, không phải giá trị secret. Research dùng Qwen Embedding local và LLM endpoint tới gateway máy ảo; không bắt buộc dùng vLLM.
+
 Các giá trị này là cấu hình khởi đầu. Giá trị cuối cùng phải được quyết định bằng dữ liệu benchmark.
 
 ---
@@ -1250,6 +1299,8 @@ Các giá trị này là cấu hình khởi đầu. Giá trị cuối cùng ph�
 ---
 
 ## 20. Kết luận
+
+Production dự kiến dùng API cho LLM và embedding; vLLM là phương án tùy chọn khi tự host. Adapter tách cách phục vụ model khỏi pipeline nghiệp vụ. Đóng góp nghiên cứu vẫn tập trung vào retrieval, conversation state, ranking và đánh giá thực nghiệm.
 
 Kiến trúc AI Chatbot mục tiêu không còn là một RAG chain đơn lẻ. Hệ thống được phát triển thành một pipeline nhiều tầng:
 

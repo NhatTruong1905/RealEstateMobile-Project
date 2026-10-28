@@ -6,7 +6,6 @@ import com.ndnt.model.dto.ProfileUpdateDTO;
 import com.ndnt.controlleradvices.exceptions.DuplicateEmailException;
 import com.ndnt.controlleradvices.exceptions.DuplicatePhoneException;
 import com.ndnt.controlleradvices.exceptions.DuplicateUsernameException;
-import com.ndnt.controlleradvices.exceptions.InvalidUserException;
 import com.ndnt.converter.UserConverter;
 import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
@@ -20,7 +19,6 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -30,11 +28,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Service
 @Transactional

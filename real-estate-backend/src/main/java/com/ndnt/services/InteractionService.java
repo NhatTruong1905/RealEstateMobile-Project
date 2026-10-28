@@ -2,7 +2,6 @@ package com.ndnt.services;
 
 import com.ndnt.model.dto.ChatMessageDTO;
 import com.ndnt.model.dto.InteractionDTO;
-import com.ndnt.model.dto.PropertyDTO;
 import com.ndnt.model.dto.request.InteractionRequestDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,7 +1,6 @@
 package com.ndnt.model.enums;
 
 import lombok.Getter;
-import lombok.Setter;
 
 
 @Getter

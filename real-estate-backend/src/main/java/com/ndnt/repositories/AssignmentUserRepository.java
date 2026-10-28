@@ -1,6 +1,5 @@
 package com.ndnt.repositories;
 
-import com.ndnt.model.entity.AssignmentInteractionEntity;
 import com.ndnt.model.entity.AssignmentUserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 

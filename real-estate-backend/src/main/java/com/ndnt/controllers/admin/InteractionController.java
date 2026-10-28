@@ -1,7 +1,6 @@
 package com.ndnt.controllers.admin;
 
 import com.ndnt.model.dto.InteractionDTO;
-import com.ndnt.model.dto.PropertyTypeDTO;
 import com.ndnt.model.dto.request.InteractionRequestDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
 import com.ndnt.services.*;

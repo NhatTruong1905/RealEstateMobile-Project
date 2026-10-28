@@ -1,7 +1,5 @@
 package com.ndnt.controllers.admin;
 
-import com.ndnt.model.dto.InteractionDTO;
-import com.ndnt.model.dto.PropertyTypeDTO;
 import com.ndnt.model.dto.UserAdminDTO;
 import com.ndnt.model.dto.UserDTO;
 import com.ndnt.model.dto.request.UserRequestDTO;

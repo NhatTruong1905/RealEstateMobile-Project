@@ -9,7 +9,7 @@ import { favoriteApi } from "../src/services/api/favorite/favoriteApi";
 import { request } from "../src/services/api/core/http";
 
 vi.mock("../src/services/api/chat/chatApi", () => ({ chatApi: { streamAnswer: vi.fn() } }));
-vi.mock("../src/services/api/core/http", () => ({ request: vi.fn(), isMockMode: false }));
+vi.mock("../src/services/api/core/http", () => ({ request: vi.fn() }));
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
