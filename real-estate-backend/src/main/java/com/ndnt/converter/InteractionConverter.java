@@ -11,10 +11,6 @@ public class InteractionConverter {
     @Autowired
     private ModelMapper modelMapper;
 
-    public InteractionEntity toInteractionEntity(InteractionDTO interactionDTO) {
-        return modelMapper.map(interactionDTO, InteractionEntity.class);
-    }
-
     public InteractionDTO toInteractionDTO(InteractionEntity interactionEntity) {
         return modelMapper.map(interactionEntity, InteractionDTO.class);
     }

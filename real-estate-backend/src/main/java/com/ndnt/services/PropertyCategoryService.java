@@ -1,7 +1,6 @@
 package com.ndnt.services;
 
 import com.ndnt.model.dto.PropertyCategoryDTO;
-import com.ndnt.model.dto.PropertyTypeDTO;
 
 import java.util.List;
 

@@ -1,7 +1,6 @@
 package com.ndnt.controllers.admin;
 
 import com.ndnt.model.dto.InteractionTypeDTO;
-import com.ndnt.model.dto.PropertyTypeDTO;
 import com.ndnt.model.dto.response.ResponseDTO;
 import com.ndnt.services.InteractionTypeService;
 import jakarta.validation.Valid;

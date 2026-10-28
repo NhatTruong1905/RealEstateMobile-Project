@@ -1,6 +1,5 @@
 package com.ndnt.services.impl;
 
-import com.ndnt.converter.FavoritePropertyConverter;
 import com.ndnt.model.dto.FavoritePropertyDTO;
 import com.ndnt.model.entity.FavoritePropertyEntity;
 import com.ndnt.model.entity.PropertyEntity;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,8 +20,6 @@ import java.util.stream.Collectors;
 public class FavoritePropertyServiceImpl implements FavoritePropertyService {
     @Autowired
     private FavoritePropertyRepository favoritePropertyRepository;
-    @Autowired
-    private FavoritePropertyConverter favoritePropertyConverter;
     @Autowired
     private PropertyRepository propertyRepository;
     @Autowired
@@ -53,6 +49,4 @@ public class FavoritePropertyServiceImpl implements FavoritePropertyService {
             this.favoritePropertyRepository.save(favorite);
         }
     }
-
-
 }

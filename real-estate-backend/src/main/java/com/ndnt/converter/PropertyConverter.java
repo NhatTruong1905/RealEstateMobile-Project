@@ -20,8 +20,4 @@ public class PropertyConverter {
 
         return dto;
     }
-
-    public PropertyEntity toPropertyEntity(PropertyDTO propertyDTO) {
-        return modelMapper.map(propertyDTO, PropertyEntity.class);
-    }
 }

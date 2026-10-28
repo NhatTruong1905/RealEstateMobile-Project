@@ -6,12 +6,10 @@ import com.ndnt.model.dto.DistrictDTO;
 import com.ndnt.model.entity.DistrictEntity;
 import com.ndnt.model.entity.WardEntity;
 import com.ndnt.repositories.DistrictRepository;
-import com.ndnt.repositories.WardRepository;
 import com.ndnt.services.DistrictService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

@@ -13,8 +13,6 @@ import com.ndnt.repositories.InteractionTypeRepository;
 import com.ndnt.repositories.PropertyRepository;
 import com.ndnt.repositories.UserRepository;
 import com.ndnt.services.InteractionService;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

@@ -1,6 +1,5 @@
 package com.ndnt.services.impl;
 
-import com.ndnt.converter.FavoritePropertyConverter;
 import com.ndnt.model.dto.FavoritePropertyDTO;
 import com.ndnt.model.entity.FavoritePropertyEntity;
 import com.ndnt.model.entity.PropertyEntity;
@@ -27,9 +26,6 @@ public class FavoritePropertyServiceImplTest {
 
     @Mock
     private FavoritePropertyRepository favoritePropertyRepository;
-
-    @Mock
-    private FavoritePropertyConverter favoritePropertyConverter;
 
     @Mock
     private PropertyRepository propertyRepository;

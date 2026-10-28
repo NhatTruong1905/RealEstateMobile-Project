@@ -63,8 +63,7 @@ src/
 
 ## Trạng thái tích hợp
 
-- Mặc định frontend gọi backend thật. Chỉ đặt `VITE_USE_MOCKS=true` khi cần dữ liệu giả cho danh sách bất động sản.
-- Đăng nhập và đăng ký luôn gọi backend thật, kể cả khi chế độ mock được bật, để không tạo phiên đăng nhập giả.
+- Frontend chỉ sử dụng dữ liệu từ backend; lỗi API được hiển thị để người dùng thử lại.
 
 - Danh sách, đăng nhập, đăng ký, hồ sơ, tin đã lưu và tin của người bán dùng hợp đồng API hiện có.
 - Khách có thể xem danh sách và chi tiết; lưu tin và đăng tin yêu cầu đăng nhập rồi quay lại đúng trang.

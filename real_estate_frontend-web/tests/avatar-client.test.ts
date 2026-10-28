@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { accountApi } from "../src/services/api/account/accountApi";
 import { request } from "../src/services/api/core/http";
 import { session } from "../src/services/api/core/session";
-vi.mock("../src/services/api/core/http", () => ({ request: vi.fn(), isMockMode: false }));
+vi.mock("../src/services/api/core/http", () => ({ request: vi.fn() }));
 const profile = { id: 7, username: "owner", phone: "0912345678", avatar: "https://images.example/old.webp" };
 const file = new File(["image"], "avatar.webp", { type: "image/webp" });
 beforeEach(() => { vi.resetAllMocks(); session.set("test-token"); });

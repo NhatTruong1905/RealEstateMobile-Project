@@ -9,9 +9,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
-import javax.net.ssl.SSLSession;
-import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 public interface UserService extends UserDetailsService {

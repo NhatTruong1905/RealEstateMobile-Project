@@ -1,9 +1,7 @@
 package com.ndnt.services.impl;
 
 import com.ndnt.model.dto.AssignmentDTO;
-import com.ndnt.model.entity.AssignmentInteractionEntity;
 import com.ndnt.model.entity.AssignmentUserEntity;
-import com.ndnt.model.entity.InteractionEntity;
 import com.ndnt.model.entity.UserEntity;
 import com.ndnt.repositories.AssignmentUserRepository;
 import com.ndnt.repositories.UserRepository;
