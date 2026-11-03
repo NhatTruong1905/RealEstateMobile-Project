@@ -7,7 +7,8 @@ Ngày: 04/11/2026. Trạng thái: kế hoạch đã thống nhất hướng côn
 - LLM và embedding dùng Gemini API; key chỉ nằm ở backend.
 - Rerank chạy local bằng vLLM, model khởi điểm `Qwen/Qwen3-Reranker-0.6B`.
 - Ưu tiên chi phí dev, có giới hạn tài nguyên và fallback khi rerank không khả dụng.
-- Giữ FAISS và Gemini embedding hiện tại trong phạm vi này. Không chuyển Qdrant, Kafka hay triển khai toàn bộ thiết kế chatbot mới.
+- Dùng Qdrant làm vector database cho profile dev đích; giữ Gemini embedding hiện tại nếu contract tương thích. Chuyển từ FAISS theo mục 13, giữ dữ liệu cũ để rollback.
+- Tạm thời không dùng Kafka để cập nhật index. Dùng lệnh seed/sync thủ công hoặc mock sự kiện theo mục 14; không triển khai Kafka broker, consumer, outbox hay toàn bộ thiết kế chatbot mới.
 - Không sử dụng OpenCode/9Router làm đường gọi mặc định cho profile Gemini mới.
 - Các lựa chọn provider trong kế hoạch này thay thế đề xuất DeepSeek/SiliconFlow tại `docs/RESEARCH_AI_CHATBOT.md` cho profile dev này; các đề xuất nghiên cứu khác chưa được triển khai tự động.
 
@@ -34,7 +35,7 @@ Không đọc/in key thật ra log hoặc báo cáo. Không ghi key vào kế ho
 Câu hỏi + trạng thái hội thoại
   → Gemini trích xuất yêu cầu khi cần
   → Gemini embed câu truy vấn
-  → FAISS / ParentDocumentRetriever
+  → Qdrant / retrieval có mapping child → parent bền vững
   → lọc điều kiện bắt buộc hiện có, gom và loại ứng viên trùng
   → vLLM /v1/rerank với query + nội dung ứng viên
   → ánh xạ index về document gốc, chọn top N
@@ -77,6 +78,10 @@ RERANK_MODEL=Qwen/Qwen3-Reranker-0.6B
 RERANK_CANDIDATE_LIMIT=20
 RERANK_TOP_N=5
 RERANK_TIMEOUT_SECONDS=5
+VECTOR_STORE_PROVIDER=qdrant
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=
+QDRANT_COLLECTION=realestate_gemini_dev_v1
 ```
 
 - Đây là tên biến đề xuất; thống nhất với cấu trúc config thực tế, tránh hai nguồn cấu hình mâu thuẫn.
@@ -137,7 +142,7 @@ Smoke local với vLLM thật: bộ câu hỏi tiếng Việt có ứng viên đ
 
 Tiêu chí hoàn thành:
 
-1. Profile Gemini gọi được LLM và embedding đúng config, index cũ tương thích được giữ nguyên.
+1. Profile Gemini gọi được LLM và embedding đúng config; Qdrant lưu/tìm vectors và metadata, truy vấn được sau restart; index FAISS cũ được giữ để rollback.
 2. vLLM local chấm điểm Qwen3 Reranker đúng cách; backend chọn đúng documents theo index.
 3. Reranker lỗi không làm hỏng chat, không vượt bộ lọc và có log fallback.
 4. Có hướng dẫn cài/chạy/dừng, cấu hình network Windows/WSL hoặc Docker và phiên bản đã kiểm chứng.
@@ -197,7 +202,7 @@ Nguồn: [Gemini embeddings](https://ai.google.dev/gemini-api/docs/embeddings).
 
 ## 12. Hướng dẫn chuẩn bị Qdrant
 
-**Phạm vi:** mục này bổ sung hướng dẫn hạ tầng theo yêu cầu người dùng. Profile triển khai ban đầu vẫn giữ FAISS ở mục 1. Việc bật Qdrant trong ứng dụng là giai đoạn riêng theo mục 13; khởi động Qdrant không tự chuyển dữ liệu FAISS. Qdrant lưu/tìm vector, không thay Gemini embedding và không cần nhận Gemini API key.
+**Phạm vi cập nhật:** Qdrant là vector database đích trong task hiện tại. Agent thực hiện chuyển đổi theo mục 13; khởi động Qdrant không tự chuyển dữ liệu FAISS. Qdrant lưu/tìm vector, không thay Gemini embedding và không cần nhận Gemini API key. Không phụ thuộc Kafka để khởi động, seed hoặc tìm kiếm.
 
 ### 12.1. Phương án khuyến nghị cho dev: Docker local
 
@@ -252,11 +257,11 @@ Nguồn: [Qdrant Local Quickstart](https://qdrant.tech/documentation/quickstart/
 
 Nguồn: [Qdrant Cloud Quickstart](https://qdrant.tech/documentation/cloud-quickstart/).
 
-## 13. Giai đoạn riêng nếu chuyển FAISS sang Qdrant
+## 13. Chuyển FAISS sang Qdrant trong phạm vi hiện tại
 
-Không thực hiện chỉ vì người dùng đã điền QDRANT_URL; agent phải xác nhận task được giao bao gồm chuyển vector store. Không cần chờ Qdrant để hoàn thành Gemini + rerank trên FAISS.
+Người dùng đã yêu cầu trước mắt dùng Qdrant để lưu vector database. Đây là bước triển khai thuộc kế hoạch hiện tại, không cần hỏi lại về lựa chọn vector store. Chỉ chuyển profile sau khi kiểm chứng dữ liệu; không xóa index FAISS cũ.
 
-1. Thêm `VECTOR_STORE_PROVIDER=faiss|qdrant`, mặc định giữ FAISS, thêm dependency Qdrant tương thích và adapter độc lập.
+1. Thêm config/adapter Qdrant và dependency tương thích; profile dev mới mặc định dùng `VECTOR_STORE_PROVIDER=qdrant`. Có thể giữ FAISS làm lựa chọn rollback rõ ràng, không âm thầm fallback sang FAISS khi Qdrant lỗi.
 2. Đo dimension từ embedding smoke thực tế, tạo collection mới với distance/normalization phù hợp contract. Nếu collection đã tồn tại, so sánh schema/manifest; mismatch phải dừng, không xóa/tạo lại ngầm.
 3. Giữ mapping child → parent của ParentDocumentRetriever và lưu parent documents bền vững; chỉ chuyển child vectors sang Qdrant mà mất parent docstore sẽ làm retrieval lỗi sau restart.
 4. Point ID dùng UUID hoặc uint64 hợp lệ; dùng ID ổn định, content hash/version để upsert idempotent, không chèn trùng khi chạy lại. Lưu metadata nguồn và trạng thái cần cho lọc.
@@ -265,4 +270,34 @@ Không thực hiện chỉ vì người dùng đã điền QDRANT_URL; agent ph�
 7. So sánh FAISS/Qdrant trên cùng bộ truy vấn, kiểm tra không rò tin không được phép xem và có cơ chế cập nhật/xóa index nhất quán với nguồn. Chỉ bật provider Qdrant sau khi kiểm tra đạt; giữ dữ liệu FAISS để rollback.
 8. Bàn giao phiên bản client/server, dimension, collection, manifest, số documents/points, lệnh test và chi phí indexing đã đo. Không ghi model weights, database volume, snapshot hoặc secrets vào Git.
 
-Checklist người dùng chuẩn bị: Gemini API key local; model/quota/budget phù hợp; chọn Qdrant local hoặc Cloud nếu triển khai giai đoạn chuyển đổi; thông tin GPU/VRAM cho vLLM. Các phần hạ tầng/tài khoản chưa xác minh phải báo rõ, không đánh dấu sẵn sàng chỉ dựa vào file cấu hình.
+Checklist người dùng chuẩn bị: Gemini API key local; model/quota/budget phù hợp; chọn Qdrant local (khuyến nghị dev) hoặc Cloud; thông tin GPU/VRAM cho vLLM. Các phần hạ tầng/tài khoản chưa xác minh phải báo rõ, không đánh dấu sẵn sàng chỉ dựa vào file cấu hình.
+
+## 14. Cập nhật index tạm thời không dùng Kafka
+
+Quyết định hiện tại: chưa triển khai đồng bộ realtime bằng Kafka. Qdrant chỉ giữ index phục vụ retrieval; nguồn dữ liệu chuẩn vẫn là nguồn bài đăng/tài liệu hiện có. Không coi Qdrant là database nghiệp vụ.
+
+### 14.1. Bản đầu bắt buộc: seed/sync thủ công
+
+- Cung cấp CLI/script có hướng dẫn chạy rõ ràng để đọc dữ liệu từ nguồn đã xác minh, normalize/chunk, gọi Gemini embedding cho phần mới/thay đổi và upsert vào Qdrant.
+- Không tự index toàn bộ khi khởi động API. Script phải có giới hạn batch/số bản ghi, báo số upsert/delete/skipped/failed và có thể chạy lại an toàn.
+- Dùng ID ổn định cùng content hash và embedding contract. Bản ghi không đổi không gọi embedding lại; thay đổi chỉ payload thì cập nhật payload, không re-embed.
+- Xử lý gỡ tin/xóa/không còn được phép hiển thị bằng thao tác delete hoặc cập nhật điều kiện hiển thị phù hợp, đồng thời bảo toàn parent docstore. Không coi phần vắng mặt trong một batch/nguồn tải lỗi là lệnh xóa toàn bộ phần còn lại.
+- Nếu chưa nối được nguồn bài đăng thật, dùng fixture dev có schema rõ ràng, đánh dấu dữ liệu mock và collection test riêng. Không trộn fixture vào collection dữ liệu thật.
+- Nêu rõ giới hạn: index chưa cập nhật cho đến lần sync tiếp theo. Với trạng thái nhạy cảm như tin bị gỡ/không công khai, kiểm tra quyền/trạng thái từ nguồn chuẩn trước khi đưa vào context; nếu không xác minh được thì loại khỏi kết quả. Không dựa vào payload cũ để quyết định quyền xem.
+
+### 14.2. Mock sự kiện là tùy chọn
+
+- Nếu cần kiểm tra luồng cập nhật, tạo fixture JSON hoặc lệnh CLI gọi trực tiếp cùng handler upsert/delete; không cần broker hay dịch vụ nền giả Kafka.
+- Hợp đồng sự kiện tối thiểu gồm `eventId`, `entityId`, `version`, `operation` (upsert/delete) và dữ liệu tham chiếu/nội dung theo nguồn thực tế. Các tên này là contract nội bộ đề xuất, không tự thay API nghiệp vụ đang có.
+- Handler phải idempotent, bỏ qua version cũ và không để sự kiện upsert cũ khôi phục bản ghi đã xóa. Lưu trạng thái xử lý/version bền vững nếu cần kiểm tra qua restart, không chỉ dùng dict trong RAM.
+- Phân tách transport và logic indexing để sau này thay đầu vào mock bằng Kafka mà vẫn dùng lại handler. Chưa thêm Kafka dependencies, topic, consumer group, retry topic, DLQ hay outbox trong task này.
+- Báo cáo rõ là mock/manual sync; không tuyên bố đã có Kafka hoặc đồng bộ realtime.
+
+### 14.3. Tiêu chí nghiệm thu bổ sung
+
+1. Khởi động API, seed, retrieval và rerank hoạt động mà không cần Kafka hay biến cấu hình Kafka.
+2. Qdrant giữ vectors/metadata qua restart; parent documents vẫn truy xuất đúng.
+3. Sync lại dữ liệu không đổi không tạo point trùng và không gọi embedding lại; nội dung đổi được cập nhật, thao tác xóa không bị replay cũ khôi phục.
+4. Lỗi Gemini/Qdrant khi sync được báo rõ và có thể chạy lại; không đánh dấu cả batch thành công khi chỉ xử lý một phần.
+5. Có kiểm thử bằng fake embedding và Qdrant test riêng cho upsert/update/delete, lọc quyền/trạng thái và restart. Nếu có mock event, bổ sung duplicate/out-of-order event tests.
+6. Tài liệu bàn giao ghi cách sync, độ trễ dữ liệu, giới hạn hiện tại và phạm vi Kafka để dành cho giai đoạn sau.
