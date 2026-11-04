@@ -14,9 +14,9 @@ Ngày: 04/11/2026. Trạng thái: kế hoạch đã thống nhất hướng côn
 
 ## 2. Hướng dẫn cho agent thực hiện
 
-Vai trò: Backend. Đọc đầy đủ `AGENTS.md` và `docs/agent-rules/BACKEND_RULES.md` trước khi sửa mã. Kiểm tra `git status`, branch, worktree và các hướng dẫn bổ sung áp dụng cho đường dẫn sửa.
+Phạm vi hiện tại là phát triển chatbot AI, không phân vai Manager/Backend/Frontend và không áp dụng quy trình điều phối worker cũ. Đọc kế hoạch này, kiểm tra `git status`, branch và mã chatbot hiện tại trước khi sửa.
 
-Chỉ sửa dịch vụ `real-estate-ai` và tài liệu liên quan. Không thay đổi frontend, schema nghiệp vụ, quy trình duyệt tin/email. Giữ nguyên thay đổi của người dùng; để thay đổi UNSTAGED, không git add/commit/push/deploy. Không tạo worker khác nếu chưa cần và chưa xác minh kênh điều phối.
+Chỉ sửa dịch vụ `real-estate-ai` và tài liệu liên quan trong task này. Giữ nguyên thay đổi của người dùng; để thay đổi UNSTAGED, không tự git add/commit/push/deploy. Không tự triển khai tính năng duyệt tin/email hoặc thay đổi frontend ngoài yêu cầu chatbot.
 
 Không đọc/in key thật ra log hoặc báo cáo. Không ghi key vào kế hoạch, Git hoặc lệnh shell có lịch sử. Việc gọi API thật có tính phí phải nằm trong ngân sách dev được xác nhận; unit test dùng client giả.
 
@@ -155,7 +155,7 @@ Tiêu chí hoàn thành:
 - Thêm module config/reranker, tests và hướng dẫn chạy local trong phạm vi `real-estate-ai` hoặc `docs`.
 - Không sửa `vector_database` để commit, không thêm model weights/cache/virtualenv vào Git.
 - Bàn giao: file thay đổi, config mới, lệnh chạy, versions, test evidence, benchmark, blockers và cách rollback bằng `RERANK_ENABLED=false` (chỉ tắt rerank, vẫn giữ Gemini LLM).
-- Tuân thủ kênh handoff trong AGENTS.md nếu khả dụng và đã xác minh phiên Manager hiện tại; không dùng Task/Dispatch cũ, không coi gửi mailbox thành công là Manager đã review.
+- Báo cáo trực tiếp cho người dùng về thay đổi chatbot, kiểm thử và phần còn thiếu; không yêu cầu handoff qua Orca, Manager inbox hoặc Task/Dispatch cũ.
 
 ## 10. Nguồn kỹ thuật để agent đối chiếu
 
@@ -165,6 +165,14 @@ Tiêu chí hoàn thành:
 - Gemini API: https://ai.google.dev/gemini-api/docs
 
 Các lệnh trong kế hoạch là hướng dẫn, chưa chạy kiểm chứng trên máy hiện tại. Agent phải đối chiếu tài liệu với phiên bản được pin trước khi triển khai.
+
+### Làm rõ lựa chọn 9Router/Tailscale
+
+- Profile đích hiện tại vẫn là Gemini API trực tiếp cho LLM/embedding, Qdrant cho vector DB và vLLM local cho rerank; chưa dùng Kafka.
+- 9Router là lựa chọn gateway tùy chọn nếu sau này cần nhiều provider. Tài liệu chính thức hướng dẫn tự cài/chạy và kết nối provider; chưa xác minh có dịch vụ managed chính thức chỉ cần đăng ký lấy key: https://docs.9router.com/.
+- Tailscale cung cấp kết nối mạng, không tự cung cấp instance 9Router. Muốn không cài local thì cần instance được host trên máy/VPS khác và người quản lý cấp quyền truy cập/API key.
+- Endpoint Tailscale đang có trong mã là cấu hình cũ, không phải bằng chứng đó là dịch vụ chính thức. Kết quả HTTP 401 trước đó chỉ chứng minh có endpoint yêu cầu xác thực; chưa xác minh loại dịch vụ, chủ sở hữu, providers hay model sử dụng được.
+- Không tự cấu hình lại gateway cũ hoặc gửi dữ liệu chatbot/key Gemini tới đó. Nếu người dùng chọn 9Router sau này, xác minh instance, quyền truy cập, `/v1/models`, chat/streaming/structured output và chi phí trước khi bật profile riêng.
 
 ## 11. Người dùng chuẩn bị Gemini API key
 
