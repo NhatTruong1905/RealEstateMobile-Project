@@ -1,6 +1,8 @@
 # Kế hoạch dev: Gemini LLM + Gemini Embedding + vLLM reranker local
 
-Ngày: 04/11/2026. Trạng thái: kế hoạch đã thống nhất hướng công nghệ, chưa triển khai.
+Ngày: 04/11/2026. Trạng thái: đã triển khai phần mềm dev và kiểm thử local; chưa hoàn tất nghiệm thu Gemini/vLLM/Qdrant server thật. Chi tiết thay đổi, 43 bài kiểm thử, lệnh chạy và phần còn thiếu tại [bàn giao dev](../real-estate-ai/README_GEMINI_DEV.md).
+
+Cập nhật refactor: các trách nhiệm chatbot đã được tách thành module riêng; hướng dẫn lấy/cấu hình Gemini, Qdrant và kiểm tra offline ở [SETUP_CHATBOT.md](../real-estate-ai/SETUP_CHATBOT.md). Không thay `.env` thật, không coi test giả lập là nghiệm thu live.
 
 ## 1. Mục tiêu và quyết định
 

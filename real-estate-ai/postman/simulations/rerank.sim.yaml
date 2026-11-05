@@ -1,0 +1,21 @@
+simulation: rerank-dev
+routing: path
+mocks:
+  - name: success
+    routeKey: success
+    path: postman/mocks/rerank/config.yaml
+  - name: unavailable
+    routeKey: unavailable
+    path: postman/mocks/rerank/config.yaml
+    scenarios:
+      - overrides:
+          conditions:
+            error: {status_code: 503}
+  - name: slow
+    routeKey: slow
+    path: postman/mocks/rerank/config.yaml
+    scenarios:
+      - overrides:
+          conditions:
+            latency: {delay_ms: 2500}
+

@@ -1,0 +1,45 @@
+openapi: 3.0.3
+info:
+  title: Local vLLM rerank subset
+  version: 1.0.0
+  description: Request/response subset from official vLLM scoring docs; synthetic scores only.
+paths:
+  /v1/rerank:
+    post:
+      operationId: rerank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [model, query, documents, top_n]
+              properties:
+                model: {type: string}
+                query: {type: string}
+                documents: {type: array, items: {type: string}}
+                top_n: {type: integer, minimum: 1}
+      responses:
+        '200':
+          description: Synthetic ranking for exactly two candidate documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index: {type: integer}
+                        relevance_score: {type: number}
+              example:
+                results:
+                  - {index: 1, relevance_score: 0.9}
+                  - {index: 0, relevance_score: 0.1}
+        '503':
+          description: Model unavailable
+          content:
+            application/json:
+              example: {error: unavailable}

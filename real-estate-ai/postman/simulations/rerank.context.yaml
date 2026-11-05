@@ -1,0 +1,37 @@
+purpose:
+  stands_in_for: Local vLLM rerank HTTP endpoint, using synthetic scores from the documented response shape.
+  unblocks: Validates HTTP serialization, index mapping and fallback without GPU or vendor API calls.
+assumptions:
+  - id: local-client-mapping
+    status: supported
+    claim: In the local success simulation, the caller maps indexes 1 and 0 back to the two original document objects.
+    reason: The real Reranker client made a request and returned the same objects in reversed order.
+    verification: On 2026-11-04, ran success/unavailable/slow scenarios via CLI 1.75.0; success completed in 63 ms. The request event confirmed POST /success/v1/rerank with HTTP 200.
+    source: rag/reranker.py; postman/rerank.openapi.yaml; postman/mocks/rerank/default.js
+    updated_at: '2026-11-04'
+  - id: local-client-fallback
+    status: supported
+    claim: In the local 503 and delayed-response scenarios, the caller returns the original candidate list.
+    reason: Caller assertions passed for both injected failures; the delay was 2500 ms and the caller deadline was 1000 ms.
+    verification: On 2026-11-04, the 503 scenario returned fallback in 31 ms and the slow scenario in 1000 ms. No real upstream was contacted. Injected errors do not produce normal request events in this CLI.
+    source: rag/reranker.py; postman/simulations/rerank.sim.yaml; tests/test_reranker.py
+    updated_at: '2026-11-04'
+  - id: real-model-quality
+    status: unknown
+    claim: Qwen3 with the deployed vLLM template improves ranking quality for Vietnamese real estate queries.
+    reason: Synthetic scores cannot establish model quality, template correctness or GPU memory usage.
+    verification: Official scoring docs were checked; actual vLLM serving and labeled benchmark remain unrun. Owner mock search skipped because the installed CLI has no status command; no account or cloud workspace was used.
+    source: https://docs.vllm.ai/en/stable/models/pooling_models/scoring/
+    updated_at: '2026-11-04'
+  - id: refactored-pipeline-context
+    status: supported
+    claim: The refactored ContextBuilder preserves candidate mapping and fallback through real local HTTP in the three synthetic scenarios exercised.
+    reason: RAGPipeline.get_context_for_chain invoked the actual Reranker and the resulting context contained the expected document order.
+    verification: '2026-11-04 refactor rerun via IPv4 loopback: success [2,1] in 62 ms with 5-second deadline; injected 503 [1,2] in 16 ms; injected 2500 ms delay [1,2] in 1015 ms with 1-second deadline. Success POST /v1/rerank HTTP 200 was observed in the simulation request log. An initial localhost attempt with a 1-second deadline timed out and did not establish success. No Gemini or real vLLM calls.'
+    source: rag/context.py; rag/pipeline.py; rag/reranker.py; postman/simulations/rerank.sim.yaml
+    updated_at: '2026-11-04'
+fingerprints:
+  - id: local-dev
+    date: '2026-11-04'
+    commit: unstaged-working-tree
+    cli: 1.75.0
