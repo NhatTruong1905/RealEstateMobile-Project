@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from api.schemas import ChatRequest, ChatResponse
 from rag.pipeline import rag_service
+import logging
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["Chatbot RAG"])
 
@@ -15,7 +18,8 @@ def chat_endpoint(request: ChatRequest):
         answer = rag_service.query(request.question, history=request.history)
         return ChatResponse(answer=answer)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi hệ thống RAG: {str(e)}")
+        log.error("chat status=failed reason=%s", type(e).__name__)
+        raise HTTPException(status_code=500, detail="Dịch vụ tư vấn tạm thời không khả dụng.") from None
 
 
 @router.post("/chat-rag/stream")
@@ -28,7 +32,8 @@ async def chat_stream_endpoint(request: ChatRequest):
             async for token in rag_service.query_astream(request.question, history=request.history):
                 yield token
         except Exception as e:
-            yield f"\n[Lỗi hệ thống RAG: {str(e)}]"
+            log.error("chat_stream status=failed reason=%s", type(e).__name__)
+            yield "\n[Dịch vụ tư vấn tạm thời không khả dụng.]"
 
     return StreamingResponse(
         token_generator(),

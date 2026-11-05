@@ -1,0 +1,8 @@
+{
+  "kind": "mock",
+  "records": [
+    {"id": "mock-1", "version": 1, "public": true, "text": "Property ID 900001: Bán căn hộ thử nghiệm Quận 7\nĐịa chỉ: Quận 7, TP. Hồ Chí Minh\nLoại giao dịch: Bán\nMức giá: 2 tỷ\nDiện tích: 65 m² | 2 phòng ngủ\nPháp lý: Sổ hồng\nDỮ LIỆU MOCK, KHÔNG PHẢI TIN THẬT", "metadata": {"mock": true}},
+    {"id": "mock-2", "version": 1, "public": true, "text": "Property ID 900002: Cho thuê căn hộ thử nghiệm Quận 1\nĐịa chỉ: Quận 1, TP. Hồ Chí Minh\nLoại giao dịch: Cho thuê\nMức giá: 12 triệu\nDiện tích: 45 m² | 1 phòng ngủ\nPháp lý: Hợp đồng thuê\nDỮ LIỆU MOCK, KHÔNG PHẢI TIN THẬT", "metadata": {"mock": true}},
+    {"id": "mock-hidden", "version": 1, "public": false, "text": "Property ID 900003: Tin thử nghiệm không công khai", "metadata": {"mock": true}}
+  ]
+}

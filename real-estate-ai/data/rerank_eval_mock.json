@@ -1,0 +1,33 @@
+{
+  "kind": "synthetic-labeled-dev-not-production-evidence",
+  "candidates": [
+    {"id": "1", "text": "Property ID 1: Bán căn hộ Quận 7\nMức giá: 2 tỷ\n2 phòng ngủ, 65 m², sổ hồng, ban công view sông, gần trường học."},
+    {"id": "2", "text": "Property ID 2: Bán căn hộ Quận 1\nMức giá: 5 tỷ\n3 phòng ngủ, 100 m², sổ hồng, trung tâm, gần phố đi bộ."},
+    {"id": "3", "text": "Property ID 3: Cho thuê căn hộ Quận 7\nMức giá: 12 triệu\n2 phòng ngủ, 70 m², đầy đủ nội thất, hồ bơi, hợp đồng thuê dài hạn."},
+    {"id": "4", "text": "Property ID 4: Cho thuê studio Thủ Đức\nMức giá: 8 triệu\n1 phòng ngủ, 35 m², gần đại học, phù hợp sinh viên, hợp đồng thuê."},
+    {"id": "5", "text": "Property ID 5: Bán đất Củ Chi\nMức giá: 1 tỷ\n100 m², đất thổ cư, sổ đỏ riêng, đường xe hơi, chưa có nhà."},
+    {"id": "6", "text": "Property ID 6: Bán nhà phố Bình Thạnh\nMức giá: 4 tỷ\n3 phòng ngủ, 80 m², sổ hồng riêng, hẻm xe hơi, sân để xe."}
+  ],
+  "queries": [
+    {"query": "mua căn hộ Quận 7 dưới 3 tỷ", "relevance": {"1": 3}},
+    {"query": "mua nhà có view sông", "relevance": {"1": 3}},
+    {"query": "căn hộ 2 phòng ngủ gần trường học", "relevance": {"1": 3}},
+    {"query": "căn hộ có ban công và sổ hồng", "relevance": {"1": 3, "2": 1}},
+    {"query": "mua căn hộ trung tâm Quận 1", "relevance": {"2": 3}},
+    {"query": "nhà 3 phòng ngủ gần phố đi bộ", "relevance": {"2": 3}},
+    {"query": "căn hộ rộng 100 mét vuông ở trung tâm", "relevance": {"2": 3}},
+    {"query": "thuê căn hộ Quận 7 dưới 15 triệu", "relevance": {"3": 3}},
+    {"query": "thuê căn hộ đầy đủ nội thất", "relevance": {"3": 3}},
+    {"query": "căn hộ có hồ bơi để thuê dài hạn", "relevance": {"3": 3}},
+    {"query": "thuê 2 phòng ngủ cho gia đình", "relevance": {"3": 3}},
+    {"query": "thuê studio Thủ Đức dưới 10 triệu", "relevance": {"4": 3}},
+    {"query": "phòng thuê gần đại học cho sinh viên", "relevance": {"4": 3}},
+    {"query": "thuê căn nhỏ 35 mét vuông", "relevance": {"4": 3}},
+    {"query": "mua đất Củ Chi dưới 2 tỷ", "relevance": {"5": 3}},
+    {"query": "đất thổ cư có sổ đỏ riêng", "relevance": {"5": 3}},
+    {"query": "mua đất chưa có nhà đường xe hơi", "relevance": {"5": 3}},
+    {"query": "mua nhà phố Bình Thạnh", "relevance": {"6": 3}},
+    {"query": "nhà 3 phòng ngủ có sân để xe", "relevance": {"6": 3}},
+    {"query": "mua nhà hẻm xe hơi sổ hồng riêng dưới 5 tỷ", "relevance": {"6": 3}}
+  ]
+}

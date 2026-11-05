@@ -7,7 +7,10 @@ from rag.pipeline import rag_service
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     rag_service.initialize()
-    yield
+    try:
+        yield
+    finally:
+        rag_service.close()
 
 app = FastAPI(
     title="Real Estate RAG API",
