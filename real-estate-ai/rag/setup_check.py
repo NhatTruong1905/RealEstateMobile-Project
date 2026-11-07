@@ -1,4 +1,3 @@
-"""Offline setup diagnostics: no SDK construction, network requests or secret output."""
 from pathlib import Path
 
 from rag.config import Settings

@@ -1,4 +1,3 @@
-"""Chat orchestration only; providers, retrieval and conversation live in separate modules."""
 import asyncio
 import logging
 import time

@@ -1,4 +1,3 @@
-"""Load a compatible retriever; startup never creates embeddings or rebuilds indexes."""
 import os
 import pickle
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -15,7 +14,6 @@ def create_retriever(settings, embedding, db_dir, store_factory=QdrantParentStor
             raise
         return store
 
-    # Legacy dependencies and pickle loading are isolated to the explicit FAISS profile.
     from langchain_community.vectorstores import FAISS
     from langchain_classic.retrievers import ParentDocumentRetriever
     from langchain_core.stores import InMemoryStore

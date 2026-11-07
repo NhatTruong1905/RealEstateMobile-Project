@@ -1,4 +1,3 @@
-"""Labeled fixed-candidate comparison; no Gemini calls. Requires a real reranker."""
 import argparse
 import json
 import math
@@ -38,7 +37,6 @@ def main():
             off.append(ndcg([d.metadata["source_id"] for d in docs], labels))
             start = time.monotonic()
             try:
-                # Fail visibly rather than counting a degraded fallback as model evidence.
                 ranked = reranker._request(case["query"], docs, settings.timeout)
                 on.append(ndcg([d.metadata["source_id"] for d in ranked], labels))
                 elapsed.append((time.monotonic() - start) * 1000)

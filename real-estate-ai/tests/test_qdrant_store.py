@@ -65,7 +65,6 @@ def test_sync_idempotent_metadata_update_content_delete_restart(setup):
     records["mock-1"]["version"] += 1
     records["mock-1"]["public"] = False
     publish(settings, records)
-    # Source change immediately revokes visibility even before sync.
     assert all(d.metadata["source_id"] != "mock-1" for d in store.invoke("q"))
     assert store.sync(records)["delete"] == 1
     assert store.sync(old)["skipped"] == 3
@@ -83,7 +82,6 @@ def test_source_unavailable_private_stale_and_missing_batch(setup):
     store, _, records, settings, _ = setup
     store.sync(records)
     records.pop("mock-1")
-    # An incomplete batch never deletes other entities.
     assert store.sync({})["delete"] == 0
     assert store.client.count(settings.collection).count == 2
     publish(settings, records)

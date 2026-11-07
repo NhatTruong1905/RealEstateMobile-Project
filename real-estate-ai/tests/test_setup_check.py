@@ -1,4 +1,3 @@
-"""Offline diagnostics must remain usable before credentials/services exist."""
 import json
 from pathlib import Path
 

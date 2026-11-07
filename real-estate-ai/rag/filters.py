@@ -1,4 +1,3 @@
-"""Pure listing eligibility filters and greeting detection; no provider calls."""
 import re
 import hashlib
 
