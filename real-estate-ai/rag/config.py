@@ -1,4 +1,3 @@
-"""Backend-only configuration. Never include credentials in diagnostics."""
 import os
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
@@ -75,5 +74,4 @@ class Settings:
         return settings
 
 
-# Compatibility exports for existing callers; new code imports rag.providers.
 from rag.providers import create_embedding, create_llm  # noqa: F401,E402

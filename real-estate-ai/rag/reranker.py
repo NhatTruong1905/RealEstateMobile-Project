@@ -1,4 +1,3 @@
-"""One bounded request; invalid responses fall back to original documents."""
 import logging
 import math
 import threading
@@ -20,7 +19,6 @@ class Reranker:
         self.endpoint = base + ("/rerank" if base.endswith("/v1") else "/v1/rerank")
 
     def _request(self, query, docs, timeout):
-        # No redirects/retries: never forward candidate contents to another host.
         with httpx.Client(timeout=timeout, transport=self.transport, trust_env=False) as client:
             response = client.post(self.endpoint, json={
                 "model": self.settings.rerank_model, "query": query[:4000],
@@ -55,7 +53,6 @@ class Reranker:
                 self.slots.release()
                 raise TimeoutError()
             future = self.executor.submit(self._request, query, docs, remaining)
-            # Keep slot occupied until the HTTP worker actually ends, even on deadline.
             future.add_done_callback(lambda _: self.slots.release())
             result = future.result(timeout=remaining)
             log.info("rerank status=ok candidates=%d elapsed_ms=%.1f", len(docs), (time.monotonic()-start)*1000)

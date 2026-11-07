@@ -109,7 +109,6 @@ def test_public_api_contract(initialized, monkeypatch):
     import main
     import api.routes as routes
     monkeypatch.setattr(routes, "rag_service", initialized)
-    # TestClient without context avoids a second lifespan initialization.
     client = TestClient(main.app)
     response = client.post("/api/chat-rag", json={"question": "mua nhà"})
     assert response.status_code == 200 and response.json() == {"answer": "Dạ, căn hộ phù hợp."}

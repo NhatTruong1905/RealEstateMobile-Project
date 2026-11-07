@@ -1,4 +1,3 @@
-"""Run from real-estate-ai: python -m rag.dev --help."""
 import argparse
 import asyncio
 import json

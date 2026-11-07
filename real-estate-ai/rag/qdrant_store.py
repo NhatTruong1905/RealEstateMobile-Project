@@ -1,8 +1,3 @@
-"""Explicit indexing with durable parents, tombstones and an embedding manifest.
-
-SQLite is part of the index and must be backed up together with Qdrant.
-No source snapshots are trusted as live authorization for real listings.
-"""
 import hashlib
 import json
 import logging
@@ -100,7 +95,6 @@ class QdrantParentStore:
         document = json.dumps({"text": text, "metadata": {**row.get("metadata", {}),
                                "source_id": pid, "source_kind": "mock", "source_version": version}}, ensure_ascii=False)
         with self.connect() as db:
-            # Serialize manual writers. Commit parents only after vectors are persisted.
             db.execute("BEGIN IMMEDIATE")
             old = db.execute("SELECT version, hash, document, points, public FROM parents WHERE id=?", (pid,)).fetchone()
             if old and version <= old[0]:
@@ -129,15 +123,12 @@ class QdrantParentStore:
                         for point, vector, chunk in zip(points, vectors, chunks)], wait=True)
             db.execute("INSERT OR REPLACE INTO parents VALUES (?, ?, ?, ?, ?, ?)",
                        (pid, version, content_hash, document, json.dumps(points), int(row["public"])))
-        # Stale vectors cannot pass the active-point check, including after a crash.
-        # Delete all inactive points for this parent (also cleans partial previous writes).
         stale_filter = models.Filter(must=[models.FieldCondition(key="parent_id", match=models.MatchValue(value=pid))],
                                     must_not=[models.HasIdCondition(has_id=points)] if points else None)
         self.client.delete(self.settings.collection, points_selector=models.FilterSelector(filter=stale_filter), wait=True)
         self.last_action = "upsert" if row["public"] else "delete"
 
     def invoke(self, query):
-        # This file is authoritative ONLY for mock dev data; never real listing permissions.
         try:
             source = read_source(self.settings.source_path)
         except Exception:

@@ -46,7 +46,6 @@ def test_mapping_payload_and_v1_url():
     [{"index": 1, "relevance_score": float("nan")}, {"index": 0, "relevance_score": .5}],
     [{"index": 1}, {"index": 0, "relevance_score": .5}], None])
 def test_invalid_response_falls_back_whole_set(rows):
-    # Use response text for non-finite numbers (invalid JSON from misbehaving upstream).
     r = client(lambda _: httpx.Response(200, text=json.dumps({"results": rows})))
     try:
         assert r.rerank("query", DOCS) is DOCS
@@ -99,7 +98,6 @@ def test_invalid_json():
 
 
 def test_real_socket_deadline_and_queue():
-    # Exercise real httpx serialization/timeouts, no vendor service or credentials.
     calls = []
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):

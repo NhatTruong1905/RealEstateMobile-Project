@@ -1,4 +1,3 @@
-"""Bounded conversation history and structured search-intent preparation."""
 import logging
 from api.schemas import RealEstateIntentSummary
 

@@ -1,4 +1,3 @@
-"""SDK client factories; no network calls at import or factory time."""
 import os
 
 
@@ -6,7 +5,6 @@ def create_embedding(settings):
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
     if not settings.google_api_key:
         raise ValueError("Missing GOOGLE_API_KEY")
-    # Preserve the existing adapter's query/document task defaults and dimensions.
     return GoogleGenerativeAIEmbeddings(model=settings.embedding_model, google_api_key=settings.google_api_key)
 
 

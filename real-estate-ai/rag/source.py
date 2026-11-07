@@ -1,4 +1,3 @@
-"""Validate the explicit dev listing source; real authorization needs its own adapter."""
 import json
 from pathlib import Path
 

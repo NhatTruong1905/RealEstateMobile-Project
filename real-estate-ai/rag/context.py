@@ -1,4 +1,3 @@
-"""Retrieve, authorize, filter, rerank and budget documents before prompt rendering."""
 import logging
 import time
 from rag.filters import is_pure_greeting, filter_documents, format_docs_with_greeting_check
@@ -20,7 +19,6 @@ class ContextBuilder:
         start = time.monotonic()
         docs = self.retriever.invoke(query)
         if self.settings.vector_provider == "faiss":
-            # The old markdown includes pending/rejected listings, so it cannot authorize display.
             try:
                 current = read_source(self.settings.source_path)
                 docs = [d for d in docs if any(r["public"] and r["text"] == d.page_content for r in current.values())]
@@ -30,7 +28,6 @@ class ContextBuilder:
         candidates = filter_documents(docs, query)[:self.settings.candidate_limit]
         log.info("retrieval candidates=%d elapsed_ms=%.1f", len(candidates), (time.monotonic()-start)*1000)
         ranked = self.reranker.rerank(query, candidates)
-        # Whole documents only, bounded context; fallback retains original candidate order.
         selected, chars = [], 0
         for doc in ranked:
             if chars + len(doc.page_content) + 2 <= self.settings.context_chars:

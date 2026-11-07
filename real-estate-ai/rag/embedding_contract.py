@@ -1,4 +1,3 @@
-"""Embedding compatibility manifest shared by smoke, indexing and retrieval."""
 
 def embedding_contract(settings, dimension):
     from importlib.metadata import version

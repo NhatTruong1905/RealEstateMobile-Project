@@ -1,4 +1,3 @@
-"""Public answer text normalization."""
 import re
 
 def clean_output_text(text: str) -> str:
