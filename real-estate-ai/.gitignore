@@ -208,3 +208,11 @@ __marimo__/
 
 
 vector_database/
+models/*/
+models/*.safetensors
+models/*.bin
+models/*.gguf
+.venv-models/
+.venv-linux/
+.env.*
+!.env.example

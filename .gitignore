@@ -33,5 +33,4 @@ key.properties
 
 # Local agent instructions and skills
 /AGENTS.md
-/.agents/
 /docs/agent-rules/

@@ -110,7 +110,17 @@ def filter_documents(docs, search_query):
                 continue
 
         if budget is not None:
-            doc_price = extract_price(content_lower)
+            if doc.metadata.get("source_kind") == "backend":
+                try:
+                    from decimal import Decimal, InvalidOperation
+                    amount = Decimal(str(doc.metadata.get("price_vnd", "")))
+                    if not amount.is_finite() or amount < 0:
+                        continue
+                    doc_price = amount
+                except (InvalidOperation, ValueError):
+                    continue
+            else:
+                doc_price = extract_price(content_lower)
             if doc_price is not None and doc_price > budget:
                 continue
 

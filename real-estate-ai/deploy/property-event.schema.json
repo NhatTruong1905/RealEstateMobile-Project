@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Property indexing event v1",
+  "type": "object",
+  "required": ["eventId", "propertyId", "aggregateVersion", "operation", "occurredAt", "schemaVersion"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "eventId": {"type": "string", "format": "uuid"},
+    "propertyId": {"type": "string", "pattern": "^[1-9][0-9]{0,9}$"},
+    "aggregateVersion": {"type": "integer", "minimum": 1},
+    "operation": {"enum": ["upsert", "delete"]},
+    "occurredAt": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": true
+}

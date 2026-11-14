@@ -17,16 +17,30 @@ def check_setup(settings: Settings):
                        "action": "" if ok else action})
 
     add("gemini_profile", settings.llm_provider == "gemini", "Set LLM_PROVIDER=gemini")
-    add("google_api_key", configured(settings.google_api_key), "Set GOOGLE_API_KEY in backend .env locally")
+    add("google_api_key", configured(settings.google_llm_api_key or settings.google_api_key) and
+        configured(settings.google_embedding_api_key or settings.google_api_key), "Set GOOGLE_API_KEY or separate GOOGLE_LLM_API_KEY / GOOGLE_EMBEDDING_API_KEY locally")
     add("gemini_model", configured(settings.llm_model), "Set GEMINI_LLM_MODEL to an ID available in your AI Studio project")
     add("qdrant_profile", settings.vector_provider == "qdrant", "Set VECTOR_STORE_PROVIDER=qdrant")
-    try:
-        source = read_source(settings.source_path)
-        valid_source = bool(source)
-    except (OSError, ValueError, TypeError, AttributeError):
-        valid_source = False
-    add("dev_source", valid_source, "Set INDEX_SOURCE_JSON=./data/listings_mock.json")
-    add("mock_collection", settings.collection.endswith("_mock"), "Use a separate QDRANT_COLLECTION ending in _mock for fixture data")
+    if settings.source_provider == "mock":
+        try:
+            source = read_source(settings.source_path)
+            valid_source = bool(source)
+        except (OSError, ValueError, TypeError, AttributeError):
+            valid_source = False
+        add("dev_source", valid_source, "Set INDEX_SOURCE_JSON=./data/listings_mock.json")
+        add("mock_collection", settings.collection.endswith("_mock"), "Use a separate QDRANT_COLLECTION ending in _mock for fixture data")
+    else:
+        add("backend_source", configured(settings.property_api_token), "Set PROPERTY_API_TOKEN and PROPERTY_API_URL")
+        add("live_collection", not settings.collection.endswith("_mock"), "Use a non-mock collection for real properties")
+        from rag.messaging import BrokerSettings
+        try:
+            BrokerSettings.from_env()
+            valid_broker = True
+        except ValueError:
+            valid_broker = False
+        add("rabbitmq_config", valid_broker, "Set RABBITMQ_URL; this offline check does not connect")
+    if settings.qdrant_url.startswith("https://"):
+        add("qdrant_cloud_key", configured(settings.qdrant_api_key), "Set cluster Database API key, not management key")
     add("embedding_smoke", Path("vector_database/embedding-smoke.json").is_file(),
         "After confirming budget, run python -m rag.dev gemini-smoke --allow-api-calls")
     add("parent_state", Path(settings.state_path).is_file(),

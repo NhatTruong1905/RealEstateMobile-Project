@@ -18,6 +18,8 @@ import java.util.List;
 @Entity
 @Table(name = "property")
 public class PropertyEntity extends BaseEntity {
+    @Column(name = "index_version", nullable = false)
+    private long indexVersion = 1;
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)

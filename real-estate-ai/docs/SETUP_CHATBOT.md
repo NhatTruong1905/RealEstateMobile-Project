@@ -1,84 +1,39 @@
-# Thiết lập chatbot Gemini / Qdrant / vLLM
+# Bắt đầu với chatbot AI
 
-## 1. Cấu hình Gemini trên máy của bạn
+Cập nhật 14/11/2026. Hướng dẫn thao tác đầy đủ: [SETUP_FULL_STACK.md](SETUP_FULL_STACK.md). Các kết quả đã kiểm chứng và phần còn thiếu: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
-Mở [Google AI Studio – API Keys](https://aistudio.google.com/apikey), chọn project dev và tạo key. Xem model mà project được phép sử dụng cùng quota/giá trước khi chọn. Hướng dẫn Google: [API key](https://aistudio.google.com/docs/api-key), [model](https://aistudio.google.com/docs/models), [giá](https://ai.google.dev/gemini-api/docs/pricing).
+## Cấu hình đã chọn
 
-Mở `real-estate-ai/.env` bằng editor, **giữ các cấu hình đang có**, thêm hoặc cập nhật từng biến dưới đây. Không gửi key vào chat và không copy đè `.env` hiện có bằng `.env.example`.
+| Thành phần | Hiện tại |
+|---|---|
+| LLM / embedding | Gemini API, key nằm trong `.env` của service |
+| Vector DB | Qdrant Cloud, Database API key của cluster |
+| Đồng bộ property | RabbitMQ Cloud qua AMQPS, backend outbox → AI worker |
+| Rerank dev | Qwen3-Reranker-0.6B qua vLLM local |
+| Rerank production | Sẽ chuyển sang provider API sau khi xác minh contract; chưa đổi hiện tại |
 
-```dotenv
-LLM_PROVIDER=gemini
-GOOGLE_API_KEY=<key nhập trực tiếp ở máy bạn>
-GEMINI_LLM_MODEL=<model ID khả dụng cho project của bạn>
-GEMINI_EMBEDDING_MODEL=models/gemini-embedding-001
-VECTOR_STORE_PROVIDER=qdrant
-QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=
-QDRANT_COLLECTION=realestate_gemini_dev_v1_mock
-QDRANT_STATE_PATH=./vector_database/qdrant-dev-mock.sqlite3
-INDEX_SOURCE_JSON=./data/listings_mock.json
-RERANK_ENABLED=false
-```
-
-Giữ một tên key là `GOOGLE_API_KEY`; ứng dụng dùng nó cho cả LLM và embedding. Kiểm tra offline hiện thấy biến key đã có giá trị, nhưng **chưa kiểm chứng key hợp lệ hoặc quota**. Còn thiếu model và nguồn/collection dev. `.env` đã được Git ignore; không sửa key thật trong quá trình refactor.
-
-## 2. Chuẩn bị Qdrant
-
-Qdrant là nơi lưu vector, không phải nơi lấy dữ liệu tin đăng. Bạn cần endpoint; chỉ Qdrant Cloud/server có auth mới cần database API key. Không nhập key Gemini vào Qdrant.
-
-**Docker local:** mở Docker Desktop và chờ Engine chạy. Kiểm tra `docker version` có phần Server. Tại lần kiểm tra này CLI có sẵn nhưng daemon chưa chạy. Bước tiếp theo là chọn/pin image Qdrant, tạo volume bền vững và chỉ mở cổng `127.0.0.1:6333`. Lệnh tham khảo và cách dừng/chạy lại ở [README_GEMINI_DEV.md](README_GEMINI_DEV.md#qdrant-local-và-network); chưa có server image được smoke test trên máy này. Không xóa container/volume hiện hữu.
-
-**Qdrant Cloud:** làm theo [Cloud Quickstart](https://qdrant.tech/documentation/cloud-quickstart/), tạo cluster dev trong gói/vùng bạn chọn. Copy cluster endpoint HTTPS và database API key vào `QDRANT_URL` / `QDRANT_API_KEY` trong `.env`. Dùng database key có quyền đọc/ghi collection phục vụ sync; management key quản lý Cloud không thay cho database key. Giữ tên collection `_mock` trong giai đoạn thử.
-
-Chưa cần tự tạo vector dimension hay upload vector. Script đo dimension bằng Gemini smoke rồi tạo collection tương thích. Bản hiện tại dùng fixture JSON; nguồn tin thật cần adapter xác nhận trạng thái/quyền xem từ backend trước khi chuyển sang dữ liệu thật. Không đổi nhãn dữ liệu thật thành `kind=mock` để bỏ qua bước này. SQLite chứa parent/mapping phải được giữ và backup cùng collection Qdrant.
-
-## 3. Kiểm tra và chạy
-
-PowerShell, dùng đúng virtualenv **trong `real-estate-ai`**, không dùng `.venv` ở root:
+Cài dependency từ duy nhất `requirements.txt`, chạy trong `real-estate-ai/`:
 
 ```powershell
-cd D:\RealEstateMobile-Project\real-estate-ai
-.\.venv\Scripts\python.exe -m rag.dev setup-check
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Lệnh này không gọi mạng/API, không in giá trị key. Exit code 1 nghĩa là còn mục cần cấu hình. `configured_offline` chỉ xác nhận điều kiện offline, không chứng minh dịch vụ thật hoạt động.
+Giữ `.env` đang có, đối chiếu `.env.example` và bổ sung URL/key theo [mục 2](SETUP_FULL_STACK.md#2-điền-env-lấy-ở-đâu). Không copy đè key cũ, không gửi key qua chat. `scripts/`, `tests/`, `postman/` đã được gỡ; không còn bước chạy script tải model hoặc pytest trong quy trình setup hiện tại.
 
-Sau khi bạn tự xác nhận ngân sách/quota và Qdrant sẵn sàng, chạy theo thứ tự:
+## Trình tự thực hiện
 
-```powershell
-.\.venv\Scripts\python.exe -m rag.dev gemini-smoke --allow-api-calls
-.\.venv\Scripts\python.exe -m rag.dev sync --allow-api-calls --limit 3 --max-chunks 10
-.\.venv\Scripts\python.exe -m rag.dev qdrant-check
-.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
-```
+1. Điền Gemini model/key, Qdrant Cloud URL/Database API key và RabbitMQ Cloud AMQPS URL. Broker không chạy trong Docker.
+2. Áp dụng migration backend theo DB thực tế, cấu hình `PROPERTY_API_TOKEN` chung và profile `chatbot-index` theo mục 3 hướng dẫn chính.
+3. Kiểm tra broker bằng `python -m rag.broker check`; lệnh kết nối thật và khai báo topology. Bật outbox publisher khi broker/migration sẵn sàng.
+4. Chạy `setup-check`, Gemini smoke và `sync-backend` batch nhỏ theo mục 6. Smoke/sync gọi Gemini có thể tính phí; kiểm tra ngân sách trước khi dùng flag `--allow-api-calls`.
+5. Khởi động worker để nhận duyệt/sửa/gỡ property. Tiếp tục snapshot bằng `next_after`, không tăng cursor vượt lỗi.
+6. Xử lý driver/dung lượng Docker, khởi động vLLM local và chạy `rerank-check` trước khi bật `RERANK_ENABLED=true`.
+7. Khởi động API sau khi index/state sẵn sàng; kiểm tra chat/stream và tin bị gỡ với dữ liệu thật.
 
-Chỉ đi tiếp khi lệnh trước thành công. Smoke/sync có gọi Gemini và có thể tính phí. Seed 3 bản ghi chỉ là batch đầu; xem `remaining` và dùng `--offset` cho batch tiếp theo. API khởi động không tự seed/re-embed. Thử chat tại `http://127.0.0.1:8000/docs`; endpoint giữ nguyên `/api/chat-rag` và `/api/chat-rag/stream`.
+Windows đang có giới hạn native gRPC DLL tại lần kiểm thử trước: dùng Linux/WSL hoặc profile `app` của Compose theo hướng dẫn chính. Đây là tùy chọn chạy ứng dụng, không tạo broker RabbitMQ local. Không khởi động API để tự embed toàn bộ dữ liệu.
 
-## 4. Reranker
+## Sau này dùng API rerank
 
-Giữ `RERANK_ENABLED=false` để hoàn tất Gemini/Qdrant trước. Máy có RTX 4050 Laptop 6141 MiB, driver 560.94; chưa có bằng chứng vLLM/Qwen chạy đúng template hoặc vừa VRAM. vLLM cài trong WSL/Linux riêng, không cài vào virtualenv API Windows. Xem [hướng dẫn vLLM và phần chưa nghiệm thu](README_GEMINI_DEV.md#vllm-local-phần-còn-thiếu). Chỉ bật rerank sau smoke thật; timeout/503 vẫn dùng danh sách đã lọc ban đầu.
+Đổi `RERANK_BASE_URL`, `RERANK_MODEL`, `RERANK_API_KEY`; với Compose phải đổi thêm `RERANK_CONTAINER_BASE_URL`. Xác minh contract, smoke provider có kiểm soát quota rồi mới bật rerank và khởi động lại API. Quy trình và bảng dọn tài nguyên nằm ở [mục 7](SETUP_FULL_STACK.md#7-chuyển-production).
 
-## 5. Cấu trúc để mở rộng
-
-| File | Trách nhiệm |
-| --- | --- |
-| `rag/config.py` | Đọc và kiểm tra cấu hình |
-| `rag/providers.py` | Tạo client LLM/embedding theo provider |
-| `rag/embedding_contract.py` | Manifest tương thích embedding |
-| `rag/source.py` | Kiểm tra schema nguồn dữ liệu dev |
-| `rag/retriever.py` | Chọn/nạp retriever, không index ở startup |
-| `rag/qdrant_store.py` | Lưu/tìm child vector và parent bền vững, sync có version |
-| `rag/filters.py` | Nhận diện lời chào, lọc và loại trùng tin |
-| `rag/reranker.py` | HTTP rerank, deadline, giới hạn đồng thời, fallback |
-| `rag/context.py` | Retrieval → xác minh nguồn → lọc → rerank → giới hạn context |
-| `rag/conversation.py` | Lịch sử có giới hạn và structured intent |
-| `rag/prompts.py` | Prompt tư vấn |
-| `rag/output.py` | Chuẩn hóa text trả lời |
-| `rag/pipeline.py` | Ghép các thành phần và chạy chat sync/stream |
-| `rag/setup_check.py` | Chẩn đoán offline, không mạng hoặc xuất secret |
-| `rag/dev.py` | CLI smoke/sync/check chủ động |
-| `rag/benchmark.py` | So sánh chất lượng/thời gian rerank trên bộ nhãn |
-
-Thêm provider ở factory; thêm nguồn nghiệp vụ bằng adapter có xác nhận quyền; giữ transport Kafka tương lai tách khỏi logic sync. Các export cũ từ `rag.config`, `rag.pipeline`, `rag.qdrant_store` vẫn được giữ để tránh phá caller hiện có.
-
-Kiểm chứng ngày 04/11/2026: test local và HTTP simulation không thay thế nghiệm thu Gemini, Qdrant server hoặc vLLM thật. Xem evidence cập nhật trong README.
+Template `deploy/qwen3_reranker.jinja`, model local và service vLLM có thể bỏ khi không cần local/rollback nữa. `deploy/property-event.schema.json` là contract RabbitMQ nên giữ hoặc chuyển nơi khác; chỉ bỏ cả thư mục `deploy/` sau khi cập nhật các tham chiếu tương ứng.

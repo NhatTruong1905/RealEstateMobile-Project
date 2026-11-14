@@ -15,18 +15,21 @@ class Reranker:
         self.transport = transport
         self.slots = threading.BoundedSemaphore(settings.concurrency)
         self.executor = ThreadPoolExecutor(max_workers=settings.concurrency, thread_name_prefix="rerank")
+        self.client = httpx.Client(timeout=settings.timeout, transport=transport, trust_env=False,
+                                   limits=httpx.Limits(max_connections=settings.concurrency,
+                                                      max_keepalive_connections=settings.concurrency))
         base = settings.rerank_base_url.rstrip("/")
         self.endpoint = base + ("/rerank" if base.endswith("/v1") else "/v1/rerank")
 
     def _request(self, query, docs, timeout):
-        with httpx.Client(timeout=timeout, transport=self.transport, trust_env=False) as client:
-            response = client.post(self.endpoint, json={
-                "model": self.settings.rerank_model, "query": query[:4000],
-                "documents": [d.page_content[:self.settings.document_chars] for d in docs],
-                "top_n": min(self.settings.top_n, len(docs)),
-            })
-            response.raise_for_status()
-            rows = response.json()["results"]
+        headers = {"Authorization": "Bearer " + self.settings.rerank_api_key} if self.settings.rerank_api_key else {}
+        response = self.client.post(self.endpoint, headers=headers, timeout=timeout, json={
+            "model": self.settings.rerank_model, "query": query[:4000],
+            "documents": [d.page_content[:self.settings.document_chars] for d in docs],
+            "top_n": min(self.settings.top_n, len(docs)),
+        })
+        response.raise_for_status()
+        rows = response.json()["results"]
         expected = min(self.settings.top_n, len(docs))
         if not isinstance(rows, list) or len(rows) != expected:
             raise ValueError("result_count")
@@ -64,3 +67,4 @@ class Reranker:
 
     def close(self):
         self.executor.shutdown(wait=False, cancel_futures=True)
+        self.client.close()

@@ -1,6 +1,17 @@
 # RESEARCH AI CHATBOT
 
-Cập nhật: 01/11/2026. Phương án triển khai: **DeepSeek API + Qwen3 Embedding API + Qwen3 Reranker API + Qdrant + Kafka**.
+> Triển khai dev 14/11/2026: Gemini LLM/embedding + Qdrant Cloud + Qwen3-Reranker-0.6B qua vLLM + RabbitMQ Cloud. Xem [hướng dẫn chạy](../real-estate-ai/docs/SETUP_FULL_STACK.md) và [bằng chứng kiểm thử](../real-estate-ai/docs/IMPLEMENTATION_STATUS.md). Nội dung nghiên cứu API production bên dưới không đồng nghĩa đã triển khai toàn bộ.
+
+
+Cập nhật 14/11/2026. Cấu hình dev đã chọn: **Gemini LLM + Gemini Embedding + Qdrant Cloud + Qwen3-Reranker-0.6B qua vLLM local + RabbitMQ Cloud**. Khi production sẽ dùng key production và có thể thay rerank local bằng API. DeepSeek/Qwen API trong các sơ đồ nghiên cứu bên dưới là phương án ứng viên, không phải provider production đã chốt.
+
+### Quyết định chuyển rerank local sang API
+
+- Hiện tại giữ model 0.6B, service vLLM và `deploy/qwen3_reranker.jinja`; chưa chuyển provider trong lần sửa tài liệu này.
+- Khi chuyển: đổi `RERANK_BASE_URL`, `RERANK_MODEL`, `RERANK_API_KEY`; nếu chạy API bằng Compose phải đổi cả `RERANK_CONTAINER_BASE_URL` vì biến này override base URL của container.
+- Client hiện dùng Bearer auth và `/v1/rerank`; provider khác schema/auth/path cần adapter. Không giả định chỉ đổi key là tương thích. Kiểm tra thật rồi mới bật `RERANK_ENABLED=true`.
+- Sau chuyển hoàn toàn có thể bỏ template, model và service/volume vLLM local. `deploy/property-event.schema.json` là contract RabbitMQ, vẫn giữ hoặc chuyển nơi khác; không phụ thuộc provider rerank.
+- Hướng dẫn chi tiết: [kế hoạch hiện hành](PLAN_GEMINI_VLLM_RERANK_DEV.md) và [mục 7 của setup service](../real-estate-ai/docs/SETUP_FULL_STACK.md#7-chuyển-production).
 
 Tài liệu phân biệt phần đã có trong mã và phần cần triển khai. Các cấu hình/model/K là ứng viên thực nghiệm, chưa phải kết quả tối ưu. Lần chỉnh này chỉ sửa tài liệu.
 
@@ -14,7 +25,7 @@ Trọng tâm khóa luận: hybrid retrieval có bộ lọc nghiệp vụ và Ada
 
 ## 2. Hiện trạng và các cải tiến cần triển khai
 
-Hiện trạng dựa trên lần đọc mã ngày 01/11/2026, chưa chạy benchmark. Nguồn: `real-estate-ai/rag/pipeline.py`, `api/schemas.py`, `api/routes.py` và Flutter `RagChatService.dart`.
+Bảng dưới là baseline nghiên cứu từ lần đọc mã ngày 01/11/2026, không phải hiện trạng dev sau tích hợp ngày 14/11/2026. Trạng thái hiện hành nằm ở các tài liệu liên kết phía trên; benchmark chất lượng thật chưa được nghiệm thu. Nguồn: `real-estate-ai/rag/pipeline.py`, `api/schemas.py`, `api/routes.py` và Flutter `RagChatService.dart`.
 
 | Nhóm | Đã có trong mã | Cải tiến cần triển khai | Tác dụng |
 |---|---|---|---|
@@ -25,7 +36,7 @@ Hiện trạng dựa trên lần đọc mã ngày 01/11/2026, chưa chạy bench
 | Top-K | Fixed k=25 child chunks | Năm tầng Top-K, mở rộng ứng viên trong budget | Điều chỉnh chất lượng/độ trễ/chi phí |
 | Ranking | Chưa có reranker chuyên dụng | Qwen3 Reranker, loại trùng; MMR khi có lợi | Xếp lại theo toàn bộ yêu cầu, giảm danh sách lặp |
 | Hội thoại | Ghép history, tóm tắt tiêu chí bằng schema | State server với SET/REMOVE/RESET | Cập nhật yêu cầu rõ ràng, không giữ nhầm điều kiện cũ |
-| Cập nhật dữ liệu | Nạp Markdown và tái sử dụng index đã lưu | Outbox → Kafka → indexing consumer → upsert/delete | Đồng bộ tin và replay sự kiện trong retention |
+| Cập nhật dữ liệu | Nạp Markdown và tái sử dụng index đã lưu | Outbox → RabbitMQ → worker → upsert/delete | Retry/DLQ, rebuild từ nguồn chuẩn |
 | Câu trả lời | Prompt hướng dẫn, text/stream text | Validate dữ kiện, evidence, structured response | Hiển thị đúng property cards và nguồn lý do |
 | Đánh giá | Chưa có benchmark được xác nhận | Dataset, baseline, ablation, latency/cost reports | Chứng minh hiệu quả từng cải tiến |
 
@@ -69,13 +80,13 @@ flowchart TB
     WRITE --> DB
     WRITE --> OB[(Outbox trong cùng transaction)]
     OB --> PUB[Outbox Publisher hoặc CDC]
-    PUB --> KAFKA[Kafka: property-events, key propertyId]
-    KAFKA --> IDX[AI Indexing consumer group: normalize, chunk, version, hash]
-    KAFKA -.-> REC[Recommendation consumer group: mở rộng]
-    KAFKA -.-> ANALYTICS[Analytics consumer group: mở rộng]
+    PUB --> MQ[RabbitMQ: property.events.v1 exchange]
+    MQ --> IDX[Queue ai.property.index.v1: AI indexing workers]
+    MQ -.-> REC[Recommendation queue riêng: mở rộng]
+    MQ -.-> ANALYTICS[Analytics queue riêng: mở rộng]
     IDX --> EMB
     IDX --> Q
-    IDX --> DLQ[Retry policy và dead-letter topic]
+    IDX --> DLQ[Retry policy và dead-letter queue]
     MON[Trace, latency, cost và freshness] -.-> ORCH
     MON -.-> IDX
     EVAL[Dataset, benchmark và ablation] -.-> SEARCH
@@ -89,7 +100,7 @@ flowchart TB
 - Web cấu hình CORS theo origin được phép và auth theo contract; không nhúng API key provider vào bundle trình duyệt. Flutter cũng không giữ key provider.
 - BM25 sparse phải có encoder và policy IDF; collection sparse không tự tạo BM25.
 - Auth/Property API tái sử dụng hệ thống hiện có; DB và PostGIS chỉ thay đổi qua migration được kiểm chứng.
-- Kafka lưu domain events; mỗi chức năng độc lập dùng consumer group riêng. Recommendation/Analytics là hướng mở rộng; chi tiết lựa chọn Kafka ở mục 8.3.
+- RabbitMQ phân phối sự kiện tới queue riêng từng chức năng; xem contract mục 8.3.
 
 ### 3.2. Luồng tìm kiếm và trả lời
 
@@ -132,8 +143,8 @@ Exact ID/greeting có fast path; không bắt buộc đi qua mọi stage. Nếu 
 flowchart LR
     CHANGE[Thêm, sửa, gỡ tin] --> TX[Ghi DB và Outbox cùng transaction]
     TX --> PUB[Outbox Publisher hoặc CDC]
-    PUB --> EVENT[Kafka property-events: key propertyId]
-    EVENT --> CONSUMER[AI Indexing consumer group]
+    PUB --> EVENT[RabbitMQ exchange v? queue indexing]
+    EVENT --> CONSUMER[AI indexing worker]
     CONSUMER --> VER[Kiểm tra eventId, version và tombstone]
     VER --> OP{Thao tác}
     OP -->|Gỡ hoặc xóa| DEL[Xóa vector, giữ version ledger]
@@ -145,8 +156,8 @@ flowchart LR
     DEL --> QD[(Qdrant)]
     UPSERT --> QD
     PAYLOAD --> QD
-    QD --> OFFSET[Commit offset sau khi ghi thành công]
-    FAIL[Retry, dead-letter topic và reconcile] -.-> VER
+    QD --> ACK[ACK sau khi Qdrant và state hoàn tất]
+    FAIL[Retry, dead-letter queue và reconcile] -.-> VER
 ```
 
 Re-index: snapshot watermark → build collection mới → catch-up → verify/benchmark → đổi alias. Index cũ được giữ và cập nhật trong rollback window. Các kiểm soát concurrency/version chi tiết ở mục 8.1.
@@ -222,11 +233,11 @@ Sau rerank có thể loại near-duplicates và dùng MMR để cân bằng liê
 
 ### 8.1. Cập nhật index
 
-- Transactional Outbox lưu cùng transaction với thay đổi property; publisher hoặc CDC chuyển sự kiện sang Kafka. Không ghi DB và publish Kafka như hai thao tác độc lập không có cơ chế khôi phục; không giả định email outbox hiện có dùng được ngay.
+- Transactional Outbox lưu cùng transaction với thay đổi property; publisher hoặc CDC chuyển sự kiện sang RabbitMQ. Không ghi DB và publish RabbitMQ như hai thao tác độc lập không có cơ chế khôi phục; không giả định email outbox hiện có dùng được ngay.
 - Event có eventId, propertyId, aggregateVersion, operation, occurredAt, schemaVersion.
 - Worker normalize → chunk → embedding phần đổi → upsert/delete. Hash tách nội dung embedding với payload; không embed lại nếu chỉ payload thay đổi.
-- Key bằng propertyId và xử lý tuần tự trong partition hoặc kiểm soát concurrency tương đương. Consumer idempotent, chỉ commit offset liên tục đã xử lý thành công; chặn version cũ và giữ tombstone sau delete/unpublish. Không commit vượt bản ghi chưa hoàn tất.
-- Xóa chunks dư khi layout đổi; retry/backoff, dead-letter topic, replay và reconcile định kỳ; test duplicate/out-of-order/crash. Xử lý lặp vẫn có thể xảy ra nếu ghi Qdrant thành công nhưng chưa commit offset.
+- Kiểm soát concurrency theo propertyId; idempotency, version/tombstone và manual ACK sau khi ghi Qdrant/state thành công; xem mục 8.3.
+- Xóa chunks dư khi layout đổi; retry/backoff, dead-letter queue, replay và reconcile định kỳ; test duplicate/out-of-order/crash. Xử lý lặp vẫn có thể xảy ra nếu ghi Qdrant thành công nhưng chưa ACK.
 - Re-index dùng snapshot watermark, catch-up/dual-write có kiểm soát, verify count/hash/visibility rồi đổi alias. Index cũ phải được cập nhật hoặc replay trước rollback.
 
 ### 8.2. State nhiều lượt
@@ -244,35 +255,23 @@ State lưu typed constraints, hard/soft, sourceMessageId, explicit/inferred, con
 
 Server kiểm tra chủ sở hữu conversation; client history không là nguồn trạng thái duy nhất. Phân biệt không có tin, thiếu bằng chứng, kết quả một phần và lỗi dịch vụ.
 
-### 8.3. Lựa chọn Kafka cho backend microservices
+### 8.3. RabbitMQ cho đồng bộ property → Qdrant
 
-**Quyết định:** dùng Kafka cho luồng domain events, thay phương án RabbitMQ trong thiết kế trước. Request tìm kiếm tương tác vẫn dùng HTTP/JSON/SSE; không đưa mọi lời gọi chatbot qua Kafka.
+**Quyết định 14/11/2026:** dùng RabbitMQ thay Kafka. Đây là kiến trúc đích, chưa triển khai broker/publisher/consumer trong lần cập nhật tài liệu này. Chat tương tác vẫn dùng HTTP/JSON/SSE.
 
-Lợi thế so với cách dùng RabbitMQ classic/quorum queues trong phương án cũ:
+Luồng: duyệt property → ghi DB và indexing outbox cùng transaction → publisher → RabbitMQ → AI worker → hydrate từ backend → embedding → Qdrant và parent/version state → ACK.
 
-| Yêu cầu của dự án | Lợi thế của Kafka | Áp dụng |
-|---|---|---|
-| Nhiều service đọc cùng sự kiện | Consumer groups có offset độc lập | Indexing, recommendation, analytics đọc cùng property-events |
-| Thử index mới hoặc khôi phục consumer | Replay theo offset trong retention | Catch-up collection mới, chạy lại dữ liệu chưa xử lý |
-| Xử lý thay đổi cùng bất động sản | Key theo propertyId, thứ tự trong từng partition | Giảm rủi ro update/delete bị xử lý đảo thứ tự |
-| Mở rộng indexing | Partition và consumer group cho phép chia tải | Tăng consumer theo partition và quota embedding |
-| Mở rộng nghiên cứu | Dùng lại event stream cho pipeline và đo consumer lag | Đánh giá độ trễ đồng bộ, phục hồi, chi phí replay |
+- Exchange topic `property.events.v1`, queue `ai.property.index.v1`; routing keys `property.approved`, `property.updated`, `property.unpublished`, `property.deleted`.
+- Event có `eventId`, `propertyId`, `aggregateVersion`, `operation`, `occurredAt`, `schemaVersion` và tham chiếu nguồn. Worker kiểm tra trạng thái/quyền công khai từ backend có xác thực; không tin payload cũ. Lỗi nguồn tạm thời phải retry, không index dữ liệu chưa xác minh.
+- Persistent messages, durable exchange/queue; publisher confirms cùng mandatory/returned-message handling. Chỉ đánh dấu outbox đã gửi khi broker xác nhận và không có lỗi routing. Timeout có thể gây gửi lại.
+- Các replica indexing chia tải cùng queue; recommendation/analytics nếu cần phải có queue riêng, tránh giành message indexing. Production chọn quorum queue/replication theo yêu cầu chịu lỗi; dev một broker chưa chứng minh độ bền production.
+- Manual ACK sau khi Qdrant và parent/version state hoàn tất bền vững. At-least-once có thể xử lý lặp nếu crash trước ACK; giữ ID ổn định, event dedup, content hash, version ledger và tombstone. Không có transaction end-to-end giữa DB, RabbitMQ, embedding API và Qdrant.
+- Retry/redelivery và nhiều worker có thể đảo thứ tự. Tuần tự hóa hoặc khóa theo property khi ghi và kiểm tra version trong vùng bảo vệ; check version trước gọi embedding là chưa đủ chống race. Gỡ tin phải xóa chunks và giữ tombstone, không để upsert cũ khôi phục tin.
+- Giới hạn prefetch/concurrency theo quota embedding. Retry có backoff/số lần tối đa; hết lượt hoặc lỗi vĩnh viễn chuyển `ai.property.index.dlq.v1`. Republish retry/DLQ phải được confirm và route hợp lệ trước ACK bản gốc; không requeue vô hạn. Nếu dùng broker dead-lettering, phải kiểm chứng độ bền bàn giao theo loại queue/cấu hình.
+- Queue thông thường không giữ lịch sử sau ACK. Rebuild bằng snapshot DB/Property API; đăng ký nhận cập nhật trước snapshot rồi catch-up/reconcile theo version. Redrive DLQ có kiểm soát; tái dùng embedding theo content hash và embedding contract.
+- Theo dõi outbox backlog, queue depth, tuổi message, unacked, retry/DLQ, index freshness và chi phí API. Test duplicate, out-of-order, crash sau upsert/trước ACK, restart, lỗi broker/embedding/Qdrant và tin bị thu hồi.
 
-Đây là lựa chọn phù hợp với nhu cầu event streaming của dự án, chưa phải kết luận Kafka nhanh hơn hoặc tiết kiệm hơn. RabbitMQ cũng có Streams/Super Streams hỗ trợ log và replay; Kafka không độc quyền các khả năng đó. Nguồn: [Kafka introduction](https://kafka.apache.org/intro/), [Kafka documentation](https://kafka.apache.org/documentation/), [RabbitMQ Streams](https://www.rabbitmq.com/docs/streams).
-
-**Hợp đồng triển khai:**
-
-- Topic đề xuất `property-events.v1`, key=`propertyId`; group indexing `ai-property-indexer-v1`. Payload gồm eventId, aggregateVersion, operation, schemaVersion và dữ liệu cần thiết hoặc nguồn để hydrate. Schema evolution phải tương thích.
-- Các replica cùng chức năng dùng chung group để chia tải; chức năng khác dùng group khác. Một group mới dùng để build index riêng không được giành partition với group đang phục vụ index hiện hành.
-- Kafka chỉ bảo đảm thứ tự trong partition theo thứ tự ghi, không tự sắp theo business version. Publisher phải giữ thứ tự theo property; thay số partition có kế hoạch vì có thể đổi ánh xạ key. Version checks vẫn bắt buộc.
-- Xử lý mặc định theo at-least-once; Kafka transaction không biến HTTP embedding và Qdrant thành một transaction end-to-end. Dùng idempotency/content hash/version ledger, chỉ commit offset sau khi lưu kết quả thành công.
-- Retry có backoff, giới hạn và policy lỗi vĩnh viễn. Nếu retry tại chỗ, pause partition có kiểm soát và vẫn duy trì polling/heartbeat theo client; nếu chuyển retry topic, phải xử lý nguy cơ đảo thứ tự bằng version/tombstone. Chỉ commit bản ghi lỗi sau khi handoff sang dead-letter topic đã được xác nhận bền vững và có kế hoạch khắc phục.
-- Retention theo cửa sổ khôi phục, dung lượng và dữ liệu cá nhân; replay không khôi phục sự kiện đã hết retention. Full bootstrap lấy snapshot từ DB/Property API rồi catch-up, không phụ thuộc Kafka lưu toàn bộ lịch sử vô hạn. Replay vào index mới phải xử lý sự kiện payload-only bằng snapshot/cache hoặc hydrate đủ dữ liệu gốc.
-- Tái dùng embedding theo content hash và embedding contract để replay không gọi API lại vô ích; giới hạn batch/concurrency theo quota provider.
-- Chốt partition count, replication, acks, min.insync.replicas và producer idempotence phù hợp độ bền cần thiết. Dev một broker không chứng minh khả năng chịu lỗi production. Cấu hình consumer polling và thời gian xử lý phù hợp độ trễ API.
-- Theo dõi consumer lag, tuổi sự kiện chưa xử lý, index freshness, rebalance, dead-letter count, disk/retention và API cost. Test crash sau upsert/trước commit, consumer restart, replay và sự kiện gỡ tin.
-
-Phạm vi lần sửa tài liệu: cập nhật kiến trúc và contract; chưa cài Kafka, chưa thay cấu hình backend hoặc triển khai consumer.
+Nguồn: [RabbitMQ confirms](https://www.rabbitmq.com/docs/confirms), [RabbitMQ reliability](https://www.rabbitmq.com/docs/reliability), [Qdrant points](https://qdrant.tech/documentation/manage-data/points/).
 
 ## 9. Cải tiến câu trả lời, giao diện và vận hành
 
@@ -600,7 +599,7 @@ Observability, privacy, rate-limit, redaction và security regression bắt đ�
 - [ ] Key backend được bảo vệ, đúng provider/region; model/dimension/rerank schema được smoke kiểm tra.
 - [ ] Refactor giữ legacy API; lifecycle không khởi tạo index tốn phí mỗi lần restart.
 - [ ] Chunk theo đúng property, vector/payload version rõ, update/delete/out-of-order/crash có test.
-- [ ] Kafka topic/key/group, Outbox publisher, offset commit, retention, retry/dead-letter và replay được kiểm chứng; không lặp embedding ngoài budget.
+- [ ] RabbitMQ exchange/queue, outbox, confirms/returns, manual ACK, retry/DLQ, version/tombstone và rebuild từ nguồn chuẩn được kiểm chứng.
 - [ ] Hard filters áp dụng nhất quán mọi nhánh và hydrate lại trước trả về.
 - [ ] State thêm/sửa/xóa/reset, ownership, result reference, cursor và request dedup có test.
 - [ ] Rerank/MMR/Adaptive K có ablation, budget và fallback; không dùng score như xác suất vô căn cứ.

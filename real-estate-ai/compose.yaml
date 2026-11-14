@@ -1,0 +1,63 @@
+name: realestate-ai
+services:
+  api:
+    profiles: [app]
+    build: .
+    image: realestate-ai:local
+    env_file: .env
+    environment:
+      PROPERTY_API_URL: ${PROPERTY_API_CONTAINER_URL:-http://host.docker.internal:8080/api/internal/ai}
+      RERANK_BASE_URL: ${RERANK_CONTAINER_BASE_URL:-http://host.docker.internal:8001}
+    volumes:
+      - ./vector_database:/app/vector_database
+    ports:
+      - "127.0.0.1:8000:8000"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+  worker:
+    profiles: [app]
+    build: .
+    image: realestate-ai:local
+    env_file: .env
+    environment:
+      PROPERTY_API_URL: ${PROPERTY_API_CONTAINER_URL:-http://host.docker.internal:8080/api/internal/ai}
+    volumes:
+      - ./vector_database:/app/vector_database
+    command: ["python", "-m", "rag.worker"]
+    restart: unless-stopped
+  reranker:
+    profiles: [rerank]
+    image: vllm/vllm-openai:v0.21.0
+    gpus: all
+    ports:
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - ./models/Qwen3-Reranker-0.6B:/models/qwen:ro
+      - ./deploy/qwen3_reranker.jinja:/templates/qwen3_reranker.jinja:ro
+      - vllm-cache:/root/.cache/vllm
+    shm_size: 1gb
+    environment:
+      HF_HUB_OFFLINE: "1"
+      VLLM_API_KEY: ${RERANK_API_KEY:?Set RERANK_API_KEY in .env}
+    command:
+      - /models/qwen
+      - --served-model-name
+      - Qwen/Qwen3-Reranker-0.6B
+      - --runner
+      - pooling
+      - --hf-overrides
+      - '{"architectures":["Qwen3ForSequenceClassification"],"classifier_from_token":["no","yes"],"is_original_qwen3_reranker":true}'
+      - --chat-template
+      - /templates/qwen3_reranker.jinja
+      - --dtype
+      - half
+      - --max-model-len
+      - "2048"
+      - --max-num-seqs
+      - "1"
+      - --gpu-memory-utilization
+      - "0.85"
+      - --enforce-eager
+    restart: "no"
+volumes:
+  vllm-cache:

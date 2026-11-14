@@ -10,6 +10,8 @@ import java.util.Collection;
 import java.util.List;
 
 public interface PropertyRepository extends JpaRepository<PropertyEntity, Integer>, JpaSpecificationExecutor<PropertyEntity> {
+    @Query("select p from PropertyEntity p where p.id > :after order by p.id")
+    List<PropertyEntity> indexPage(@Param("after") Integer after, org.springframework.data.domain.Pageable page);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from PropertyEntity p where p.id = :id")
     java.util.Optional<PropertyEntity> findLockedById(@Param("id") Integer id);
