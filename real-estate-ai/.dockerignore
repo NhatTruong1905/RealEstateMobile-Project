@@ -2,7 +2,11 @@
 .idea
 __pycache__
 .venv
+.venv-linux
 *.pyc
 *.pyo
 *.log
 .env
+.env.*
+models
+vector_database

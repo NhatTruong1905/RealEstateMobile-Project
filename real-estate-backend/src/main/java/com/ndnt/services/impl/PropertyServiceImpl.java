@@ -57,6 +57,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Autowired private PropertyAccess access;
     @Autowired private PropertyMailOutbox mailOutbox;
+    @Autowired private PropertyIndexOutbox indexOutbox;
     @Autowired private UserRepository users;
     @Autowired private PropertyTypeRepository types;
     @Autowired private PropertyCategoryRepository categories;
@@ -66,6 +67,14 @@ public class PropertyServiceImpl implements PropertyService {
     }
     private boolean published(PropertyEntity property) {
         return StatusProperty.PUBLISHED.getStatus().equals(property.getStatus());
+    }
+    private List<Object> indexedFields(PropertyEntity p) {
+        return java.util.Arrays.asList(p.getTitle(),p.getDescription(),p.getAddress(),p.getCity(),p.getStatus(),
+                p.getLegal(),p.getDirection(),p.getBedroomCount(),p.getBathroomCount(),p.getFloorCount(),
+                p.getPrice()==null ? null : p.getPrice().stripTrailingZeros(),
+                p.getArea()==null ? null : p.getArea().stripTrailingZeros(),
+                p.getWard()==null ? null : p.getWard().getId(),p.getType()==null ? null : p.getType().getId(),
+                p.getCategory()==null ? null : p.getCategory().getId());
     }
     private PropertyDTO dto(PropertyEntity entity, boolean privateReview) {
         return dto(entity, privateReview, imageStorage.propertyImages(entity.getId()));
@@ -191,6 +200,7 @@ public class PropertyServiceImpl implements PropertyService {
             throw PropertyProblem.forbidden();
         boolean create = request.getId() == null;
         PropertyEntity entity = create ? new PropertyEntity() : locked(request.getId());
+        List<Object> previousIndexFields = indexedFields(entity);
         if (!create) {
             if (adminRoute) access.requireReviewer(actor, entity); else access.requireOwner(actor, entity);
             if (StatusProperty.DELETED.getStatus().equals(entity.getStatus()))
@@ -245,6 +255,8 @@ public class PropertyServiceImpl implements PropertyService {
         entity.setFloorCount(request.getFloorCount()); entity.setBedroomCount(request.getBedroomCount()); entity.setBathroomCount(request.getBathroomCount());
         entity.setDirection(request.getDirection());
 
+        boolean indexChanged = create || !previousIndexFields.equals(indexedFields(entity));
+        if (!create && indexChanged) entity.setIndexVersion(entity.getIndexVersion() + 1);
         propertyRepository.saveAndFlush(entity);
         List<String> existing = create ? List.of() : imageStorage.propertyImages(entity.getId());
         List<String> retained = existing;
@@ -258,6 +270,7 @@ public class PropertyServiceImpl implements PropertyService {
         for (String url : existing) if (!retained.contains(url)) imageStorage.retire(url);
         if (create) mailOutbox.enqueue(entity, "RECEIVED");
         else if (transitioned) mailOutbox.enqueue(entity, StatusProperty.REJECTED.getStatus().equals(desired) ? "REJECTED" : "APPROVED");
+        if (indexChanged) indexOutbox.enqueue(entity, transitioned && published(entity));
         return dto(entity, true, imageUrls);
     }
 
@@ -266,6 +279,8 @@ public class PropertyServiceImpl implements PropertyService {
         UserEntity actor = access.actor();
         PropertyEntity property = locked(id); access.requireReviewer(actor, property);
         property.setStatus(StatusProperty.DELETED.getStatus());
+        property.setIndexVersion(property.getIndexVersion() + 1);
+        indexOutbox.enqueue(property, false);
     }
 
     @Override
@@ -273,6 +288,8 @@ public class PropertyServiceImpl implements PropertyService {
         UserEntity actor = access.actor();
         PropertyEntity property = locked(id); access.requireOwner(actor, property);
         property.setStatus(StatusProperty.DELETED.getStatus());
+        property.setIndexVersion(property.getIndexVersion() + 1);
+        indexOutbox.enqueue(property, false);
     }
 
     @Override

@@ -1,2 +1,4 @@
-- [ ] Tích hợp Kafka vào hệ thống để xử lý sự kiện cập nhật trạng thái tin đăng.
-- [ ] Tích hợp gửi email cập nhật trạng thái tin đăng qua Kafka (tiếp nhận, chấp nhận, từ chối kèm lý do); gửi sau commit, có retry và chống gửi trùng.
+- [ ] Chatbot AI: RabbitMQ Cloud + transactional outbox đồng bộ Qdrant khi property được duyệt/sửa/gỡ; confirms, manual ACK, retry/DLQ và version/tombstone. Xem mục 8.3 trong `docs/RESEARCH_AI_CHATBOT.md`. Đã bổ sung mã; nghiệm thu live theo `real-estate-ai/docs/IMPLEMENTATION_STATUS.md`.
+- [ ] Đánh giá riêng transport gửi email trạng thái tin đăng (ngoài quyết định RabbitMQ cho chatbot); gửi sau commit, retry và chống gửi trùng.
+- [ ] Rerank dev: nghiệm thu Qwen3-Reranker-0.6B/vLLM local sau khi xử lý driver và dung lượng Docker.
+- [ ] Rerank production: chọn provider, xác minh contract/Bearer auth, đổi cấu hình host và Compose override, smoke rồi mới bật; khi bỏ hẳn local thì dọn template/model/service vLLM. Giữ hoặc chuyển schema RabbitMQ trước khi bỏ `deploy/`. Xem mục 7 trong `real-estate-ai/docs/SETUP_FULL_STACK.md`.

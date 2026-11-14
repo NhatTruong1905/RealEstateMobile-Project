@@ -11,6 +11,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient, models
 
 from rag.source import read_source
+from rag.property_source import PropertySource, validate_record
 from rag.embedding_contract import embedding_contract
 
 log = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ def digest(value):
 class QdrantParentStore:
     def __init__(self, settings, embedding, client=None):
         self.settings, self.embedding = settings, embedding
+        self.source = PropertySource(settings)
         self.client = client or QdrantClient(url=settings.qdrant_url,
                                             api_key=settings.qdrant_api_key or None, timeout=10)
         Path(settings.state_path).parent.mkdir(parents=True, exist_ok=True)
@@ -67,6 +69,8 @@ class QdrantParentStore:
         elif create and not saved:
             self.client.create_collection(self.settings.collection, vectors_config=models.VectorParams(
                 size=contract["dimension"], distance=models.Distance.COSINE))
+            self.client.create_payload_index(self.settings.collection, field_name="parent_id",
+                                             field_schema=models.PayloadSchemaType.KEYWORD, wait=True)
         else:
             raise ValueError("Qdrant collection missing; refusing automatic rebuild")
         if not saved:
@@ -88,12 +92,24 @@ class QdrantParentStore:
                 log.error("sync status=failed reason=%s", type(exc).__name__)
         return result
 
-    def _sync_one(self, row, max_chunks):
+    def apply_property(self, row, max_chunks=100):
+        if self.settings.source_provider != "backend" or self.settings.collection.endswith("_mock"):
+            raise ValueError("Live indexing requires backend source and a non-mock collection")
+        validate_record(row)
+        self._sync_one(row, max_chunks, source_kind="backend")
+        return self.last_action
+
+    def _delete_stale(self, pid, points):
+        stale_filter = models.Filter(must=[models.FieldCondition(key="parent_id", match=models.MatchValue(value=pid))],
+                                    must_not=[models.HasIdCondition(has_id=points)] if points else None)
+        self.client.delete(self.settings.collection, points_selector=models.FilterSelector(filter=stale_filter), wait=True)
+
+    def _sync_one(self, row, max_chunks, source_kind="mock"):
         pid, version = row["id"], row["version"]
         text = row.get("text", "")
         content_hash = digest(text)
         document = json.dumps({"text": text, "metadata": {**row.get("metadata", {}),
-                               "source_id": pid, "source_kind": "mock", "source_version": version}}, ensure_ascii=False)
+                               "source_id": pid, "source_kind": source_kind, "source_version": version}}, ensure_ascii=False)
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             old = db.execute("SELECT version, hash, document, points, public FROM parents WHERE id=?", (pid,)).fetchone()
@@ -101,6 +117,7 @@ class QdrantParentStore:
                 if version == old[0] and (content_hash != old[1] or bool(row["public"]) != bool(old[4]) or document != old[2]):
                     raise ValueError("Changed record must increment version")
                 self.last_action = "skipped"
+                self._delete_stale(pid, json.loads(old[3]))
                 return
             old_points = json.loads(old[3]) if old else []
             points = []
@@ -119,24 +136,22 @@ class QdrantParentStore:
                     points = [str(uuid.uuid5(uuid.NAMESPACE_URL, f"{self.settings.collection}:{pid}:{content_hash}:{i}")) for i in range(len(chunks))]
                     self.client.upsert(self.settings.collection, points=[models.PointStruct(
                         id=point, vector=vector, payload={"parent_id": pid, "content_hash": content_hash,
-                                                        "chunk": chunk, "source_kind": "mock"})
+                                                        "chunk": chunk, "source_kind": source_kind})
                         for point, vector, chunk in zip(points, vectors, chunks)], wait=True)
             db.execute("INSERT OR REPLACE INTO parents VALUES (?, ?, ?, ?, ?, ?)",
                        (pid, version, content_hash, document, json.dumps(points), int(row["public"])))
-        stale_filter = models.Filter(must=[models.FieldCondition(key="parent_id", match=models.MatchValue(value=pid))],
-                                    must_not=[models.HasIdCondition(has_id=points)] if points else None)
-        self.client.delete(self.settings.collection, points_selector=models.FilterSelector(filter=stale_filter), wait=True)
+            self._delete_stale(pid, points)
         self.last_action = "upsert" if row["public"] else "delete"
 
     def invoke(self, query):
-        try:
-            source = read_source(self.settings.source_path)
-        except Exception:
-            log.warning("retrieval status=degraded reason=source_unavailable")
-            return []
         vector = self.embedding.embed_query(query)
         hits = self.client.query_points(self.settings.collection, query=vector,
                                        limit=max(25, self.settings.candidate_limit * 5), with_payload=True).points
+        try:
+            source = self.source.get_many([(h.payload or {}).get("parent_id") for h in hits])
+        except Exception:
+            log.warning("retrieval status=degraded reason=source_unavailable")
+            return []
         documents, seen = [], set()
         with self.connect() as db:
             for hit in hits:
@@ -150,7 +165,7 @@ class QdrantParentStore:
                 if current["version"] != row[0] or digest(current["text"]) != row[1] or str(hit.id) not in json.loads(row[3]):
                     continue
                 stored = json.loads(row[2])
-                if stored["metadata"] != {**current.get("metadata", {}), "source_id": pid, "source_kind": "mock", "source_version": current["version"]}:
+                if stored["metadata"] != {**current.get("metadata", {}), "source_id": pid, "source_kind": self.settings.source_provider, "source_version": current["version"]}:
                     continue
                 seen.add(pid)
                 documents.append(Document(page_content=stored["text"], metadata=stored["metadata"]))

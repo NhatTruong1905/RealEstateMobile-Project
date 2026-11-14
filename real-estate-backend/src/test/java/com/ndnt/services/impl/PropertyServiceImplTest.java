@@ -27,6 +27,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PropertyServiceImplTest {
+    @Mock private com.ndnt.services.property.PropertyIndexOutbox indexOutbox;
     @Mock private com.ndnt.services.property.PropertyAccess access;
     @Mock private com.ndnt.services.storage.ImageStorageService imageStorage;
 

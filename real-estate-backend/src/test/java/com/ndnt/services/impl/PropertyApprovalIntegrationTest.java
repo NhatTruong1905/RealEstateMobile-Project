@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties={"spring.config.location=classpath:test.properties","spring.datasource.url=jdbc:h2:mem:approval;MODE=MYSQL;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000",
-    "spring.jpa.show-sql=false", "property.mail.worker-enabled=false", "property.mail.max-attempts=2"})
+    "spring.jpa.show-sql=false", "property.mail.worker-enabled=false", "property.mail.max-attempts=2", "property.index.service-token=test-ai-token"})
 @TestPropertySource("/test.properties")
 class PropertyApprovalIntegrationTest {
     @Autowired WebApplicationContext context;
@@ -42,6 +42,7 @@ class PropertyApprovalIntegrationTest {
     @Autowired PropertyService service;
     @Autowired PropertyRepository properties;
     @Autowired PropertyMailEventRepository events;
+    @Autowired PropertyIndexEventRepository indexEvents;
     @Autowired PropertyMailDelivery delivery;
     @Autowired UserRepository users;
     @Autowired RoleRepository roles;
@@ -100,6 +101,32 @@ class PropertyApprovalIntegrationTest {
         dto.setTypeId(typeId); dto.setCategoryId(categoryId); dto.setWardId(wardId); dto.setCity("Hồ Chí Minh"); return dto;
     }
     PropertyDTO create() { auth(owner); return service.saveOwnedProperty(form()); }
+    @Test void indexingOutboxVersionsAndProtectedSourceFollowApprovalAndDeletion() throws Exception {
+        PropertyDTO property = create();
+        assign(property.getId());
+        assertEquals(1L,properties.findById(property.getId()).orElseThrow().getIndexVersion());
+        mvc.perform(get("/api/internal/ai/properties/"+property.getId())).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/internal/ai/properties/"+property.getId()).header("X-AI-Service-Token","test-ai-token"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.public").value(false)).andExpect(jsonPath("$.text").value(""));
+        auth(staff);
+        service.createOrUpdateProperty(decision(property,StatusProperty.PUBLISHED.getStatus(),null));
+        mvc.perform(get("/api/internal/ai/properties/"+property.getId()).header("X-AI-Service-Token","test-ai-token"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.public").value(true)).andExpect(jsonPath("$.version").value(2))
+            .andExpect(jsonPath("$.metadata.property_id").value(property.getId())).andExpect(jsonPath("$.metadata.email").doesNotExist());
+        var approval = indexEvents.findAll().stream().filter(e -> e.getPropertyId().equals(property.getId()) && e.getAggregateVersion()==2).findFirst().orElseThrow();
+        assertEquals("property.approved",approval.getRoutingKey());
+        auth(staff);
+        service.deleteProperty(property.getId());
+        mvc.perform(get("/api/internal/ai/properties/resolve").param("ids",property.getId().toString()).header("X-AI-Service-Token","test-ai-token"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.records[0].public").value(false)).andExpect(jsonPath("$.records[0].version").value(3));
+        assertEquals(3,indexEvents.findAll().stream().filter(e -> e.getPropertyId().equals(property.getId())).count());
+    }
+
+    @Test void indexingOutboxRollsBackWithBusinessTransaction() {
+        long count = indexEvents.count();
+        tx.executeWithoutResult(status -> { create(); status.setRollbackOnly(); });
+        assertEquals(count,indexEvents.count());
+    }
     void assign(Integer id) {
         tx.executeWithoutResult(s -> { AssignmentPropertyEntity a = new AssignmentPropertyEntity();
             a.setStaff(users.findById(staff.getId()).orElseThrow()); a.setProperty(properties.findById(id).orElseThrow()); assignments.save(a); });

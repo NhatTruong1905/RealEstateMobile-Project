@@ -3,9 +3,10 @@ import os
 
 def create_embedding(settings):
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
-    if not settings.google_api_key:
+    key = settings.google_embedding_api_key or settings.google_api_key
+    if not key:
         raise ValueError("Missing GOOGLE_API_KEY")
-    return GoogleGenerativeAIEmbeddings(model=settings.embedding_model, google_api_key=settings.google_api_key)
+    return GoogleGenerativeAIEmbeddings(model=settings.embedding_model, google_api_key=key)
 
 
 def create_llm(settings):
@@ -13,9 +14,10 @@ def create_llm(settings):
                   max_tokens=settings.max_output_tokens)
     if settings.llm_provider == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
-        if not settings.google_api_key or not settings.llm_model or settings.llm_model.startswith("REPLACE"):
+        key = settings.google_llm_api_key or settings.google_api_key
+        if not key or not settings.llm_model or settings.llm_model.startswith("REPLACE"):
             raise ValueError("Set GOOGLE_API_KEY and verified GEMINI_LLM_MODEL")
-        return ChatGoogleGenerativeAI(model=settings.llm_model, api_key=settings.google_api_key,
+        return ChatGoogleGenerativeAI(model=settings.llm_model, api_key=key,
                                      vertexai=False, temperature=0.0, retries=0,
                                      request_timeout=120, max_tokens=settings.max_output_tokens)
     from langchain_openai import ChatOpenAI

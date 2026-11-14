@@ -15,6 +15,8 @@ def positive(name, default, cast=int):
 class Settings:
     llm_provider: str = "gemini"
     google_api_key: str = field(default="", repr=False)
+    google_llm_api_key: str = field(default="", repr=False)
+    google_embedding_api_key: str = field(default="", repr=False)
     llm_model: str = ""
     embedding_model: str = "models/gemini-embedding-001"
     vector_provider: str = "qdrant"
@@ -23,9 +25,14 @@ class Settings:
     collection: str = "realestate_gemini_dev_v1"
     state_path: str = "./vector_database/qdrant-dev.sqlite3"
     source_path: str = ""
+    source_provider: str = "mock"
+    property_api_url: str = "http://127.0.0.1:8080/api/internal/ai"
+    property_api_token: str = field(default="", repr=False)
+    source_timeout: float = 10.0
     rerank_enabled: bool = False
     rerank_base_url: str = "http://127.0.0.1:8001"
     rerank_model: str = "Qwen/Qwen3-Reranker-0.6B"
+    rerank_api_key: str = field(default="", repr=False)
     candidate_limit: int = 20
     top_n: int = 5
     timeout: float = 5.0
@@ -42,6 +49,8 @@ class Settings:
         settings = cls(
             llm_provider=os.getenv("LLM_PROVIDER", "gemini"),
             google_api_key=os.getenv("GOOGLE_API_KEY", ""),
+            google_llm_api_key=os.getenv("GOOGLE_LLM_API_KEY", ""),
+            google_embedding_api_key=os.getenv("GOOGLE_EMBEDDING_API_KEY", ""),
             llm_model=os.getenv("GEMINI_LLM_MODEL", ""),
             embedding_model=os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001"),
             vector_provider=os.getenv("VECTOR_STORE_PROVIDER", "qdrant"),
@@ -50,9 +59,14 @@ class Settings:
             collection=os.getenv("QDRANT_COLLECTION", "realestate_gemini_dev_v1"),
             state_path=os.getenv("QDRANT_STATE_PATH", "./vector_database/qdrant-dev.sqlite3"),
             source_path=os.getenv("INDEX_SOURCE_JSON", ""),
+            source_provider=os.getenv("INDEX_SOURCE_PROVIDER", "mock"),
+            property_api_url=os.getenv("PROPERTY_API_URL", "http://127.0.0.1:8080/api/internal/ai"),
+            property_api_token=os.getenv("PROPERTY_API_TOKEN", ""),
+            source_timeout=positive("PROPERTY_API_TIMEOUT_SECONDS", 10, float),
             rerank_enabled=enabled == "true",
             rerank_base_url=os.getenv("RERANK_BASE_URL", "http://127.0.0.1:8001"),
             rerank_model=os.getenv("RERANK_MODEL", "Qwen/Qwen3-Reranker-0.6B"),
+            rerank_api_key=os.getenv("RERANK_API_KEY", ""),
             candidate_limit=positive("RERANK_CANDIDATE_LIMIT", 20),
             top_n=positive("RERANK_TOP_N", 5),
             timeout=positive("RERANK_TIMEOUT_SECONDS", 5, float),
@@ -67,7 +81,11 @@ class Settings:
             raise ValueError("VECTOR_STORE_PROVIDER must be qdrant/faiss")
         if settings.top_n > settings.candidate_limit:
             raise ValueError("RERANK_TOP_N exceeds RERANK_CANDIDATE_LIMIT")
-        for name in ("qdrant_url", "rerank_base_url"):
+        if settings.source_provider not in {"mock", "backend"}:
+            raise ValueError("INDEX_SOURCE_PROVIDER must be mock/backend")
+        if settings.source_provider == "backend" and not settings.property_api_token:
+            raise ValueError("Missing PROPERTY_API_TOKEN")
+        for name in ("qdrant_url", "rerank_base_url", "property_api_url"):
             url = urlsplit(getattr(settings, name))
             if url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password or url.query or url.fragment:
                 raise ValueError(f"Invalid {name}")

@@ -15,16 +15,17 @@ from rag.source import read_source
 def main():
     load_dotenv()
     parser = argparse.ArgumentParser(description="Explicit dev smoke/sync; never runs at API startup")
-    parser.add_argument("command", choices=["setup-check", "gemini-smoke", "sync", "qdrant-check"])
+    parser.add_argument("command", choices=["setup-check", "gemini-smoke", "sync", "sync-backend", "qdrant-check", "rerank-check"])
     parser.add_argument("--allow-api-calls", action="store_true", help="Acknowledge configured Gemini calls may incur cost")
     parser.add_argument("--manifest", default="./vector_database/embedding-smoke.json")
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--max-chunks", type=int, default=100)
     parser.add_argument("--offset", type=int, default=0, help="Offset in source records for bounded batches")
+    parser.add_argument("--after", type=int, default=0, help="Backend keyset cursor; resume with next_after")
     args = parser.parse_args()
-    if not 1 <= args.limit <= 100 or not 1 <= args.max_chunks <= 100 or args.offset < 0:
+    if not 1 <= args.limit <= 100 or not 1 <= args.max_chunks <= 100 or args.offset < 0 or args.after < 0:
         parser.error("limit/max-chunks must be 1..100")
-    if args.command in {"gemini-smoke", "sync"} and not args.allow_api_calls:
+    if args.command in {"gemini-smoke", "sync", "sync-backend"} and not args.allow_api_calls:
         parser.error("Specify --allow-api-calls only after confirming your dev budget")
     store = None
     try:
@@ -34,6 +35,19 @@ def main():
             result = check_setup(settings)
             print(json.dumps(result))
             return 0 if result["status"] == "configured_offline" else 1
+        if args.command == "rerank-check":
+            from dataclasses import replace
+            from langchain_core.documents import Document
+            from rag.reranker import Reranker
+            reranker = Reranker(replace(settings, rerank_enabled=True, top_n=2))
+            try:
+                docs = [Document(page_content="A house for sale in Ho Chi Minh City."),
+                        Document(page_content="A recipe for chocolate cake.")]
+                result = reranker._request("Find a house for sale", docs, settings.timeout)
+                print(json.dumps({"status": "ok", "count": len(result), "quality_verified": False}))
+                return 0
+            finally:
+                reranker.close()
         if args.command == "gemini-smoke":
             if settings.llm_provider != "gemini":
                 raise ValueError("Smoke requires Gemini profile")
@@ -59,17 +73,32 @@ def main():
             path.write_text(json.dumps(contract, indent=2), encoding="utf-8")
             print(json.dumps({"status": "ok", "llm_model": settings.llm_model, "contract": contract}))
             return 0
-        store = QdrantParentStore(settings, create_embedding(settings) if args.command == "sync" else None)
+        store = QdrantParentStore(settings, create_embedding(settings) if args.command in {"sync", "sync-backend"} else None)
         if args.command == "qdrant-check":
             contract = store.validate()
             print(json.dumps({"status": "ok", "collection": settings.collection, "contract": contract,
                               "points": store.client.count(settings.collection, exact=True).count}))
             return 0
-        records = read_source(settings.source_path)
         contract = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
         if contract != embedding_contract(settings, contract["dimension"]):
             raise ValueError("Smoke manifest does not match configuration")
         store.validate(contract, create=True)
+        if args.command == "sync-backend":
+            rows = store.source.page(args.after, args.limit)
+            result = dict(upsert=0, delete=0, skipped=0, failed=0)
+            cursor = args.after
+            for row in rows:
+                try:
+                    result[store.apply_property(store.source.get(row["id"]), args.max_chunks)] += 1
+                    cursor = int(row["id"])
+                except Exception as exc:
+                    result["failed"] += 1
+                    logging.error("sync status=failed reason=%s", type(exc).__name__)
+                    break
+            result.update(next_after=cursor, possibly_more=len(rows) == args.limit)
+            print(json.dumps(result))
+            return 1 if result["failed"] else 0
+        records = read_source(settings.source_path)
         result = store.sync(records, args.limit, args.max_chunks, args.offset)
         result["remaining"] = max(0, len(records) - args.offset - args.limit)
         print(json.dumps(result))
