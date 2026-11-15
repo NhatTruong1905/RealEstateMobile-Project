@@ -37,20 +37,27 @@ public class APIPropertyController {
     @Autowired
     private UserService userService;
 
-    @Autowired private com.ndnt.services.PropertyTypeService propertyTypes;
-    @Autowired private com.ndnt.services.PropertyCategoryService propertyCategories;
-    @Autowired private com.ndnt.services.WardService wards;
+    @Autowired
+    private com.ndnt.services.PropertyTypeService propertyTypes;
+    @Autowired
+    private com.ndnt.services.PropertyCategoryService propertyCategories;
+    @Autowired
+    private com.ndnt.services.WardService wards;
 
-    public record Option(Integer id, String name) {}
-    public record WardOption(Integer id, String name, String districtName) {}
+    public record Option(Integer id, String name) {
+    }
+
+    public record WardOption(Integer id, String name, String districtName) {
+    }
 
     @GetMapping("/secure/property-options")
     public ResponseEntity<?> options() {
-        ResponseDTO response = new ResponseDTO(); response.setMessage("Success");
+        ResponseDTO response = new ResponseDTO();
+        response.setMessage("Success");
         response.setData(Map.of(
-            "types", propertyTypes.getPropertyTypes().stream().map(t -> new Option(t.getId(),t.getName())).toList(),
-            "categories", propertyCategories.getPropertyCategories().stream().map(c -> new Option(c.getId(),c.getName())).toList(),
-            "wards", wards.getWards().stream().map(w -> new WardOption(w.getId(),w.getName(),w.getDistrictName())).toList()));
+                "types", propertyTypes.getPropertyTypes().stream().map(t -> new Option(t.getId(), t.getName())).toList(),
+                "categories", propertyCategories.getPropertyCategories().stream().map(c -> new Option(c.getId(), c.getName())).toList(),
+                "wards", wards.getWards().stream().map(w -> new WardOption(w.getId(), w.getName(), w.getDistrictName())).toList()));
         return ResponseEntity.ok(response);
     }
 
@@ -77,15 +84,29 @@ public class APIPropertyController {
     }
 
     @GetMapping("/secure/properties")
-    public ResponseEntity<?> getPropertyOfUser(Principal principal) {
+    public ResponseEntity<?> getPropertyOfUser(Principal principal,
+                                               @RequestParam(required = false) Integer page,
+                                               @RequestParam(required = false) Integer limit) {
+        if ((page != null && page < 1) || (limit != null && (limit < 1 || limit > 100))) {
+            return ResponseEntity.badRequest().body(Map.of("message", "page phải từ 1; limit phải từ 1 đến 100."));
+        }
         UserDTO currentUser = this.userService.findByUsername(principal.getName());
         if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } else {
-            List<PropertyDTO> propertyDTOS = this.propertyService.getPropertyOfUser(currentUser.getId());
             ResponseDTO responseDTO = new ResponseDTO();
             responseDTO.setMessage("Success");
-            responseDTO.setData(propertyDTOS);
+            if (page == null && limit == null) {
+                responseDTO.setData(this.propertyService.getPropertyOfUser(currentUser.getId()));
+            } else {
+                Pageable pageable = PageRequest.of((page == null ? 1 : page) - 1, limit == null ? 6 : limit);
+                Page<PropertyDTO> propertyPage = this.propertyService.getPropertyOfUser(currentUser.getId(), pageable);
+                responseDTO.setData(Map.of(
+                        "content", propertyPage.getContent(),
+                        "currentPage", propertyPage.getNumber() + 1,
+                        "totalItems", propertyPage.getTotalElements(),
+                        "totalPages", propertyPage.getTotalPages()));
+            }
             return ResponseEntity.ok().body(responseDTO);
         }
     }
@@ -94,11 +115,14 @@ public class APIPropertyController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateOrCreateProperty(@Valid @ModelAttribute PropertyDTO propertyDTO, BindingResult bindingResult, Principal principal) {
         if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .collect(Collectors.toList());
-            return ResponseEntity.badRequest().body(errors);
+            Map<String, String> errors = bindingResult.getFieldErrors().stream()
+                    .collect(Collectors.toMap(FieldError::getField, this::propertyValidationMessage,
+                            (first, next) -> first, java.util.LinkedHashMap::new));
+            ResponseDTO response = new ResponseDTO();
+            response.setMessage("Vui lòng kiểm tra các trường được đánh dấu.");
+            response.setDetail("VALIDATION_ERROR");
+            response.setData(errors);
+            return ResponseEntity.badRequest().body(response);
         }
 
         UserDTO currentUser = this.userService.findByUsername(principal.getName());
@@ -112,6 +136,21 @@ public class APIPropertyController {
             responseDTO.setData(propertyDTO);
             return ResponseEntity.ok().body(responseDTO);
         }
+    }
+
+    private String propertyValidationMessage(FieldError error) {
+        if (!error.isBindingFailure()) return error.getDefaultMessage();
+        return switch (error.getField()) {
+            case "price" -> "Giá bất động sản phải là số hợp lệ.";
+            case "area" -> "Diện tích phải là số hợp lệ.";
+            case "floorCount" -> "Số tầng phải là số nguyên hợp lệ.";
+            case "bedroomCount" -> "Số phòng ngủ phải là số nguyên hợp lệ.";
+            case "bathroomCount" -> "Số phòng tắm phải là số nguyên hợp lệ.";
+            case "typeId" -> "Lựa chọn loại hình giao dịch không hợp lệ. Vui lòng chọn lại.";
+            case "categoryId" -> "Lựa chọn phân khúc bất động sản không hợp lệ. Vui lòng chọn lại.";
+            case "wardId" -> "Lựa chọn phường/xã không hợp lệ. Vui lòng chọn lại.";
+            default -> "Giá trị không hợp lệ. Vui lòng kiểm tra lại.";
+        };
     }
 
     @GetMapping("/secure/properties/{id}")
@@ -167,7 +206,8 @@ public class APIPropertyController {
         if (favoritePropertyDTO.getPropertyIds() == null)
             throw com.ndnt.services.property.PropertyProblem.invalid("propertyIds", "Cần danh sách bài đăng");
         for (Integer propertyId : favoritePropertyDTO.getPropertyIds()) {
-            if (propertyId == null) throw com.ndnt.services.property.PropertyProblem.invalid("propertyIds", "Mã bài đăng không hợp lệ");
+            if (propertyId == null)
+                throw com.ndnt.services.property.PropertyProblem.invalid("propertyIds", "Mã bài đăng không hợp lệ");
             this.propertyService.findById(propertyId);
         }
         this.favoritePropertyService.createOrUpdateFavoriteProperty(favoritePropertyDTO);

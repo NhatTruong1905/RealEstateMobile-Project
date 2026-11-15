@@ -29,8 +29,21 @@ Số mục lớn và đường kẻ dọc màu cam tạo nhịp như mục lục
 - Hover 160–220ms; không thay đổi layout.
 - Drawer mobile quản lý focus; reduced motion tắt chuyển động trang trí.
 - Loading dùng skeleton có kích thước cố định; lỗi và empty state luôn có hành động tiếp theo.
+- Điều hướng giữa các trang dùng View Transitions do React Router quản lý: nội dung cũ rời đi 180ms, nội dung mới vào 380ms; sidebar, header và chatbot giữ ổn định.
+- Nền chọn menu người bán di chuyển giữa các mục trong 420ms; icon và nhãn luôn nằm trên nền chọn. Điều hướng liên tiếp thay thế chuyển động đang chạy và giữ đúng URL cuối cùng.
+- Đăng nhập/đăng ký giữ hai panel trượt trực tiếp, không chồng thêm chuyển tiếp trang. Trình duyệt thiếu View Transitions dùng hiệu ứng vào trang nhẹ; reduced motion bỏ chuyển động không thiết yếu.
 
-## Responsive
+## Seller listing form
+
+- `/seller/post` uses three steps: information, photos, review and submission.
+- Keep fields mounted across steps so returning to edit preserves the current draft. No promise of persistence after reload.
+- Group required information into transaction/price and location/legal sections; disclose optional property details on demand.
+- Show the exact VND amount beside price entry. Preview selected photos, support adding/removing files, and validate the five-image JPG/PNG limit before submission.
+- Review uses the user's current values and selected images. Clearly explain moderation; only confirm receipt after the API responds.
+- Move focus to the step heading on navigation and the relevant input on validation failure. Keep the final request locked with a spinner until it settles.
+- Desktop has a form with a narrow guidance column; mobile uses one column and a full-width primary action.
+
+## Responsive layout
 
 - Mobile: một cột, filter drawer, menu thu gọn.
 - Tablet: hai cột, filter nằm trên kết quả.

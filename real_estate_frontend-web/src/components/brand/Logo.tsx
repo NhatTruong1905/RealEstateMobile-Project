@@ -1,5 +1,5 @@
 import { House } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "../ui/Navigation";
 
 export function Logo() {
   return (

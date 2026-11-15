@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
-import { Bath, BedDouble, Bookmark, Compass, MapPin } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Bath, BedDouble, Bookmark, Compass, LoaderCircle, MapPin } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Link } from "../ui/Navigation";
+import { useNavigate } from "../../hooks/useNavigate";
 import { session } from "../../services/api/core/session";
 import { favoriteApi, favoriteStore } from "../../services/api/favorite/favoriteApi";
 import { fallbackPropertyImage } from "../../config/assets";
@@ -15,6 +17,8 @@ export function PropertyCard({ property }: { property: Property }) {
     favoriteStore.get().includes(property.id),
   );
   const [saving, setSaving] = useState(false);
+  const submitting = useRef(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     const sync = () => setSaved(favoriteStore.get().includes(property.id));
@@ -23,6 +27,7 @@ export function PropertyCard({ property }: { property: Property }) {
   }, [property.id]);
 
   async function toggleSaved() {
+    if (submitting.current) return;
     if (!session.token) {
       navigate(
         `/login?returnTo=${encodeURIComponent(location.pathname + location.search)}&saveProperty=${property.id}`,
@@ -31,11 +36,16 @@ export function PropertyCard({ property }: { property: Property }) {
     }
 
     const next = !saved;
+    submitting.current = true;
+    setSaveError("");
     setSaving(true);
     try {
       await favoriteApi.set(property.id, next);
       setSaved(next);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Không thể lưu tin. Vui lòng thử lại.");
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
@@ -61,13 +71,15 @@ export function PropertyCard({ property }: { property: Property }) {
         type="button"
         onClick={toggleSaved}
         disabled={saving}
+        aria-busy={saving}
         aria-pressed={saved}
         aria-label={saved ? "Bỏ lưu bất động sản" : "Lưu bất động sản"}
         title={saved ? "Bỏ lưu" : "Lưu tin"}
       >
-        <Bookmark fill={saved ? "currentColor" : "none"} />
+        {saving ? <LoaderCircle className="spin" aria-hidden="true" /> : <Bookmark fill={saved ? "currentColor" : "none"} />}
       </button>
       <div className="property-body">
+        {saveError && <p className="form-error" role="alert">{saveError}</p>}
         <div className="property-price">{formatMoney(property.price)}</div>
         <h3>
           <Link to={`/properties/${property.id}`}>

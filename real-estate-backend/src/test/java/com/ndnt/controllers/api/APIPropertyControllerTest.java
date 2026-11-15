@@ -103,6 +103,60 @@ public class APIPropertyControllerTest {
     }
 
     @Test
+    void getPropertyOfUser_Paginated() throws Exception {
+        UserDTO user = new UserDTO(); user.setId(1);
+        PropertyDTO property = new PropertyDTO(); property.setId(10);
+        var pageable = org.springframework.data.domain.PageRequest.of(1, 6);
+        when(userService.findByUsername("testuser")).thenReturn(user);
+        when(propertyService.getPropertyOfUser(1, pageable))
+            .thenReturn(new PageImpl<>(List.of(property), pageable, 7));
+        mockMvc.perform(get("/api/secure/properties").principal(() -> "testuser")
+                .param("page", "2").param("limit", "6"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.content[0].id").value(10))
+            .andExpect(jsonPath("$.data.currentPage").value(2))
+            .andExpect(jsonPath("$.data.totalItems").value(7))
+            .andExpect(jsonPath("$.data.totalPages").value(2));
+        verify(propertyService).getPropertyOfUser(1, pageable);
+        verify(propertyService, never()).getPropertyOfUser(any(Integer.class));
+    }
+
+    @Test
+    void getPropertyOfUser_InvalidPageBounds() throws Exception {
+        for (String[] query : List.of(new String[]{"0", "6"}, new String[]{"-1", "6"},
+                new String[]{"1", "0"}, new String[]{"1", "101"})) {
+            mockMvc.perform(get("/api/secure/properties").principal(() -> "testuser")
+                .param("page", query[0]).param("limit", query[1])).andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(propertyService, userService);
+    }
+
+    @Test
+    void createProperty_RequiredErrorsAreAssignedToTheirFields() throws Exception {
+        mockMvc.perform(multipart("/api/secure/properties").principal(() -> "testuser"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.detail").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.data.typeId").value("Vui lòng chọn loại hình giao dịch."))
+            .andExpect(jsonPath("$.data.categoryId").value("Vui lòng chọn phân khúc bất động sản."))
+            .andExpect(jsonPath("$.data.title").value("Vui lòng nhập tiêu đề tin đăng."))
+            .andExpect(jsonPath("$.data.address").value("Vui lòng nhập địa chỉ đầy đủ."))
+            .andExpect(jsonPath("$.data.price").value("Vui lòng nhập giá bất động sản."))
+            .andExpect(jsonPath("$.data.area").value("Vui lòng nhập diện tích."))
+            .andExpect(jsonPath("$.data.legal").value("Vui lòng nhập thông tin pháp lý."));
+        verifyNoInteractions(propertyService, userService);
+    }
+
+    @Test
+    void createProperty_InvalidNumbersDoNotExposeJavaConversionErrors() throws Exception {
+        mockMvc.perform(multipart("/api/secure/properties").principal(() -> "testuser")
+                .param("price", "abc").param("area", "-1").param("bedroomCount", "1.5"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.data.price").value("Giá bất động sản phải là số hợp lệ."))
+            .andExpect(jsonPath("$.data.area").value("Diện tích phải lớn hơn 0."))
+            .andExpect(jsonPath("$.data.bedroomCount").value("Số phòng ngủ phải là số nguyên hợp lệ."));
+        verifyNoInteractions(propertyService, userService);
+    }
+
+    @Test
     @DisplayName("GET /api/secure/properties/{id} - Lấy chi tiết bất động sản thành công")
     void getDetailProperty_Success() throws Exception {
         PropertyDTO property = new PropertyDTO();

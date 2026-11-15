@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Building2, ChevronLeft, ChevronRight, List, Map as MapIcon, Search, SlidersHorizontal, X } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { Link } from "../../components/ui/Navigation";
 import { propertyApi } from "../../services/api/property/propertyApi";
 import { PropertyCard } from "../../components/property/PropertyCard";
 import { PropertyMap } from "../../components/property/PropertyMap";

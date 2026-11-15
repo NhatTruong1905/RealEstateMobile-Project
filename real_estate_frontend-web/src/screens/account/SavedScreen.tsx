@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bookmark, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "../../components/ui/Navigation";
 import { favoriteApi } from "../../services/api/favorite/favoriteApi";
 import { PropertyCard } from "../../components/property/PropertyCard";
 import { State } from "../../components/ui/State";

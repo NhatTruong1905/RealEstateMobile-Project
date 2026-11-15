@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bath, BedDouble, Building2, ChevronLeft, Compass, House, Layers3, LoaderCircle, MapPin, MessageCircle, Phone } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { Link } from "../../components/ui/Navigation";
 import { propertyApi } from "../../services/api/property/propertyApi";
 import { fallbackPropertyImage } from "../../config/assets";
 import { State } from "../../components/ui/State";

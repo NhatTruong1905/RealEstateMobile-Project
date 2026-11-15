@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Navigate, Outlet, Route, RouterProvider, ScrollRestoration } from "react-router-dom";
 import { PublicLayout } from "./layouts/PublicLayout";
 import { SellerLayout } from "./layouts/SellerLayout";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
@@ -16,10 +16,18 @@ import { FAQPage, PrivacyPage, TermsPage } from "./screens/support/SupportScreen
 import { ChatWidget } from "./components/chat/ChatWidget";
 import "./styles/index.css";
 
-export default function App() {
+function NavigationFrame() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <>
+      <Outlet />
+      <ChatWidget />
+      <ScrollRestoration />
+    </>
+  );
+}
+
+const router = createBrowserRouter(createRoutesFromElements(
+      <Route element={<NavigationFrame />}>
         <Route element={<PublicLayout />}>
           <Route index element={<HomePage />} />
           <Route path="properties" element={<PropertiesPage />} />
@@ -45,8 +53,9 @@ export default function App() {
         </Route>
 
         <Route path="*" element={<NotFound />} />
-      </Routes>
-      <ChatWidget />
-    </BrowserRouter>
-  );
+      </Route>
+));
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
