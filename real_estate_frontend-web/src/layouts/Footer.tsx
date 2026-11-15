@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "../components/ui/Navigation";
 import { Logo } from "../components/brand/Logo";
 
 export function Footer() {

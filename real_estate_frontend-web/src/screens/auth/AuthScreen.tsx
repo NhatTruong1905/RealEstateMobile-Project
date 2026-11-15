@@ -1,29 +1,41 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { SubmitEvent } from "react";
-import { ChevronLeft, LoaderCircle } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
+import { LoadingButton } from "../../components/ui/LoadingButton";
+import { useSearchParams } from "react-router-dom";
+import { Link } from "../../components/ui/Navigation";
+import { useNavigate } from "../../hooks/useNavigate";
 import { authApi } from "../../services/api/auth/authApi";
 import { favoriteApi } from "../../services/api/favorite/favoriteApi";
 import { Logo } from "../../components/brand/Logo";
 import { normalizeAuthField } from "../../services/api/auth/normalizeAuth";
 
 export function AuthPage({ mode }: { mode: "login" | "register" }) {
-  return <AuthForm key={mode} mode={mode} />;
+  return <AuthForm mode={mode} />;
 }
 
 function AuthForm({ mode }: { mode: "login" | "register" }) {
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [errorField, setErrorField] = useState("");
+  const [previousMode, setPreviousMode] = useState(mode);
+  if (previousMode !== mode) {
+    setPreviousMode(mode);
+    setError("");
+    setErrorField("");
+    setEmailError("");
+    setUsernameError("");
+  }
   const returnQuery = search.toString();
   const switchPath = `${mode === "login" ? "/register" : "/login"}${returnQuery ? `?${returnQuery}` : ""}`;
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy) return;
+    if (submitting.current) return;
     setError("");
     setErrorField("");
     setUsernameError("");
@@ -84,6 +96,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
         return;
       }
     }
+    submitting.current = true;
     setBusy(true);
     try {
       if (mode === "login") {
@@ -104,6 +117,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Có lỗi xảy ra");
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -274,20 +288,16 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
               Quên mật khẩu?
             </Link>
           )}
-          <button className="button button-primary full" disabled={busy}>
-            {busy ? (
-              <>
-                <LoaderCircle className="spin" /> Đang xử lý
-              </>
-            ) : mode === "login" ? (
+          <LoadingButton type="submit" className="button button-primary full" loading={busy} loadingLabel={mode === "login" ? "Đang đăng nhập…" : "Đang tạo tài khoản…"}>
+            {mode === "login" ? (
               "Đăng nhập"
             ) : (
               "Tạo tài khoản"
             )}
-          </button>
+          </LoadingButton>
           <p className="auth-switch">
             {mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}{" "}
-            <Link to={switchPath}>
+            <Link to={switchPath} aria-disabled={busy} onClick={(event) => { if (submitting.current) event.preventDefault(); }}>
               {mode === "login" ? "Đăng ký" : "Đăng nhập"}
             </Link>
           </p>

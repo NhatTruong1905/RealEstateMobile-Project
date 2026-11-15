@@ -24,5 +24,7 @@ public interface PropertyService {
 
     List<PropertyDTO> getPropertyOfUser(Integer userId);
 
+    Page<PropertyDTO> getPropertyOfUser(Integer userId, Pageable pageable);
+
     List<PropertyDTO> getFavoritePropertiesByUser(Integer id);
 }

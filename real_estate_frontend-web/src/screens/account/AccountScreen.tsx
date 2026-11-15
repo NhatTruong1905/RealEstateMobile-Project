@@ -3,6 +3,7 @@ import { Camera, Check, CircleUserRound, LoaderCircle, LogOut } from "lucide-rea
 import { accountApi } from "../../services/api/account/accountApi";
 import { session } from "../../services/api/core/session";
 import type { UserProfile } from "../../types";
+import { LoadingButton } from "../../components/ui/LoadingButton";
 
 export function AccountPage() {
   const [profile, setProfile] = useState<UserProfile>();
@@ -12,6 +13,7 @@ export function AccountPage() {
   const [preview, setPreview] = useState("");
   const [failedImage, setFailedImage] = useState("");
   const [saving, setSaving] = useState(false);
+  const submitting = useRef(false);
   const previewRef = useRef("");
   const fileInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(false);
@@ -50,7 +52,8 @@ export function AccountPage() {
 
   async function saveAvatar(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!file || !profile || saving) return;
+    if (!file || !profile || submitting.current) return;
+    submitting.current = true;
     const generation = session.generation;
     setSaving(true);
     setError("");
@@ -66,6 +69,7 @@ export function AccountPage() {
       if (!mounted.current || generation !== session.generation) return;
       setError(error instanceof Error ? error.message : "Không thể cập nhật ảnh đại diện.");
     } finally {
+      submitting.current = false;
       if (mounted.current && generation === session.generation) setSaving(false);
     }
   }
@@ -149,10 +153,7 @@ export function AccountPage() {
             {file && <div className="avatar-selection">
               <p className="avatar-preview-note" role="status">Ảnh mới đang được xem trước. Nhấn lưu để cập nhật.</p>
               <div className="avatar-actions">
-              <button className="button button-primary" disabled={saving}>
-                {saving && <LoaderCircle className="spin" />}
-                {saving ? "Đang lưu..." : "Lưu ảnh đại diện"}
-              </button>
+              <LoadingButton type="submit" className="button button-primary" loading={saving} loadingLabel="Đang lưu...">Lưu ảnh đại diện</LoadingButton>
               <button type="button" className="button button-secondary" disabled={saving} onClick={() => { resetSelection(); setError(""); setSuccess(""); }}>Hủy</button>
               </div>
             </div>}

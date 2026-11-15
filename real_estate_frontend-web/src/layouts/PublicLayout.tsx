@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { RouteContent } from "../components/ui/RouteContent";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 
@@ -7,7 +7,7 @@ export function PublicLayout() {
     <>
       <Header />
       <main>
-        <Outlet />
+        <RouteContent />
       </main>
       <Footer />
     </>

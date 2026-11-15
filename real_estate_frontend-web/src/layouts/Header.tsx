@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bookmark, ChevronDown, CircleUserRound, Menu } from "lucide-react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { Link, NavLink } from "../components/ui/Navigation";
 import { accountApi } from "../services/api/account/accountApi";
 import { session } from "../services/api/core/session";
 import { favoriteApi } from "../services/api/favorite/favoriteApi";

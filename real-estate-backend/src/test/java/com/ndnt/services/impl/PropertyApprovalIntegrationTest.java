@@ -101,6 +101,44 @@ class PropertyApprovalIntegrationTest {
         dto.setTypeId(typeId); dto.setCategoryId(categoryId); dto.setWardId(wardId); dto.setCity("Hồ Chí Minh"); return dto;
     }
     PropertyDTO create() { auth(owner); return service.saveOwnedProperty(form()); }
+
+    @Test void ownerPaginationIsBoundedOrderedAndPrivate() throws Exception {
+        PropertyDTO first = create(), second = create(), third = create();
+        auth(other); PropertyDTO otherProperty = service.saveOwnedProperty(form());
+        clearInvocations(objectStorage);
+
+        mvc.perform(get("/api/secure/properties").header("Authorization", bearer(owner))
+                .param("page", "2").param("limit", "2"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.content.length()").value(1))
+            .andExpect(jsonPath("$.data.content[0].id").value(first.getId()))
+            .andExpect(jsonPath("$.data.totalItems").value(3))
+            .andExpect(jsonPath("$.data.currentPage").value(2))
+            .andExpect(jsonPath("$.data.totalPages").value(2));
+        verify(objectStorage).listPropertyImages(first.getId());
+        verify(objectStorage, never()).listPropertyImages(second.getId());
+        verify(objectStorage, never()).listPropertyImages(third.getId());
+        verify(objectStorage, never()).listPropertyImages(otherProperty.getId());
+
+        mvc.perform(get("/api/secure/properties").header("Authorization", bearer(owner))
+                .param("page", "1").param("limit", "2"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.content.length()").value(2))
+            .andExpect(jsonPath("$.data.content[0].id").value(third.getId()))
+            .andExpect(jsonPath("$.data.content[1].id").value(second.getId()));
+        mvc.perform(get("/api/secure/properties").header("Authorization", bearer(other))
+                .param("page", "1").param("limit", "2"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.totalItems").value(1))
+            .andExpect(jsonPath("$.data.content[0].id").value(otherProperty.getId()));
+
+        clearInvocations(objectStorage);
+        mvc.perform(get("/api/secure/properties").header("Authorization", bearer(owner))
+                .param("page", "5").param("limit", "2"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.content").isEmpty())
+            .andExpect(jsonPath("$.data.totalItems").value(3));
+        verifyNoInteractions(objectStorage);
+        mvc.perform(get("/api/secure/properties").param("page", "1").param("limit", "2"))
+            .andExpect(status().isUnauthorized());
+    }
+
     @Test void indexingOutboxVersionsAndProtectedSourceFollowApprovalAndDeletion() throws Exception {
         PropertyDTO property = create();
         assign(property.getId());

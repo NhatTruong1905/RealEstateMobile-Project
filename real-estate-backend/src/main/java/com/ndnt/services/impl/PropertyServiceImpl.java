@@ -243,12 +243,12 @@ public class PropertyServiceImpl implements PropertyService {
                 }
             } catch (Exception ignored) {                                                                                  }
         }
-        if (wardId == null) throw PropertyProblem.invalid("wardId", "Cần phường hợp lệ hoặc địa chỉ có thể xác định phường");
-        entity.setWard(wardRepository.findById(wardId).orElseThrow(() -> PropertyProblem.invalid("wardId", "Phường không tồn tại")));
-        if (request.getTypeId() == null) throw PropertyProblem.invalid("typeId", "Cần loại hình hợp lệ");
-        entity.setType(types.findById(request.getTypeId()).orElseThrow(() -> PropertyProblem.invalid("typeId", "Loại hình không tồn tại")));
-        if (request.getCategoryId() == null) throw PropertyProblem.invalid("categoryId", "Cần danh mục hợp lệ");
-        entity.setCategory(categories.findById(request.getCategoryId()).orElseThrow(() -> PropertyProblem.invalid("categoryId", "Danh mục không tồn tại")));
+        if (wardId == null) throw PropertyProblem.invalid("wardId", "Không xác định được phường/xã từ địa chỉ. Vui lòng chọn phường/xã.");
+        entity.setWard(wardRepository.findById(wardId).orElseThrow(() -> PropertyProblem.invalid("wardId", "Phường/xã không còn tồn tại. Vui lòng chọn lại.")));
+        if (request.getTypeId() == null) throw PropertyProblem.invalid("typeId", "Vui lòng chọn loại hình giao dịch.");
+        entity.setType(types.findById(request.getTypeId()).orElseThrow(() -> PropertyProblem.invalid("typeId", "Loại hình giao dịch không còn tồn tại. Vui lòng chọn lại.")));
+        if (request.getCategoryId() == null) throw PropertyProblem.invalid("categoryId", "Vui lòng chọn phân khúc bất động sản.");
+        entity.setCategory(categories.findById(request.getCategoryId()).orElseThrow(() -> PropertyProblem.invalid("categoryId", "Phân khúc bất động sản không còn tồn tại. Vui lòng chọn lại.")));
         entity.setTitle(request.getTitle()); entity.setDescription(request.getDescription()); entity.setAddress(request.getAddress());
         entity.setCity(request.getCity() == null || request.getCity().isBlank() ? "Hồ Chí Minh" : request.getCity());
         entity.setPrice(request.getPrice()); entity.setArea(request.getArea()); entity.setLegal(request.getLegal());
@@ -297,6 +297,14 @@ public class PropertyServiceImpl implements PropertyService {
         UserEntity actor = access.actor();
         if (!actor.getId().equals(userId)) throw PropertyProblem.forbidden();
         return propertyRepository.findByUser_IdOrderByIdDesc(userId).stream().map(p -> dto(p, true)).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PropertyDTO> getPropertyOfUser(Integer userId, Pageable pageable) {
+        UserEntity actor = access.actor();
+        if (!actor.getId().equals(userId)) throw PropertyProblem.forbidden();
+        return propertyRepository.findByUser_IdOrderByIdDesc(userId, pageable).map(p -> dto(p, true));
     }
 
     @Override

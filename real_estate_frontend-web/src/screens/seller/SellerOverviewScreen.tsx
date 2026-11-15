@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { sellerApi } from "../../services/api/seller/sellerApi";
 import type { Property } from "../../types";
 import { ArrowRight, House, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "../../components/ui/Navigation";
 import { SellerPropertyRow } from "../../components/property/SellerPropertyRow";
 import { State } from "../../components/ui/State";
 

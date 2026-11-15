@@ -1,5 +1,5 @@
 import { MessageCircle, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "../../components/ui/Navigation";
 import { State } from "../../components/ui/State";
 
 export function SimplePage({

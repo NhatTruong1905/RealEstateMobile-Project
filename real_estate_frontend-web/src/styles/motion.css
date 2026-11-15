@@ -1,0 +1,152 @@
+:root {
+  --motion-fast: 140ms;
+  --motion-state: 220ms;
+  --motion-panel: 320ms;
+  --motion-auth: 580ms;
+  --ease-arrive: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-travel: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.route-content { view-transition-name: page-content; }
+.site-header { view-transition-name: public-header; }
+.seller-sidebar { view-transition-name: seller-navigation; }
+.chat-widget { view-transition-name: chat-widget; }
+.seller-sidebar nav a { position: relative; isolation: isolate; }
+.seller-sidebar nav a.active { background: transparent; }
+.seller-sidebar nav a:not(.active):hover { background: #1b332b; }
+.seller-nav-content { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; }
+.seller-nav-indicator {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #234038;
+  view-transition-name: seller-nav-indicator;
+  pointer-events: none;
+}
+.seller-sidebar nav a:active .seller-nav-label { transform: translateX(2px); }
+.seller-nav-label { transition: transform var(--motion-fast) var(--ease-arrive); }
+
+::view-transition { pointer-events: none; }
+::view-transition-group(*) { animation-duration: 380ms; animation-timing-function: var(--ease-arrive); }
+::view-transition-old(root) { animation: page-fade-out 160ms ease both; }
+::view-transition-new(root) { animation: page-fade-in 260ms ease both; }
+::view-transition-old(page-content) { animation: page-leave 180ms cubic-bezier(0.4, 0, 1, 1) both; }
+::view-transition-new(page-content) { animation: page-arrive 380ms var(--ease-arrive) both; }
+::view-transition-old(public-header), ::view-transition-old(seller-navigation), ::view-transition-old(chat-widget), ::view-transition-old(seller-nav-indicator) { animation: none; opacity: 0; }
+::view-transition-new(public-header), ::view-transition-new(seller-navigation), ::view-transition-new(chat-widget), ::view-transition-new(seller-nav-indicator) { animation: none; }
+::view-transition-group(seller-nav-indicator) { animation-duration: 420ms; }
+::view-transition-group(seller-navigation) { z-index: 1; }
+::view-transition-group(seller-nav-indicator) { z-index: 2; }
+::view-transition-group(seller-nav-overview), ::view-transition-group(seller-nav-properties), ::view-transition-group(seller-nav-post), ::view-transition-group(seller-nav-customers) { z-index: 3; }
+::view-transition-group(chat-widget) { z-index: 4; }
+@keyframes page-fade-out { to { opacity: 0; } }
+@keyframes page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes page-leave { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-12px); } }
+@keyframes page-arrive { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+
+:where(button, .button, .icon-button, .main-nav a, .seller-sidebar a, summary, .text-link, .back-link, .auth-switch a, .pagination a) {
+  transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease, opacity var(--motion-fast) ease,
+    transform var(--motion-fast) var(--ease-arrive);
+}
+.button:hover, .chat-launcher:hover, .save-property:hover { transform: none; }
+:where(button, .button):not(:disabled):active { transform: scale(0.98); }
+:where(button, .button):disabled { transform: none; }
+button[aria-busy="true"] { cursor: wait; }
+button[aria-busy="true"] > .spin { flex-shrink: 0; }
+a[aria-disabled="true"] { opacity: 0.6; cursor: wait; }
+.property-card:hover { transform: none; }
+.property-card { transition: border-color var(--motion-state) ease, box-shadow var(--motion-state) ease; }
+.property-image img { transition: transform 420ms var(--ease-arrive); }
+.save-property svg { transition: transform var(--motion-state) var(--ease-arrive), fill var(--motion-fast) ease; }
+.save-property.saved svg { transform: scale(1.12); }
+:where(input, select, textarea) {
+  transition: border-color var(--motion-fast) ease, background-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+.form-error, .form-success { animation: feedback-in var(--motion-state) var(--ease-arrive); }
+@keyframes feedback-in { from { opacity: 0.4; } to { opacity: 1; } }
+
+.auth-art, .auth-form-wrap {
+  transition: transform var(--motion-auth) var(--ease-travel);
+  will-change: auto;
+}
+.auth-form { animation: auth-content-in 340ms 100ms var(--ease-arrive) both; }
+.display-quote { animation: auth-content-in 360ms 100ms var(--ease-arrive) both; }
+
+.chat-panel {
+  animation: none;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 180ms ease, transform var(--motion-panel) var(--ease-arrive),
+    display var(--motion-panel) allow-discrete;
+}
+.chat-panel[hidden] { display: none; opacity: 0; transform: translateY(10px) scale(0.98); }
+.chat-message { animation: feedback-in var(--motion-state) ease; }
+.chat-launcher svg { animation: feedback-in var(--motion-fast) ease; }
+
+.property-nav-menu[open] .property-nav-submenu { animation: menu-in var(--motion-state) var(--ease-arrive); }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@supports (interpolate-size: allow-keywords) {
+  .faq-list details { interpolate-size: allow-keywords; }
+  .faq-list details::details-content {
+    block-size: 0;
+    opacity: 0;
+    overflow: clip;
+    transition: block-size var(--motion-state) var(--ease-arrive), opacity 160ms ease,
+      content-visibility var(--motion-state) allow-discrete;
+  }
+  .faq-list details[open]::details-content { block-size: auto; opacity: 1; }
+}
+.listing-layout.with-map > .filter-drawer {
+  opacity: 0;
+  transition: opacity 180ms ease, display var(--motion-panel) allow-discrete;
+}
+.listing-layout.with-map > .filter-drawer.open { opacity: 1; }
+.listing-layout.with-map > .filter-drawer .filters {
+  transform: translateX(20px);
+  transition: transform var(--motion-panel) var(--ease-arrive);
+}
+.listing-layout.with-map > .filter-drawer.open .filters { transform: translateX(0); }
+@media (max-width: 767px) {
+  .main-nav {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 160ms ease, transform var(--motion-state) var(--ease-arrive), display var(--motion-state) allow-discrete;
+  }
+  .main-nav.is-open { opacity: 1; transform: translateY(0); }
+  .filter-drawer {
+    opacity: 0;
+    transition: opacity 180ms ease, display var(--motion-panel) allow-discrete;
+  }
+  .filter-drawer.open { opacity: 1; }
+  .filter-drawer .filters { transform: translateX(20px); transition: transform var(--motion-panel) var(--ease-arrive); }
+  .filter-drawer.open .filters { transform: translateX(0); }
+}
+@starting-style {
+  .chat-panel:not([hidden]) { opacity: 0; transform: translateY(10px) scale(0.98); }
+  .listing-layout.with-map > .filter-drawer.open { opacity: 0; }
+  .listing-layout.with-map > .filter-drawer.open .filters { transform: translateX(20px); }
+}
+@media (max-width: 767px) {
+  @starting-style {
+    .main-nav.is-open { opacity: 0; transform: translateY(-6px); }
+    .filter-drawer.open { opacity: 0; }
+    .filter-drawer.open .filters { transform: translateX(20px); }
+  }
+}
+@media (hover: none) {
+  .property-card:hover .property-image img { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0.01ms !important; }
+  html, *, *::before, *::after { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    animation-delay: 0ms !important;
+  }
+  .property-card:hover .property-image img, .save-property.saved svg { transform: none; }
+}

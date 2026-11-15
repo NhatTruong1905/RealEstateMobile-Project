@@ -29,6 +29,13 @@ cd ..\real_estate_frontend-web
 npm run dev
 ```
 
+## Phân trang tin đăng
+
+Trang `/seller/properties` dùng phân trang backend qua
+`GET /api/secure/properties?page=1&limit=6`, hỗ trợ 6/12/24 tin mỗi trang.
+Trang và số tin được giữ trên URL để tải lại hoặc dùng Back/Forward.
+Khởi động lại backend sau khi cập nhật mã để endpoint trả dữ liệu phân trang.
+
 ## Kiểm tra
 
 ```bash

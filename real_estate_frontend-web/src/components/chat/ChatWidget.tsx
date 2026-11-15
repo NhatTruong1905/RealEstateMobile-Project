@@ -39,7 +39,7 @@ export function ChatWidget() {
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-30)));
     }
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    endRef.current?.scrollIntoView({ behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   }, [messages]);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function ChatWidget() {
 
   async function sendMessage() {
     const question = draft.trim();
-    if (!question || sending) return;
+    if (!question || abortRef.current) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -154,9 +154,11 @@ export function ChatWidget() {
 
   return (
     <div className={open ? "chat-widget is-open" : "chat-widget"}>
-      {open && (
         <section
           className="chat-panel"
+          hidden={!open}
+          inert={!open}
+          aria-hidden={!open}
           aria-label="Trợ lý tư vấn bất động sản"
         >
           <header className="chat-header">
@@ -237,6 +239,7 @@ export function ChatWidget() {
             <button
               type="submit"
               disabled={!draft.trim() || sending}
+              aria-busy={sending}
               aria-label={sending ? "Đang gửi câu hỏi" : "Gửi câu hỏi"}
             >
               {sending ? <LoaderCircle className="spin" /> : <Send />}
@@ -246,7 +249,6 @@ export function ChatWidget() {
             Thông tin chỉ mang tính tham khảo. Hãy xác minh trước khi giao dịch.
           </small>
         </section>
-      )}
 
       <button
         type="button"

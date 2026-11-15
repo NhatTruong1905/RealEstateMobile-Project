@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { ReactNode, SubmitEvent } from "react";
 import { ArrowRight, Building2, Compass, House, KeyRound, Search } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "../../components/ui/Navigation";
+import { useNavigate } from "../../hooks/useNavigate";
 import { propertyApi } from "../../services/api/property/propertyApi";
 import { PropertyCard } from "../../components/property/PropertyCard";
 import type { Property } from "../../types";
