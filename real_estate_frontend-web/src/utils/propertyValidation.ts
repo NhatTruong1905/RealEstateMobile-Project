@@ -37,7 +37,7 @@ export function validatePropertyFormData(data: FormData, options: PropertyOption
     const decimals = Math.max(0, (mantissa.split(".")[1]?.length || 0) - Number(exponent));
     if (invalidNumbers.has(name)) errors[name] = `${label} phải là số hợp lệ.`;
     else if (!raw) errors[name] = `Vui lòng nhập ${name === "price" ? "giá bất động sản" : "diện tích"}.`;
-    else if (!Number.isFinite(value)) errors[name] = `${label} phải là số hợp lệ.`;
+    else if (!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !Number.isFinite(value)) errors[name] = `${label} phải là số hợp lệ.`;
     else if (value <= 0) errors[name] = `${label} phải lớn hơn 0.`;
     else if (value > max) errors[name] = `${label} không được vượt quá ${max.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}.`;
     else if (decimals > 2) errors[name] = `${label} chỉ được có tối đa 2 chữ số sau dấu thập phân.`;
@@ -49,10 +49,11 @@ export function validatePropertyFormData(data: FormData, options: PropertyOption
     const value = Number(raw);
     if (invalidNumbers.has(name)) errors[name] = `${label} phải là số nguyên hợp lệ.`;
     else if (!raw) data.delete(name);
-    else if (!Number.isFinite(value)) errors[name] = `${label} phải là số hợp lệ.`;
+    else if (!/^[+-]?\d+$/.test(raw) || !Number.isFinite(value)) errors[name] = `${label} phải là số nguyên hợp lệ.`;
     else if (value < 0) errors[name] = `${label} không được nhỏ hơn 0.`;
     else if (!Number.isInteger(value)) errors[name] = `${label} phải là số nguyên.`;
     else if (value > 2147483647) errors[name] = `${label} không được vượt quá 2.147.483.647.`;
+    else data.set(name, String(value));
   }
   return errors;
 }

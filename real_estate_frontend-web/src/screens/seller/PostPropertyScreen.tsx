@@ -177,6 +177,8 @@ export function PostProperty() {
           placeholder={placeholder}
           type={type}
           required={required}
+          maxLength={type === "text" ? (name === "legal" || name === "direction" ? 45 : 255) : undefined}
+          max={type === "number" ? (name.endsWith("Count") ? 2147483647 : name === "price" ? 9999999999999.99 : 99999999.99) : undefined}
           min={
             type === "number"
               ? name.endsWith("Count")
@@ -184,7 +186,7 @@ export function PostProperty() {
                 : "0.01"
               : undefined
           }
-          step={name.endsWith("Count") ? "1" : "any"}
+          step={name.endsWith("Count") ? "1" : "0.01"}
           aria-invalid={!!fields[name]}
           aria-describedby={`${name}-error`}
         />
@@ -244,12 +246,26 @@ export function PostProperty() {
       {optionsLoading && <p role="status">Đang tải danh mục...</p>}
       {optionsError && <div className="post-notice" role="alert">{optionsError}<LoadingButton type="button" loading={optionsLoading} onClick={loadOptions}>Tải lại danh mục</LoadingButton></div>}
       <form ref={formRef} className="property-form post-form" noValidate onSubmit={submit}
+        onBlur={(event) => {
+          const target = event.target;
+          if (!options || !formRef.current || !(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement) || target.type === "file") return;
+          const invalidNumbers = new Set(Array.from(formRef.current.elements)
+            .filter((input): input is HTMLInputElement => input instanceof HTMLInputElement && input.validity.badInput)
+            .map((input) => input.name));
+          const updated = validatePropertyFormData(new FormData(formRef.current), options, invalidNumbers);
+          setFields((current) => {
+            const next = { ...current };
+            if (updated[target.name]) next[target.name] = updated[target.name];
+            else delete next[target.name];
+            return next;
+          });
+        }}
         onChange={(event) => {
           const target = event.target;
           if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement) {
             if (target.type === "file") return;
             setValues((current) => ({ ...current, [target.name]: target.value }));
-            if (validated.current && options && formRef.current) {
+            if ((validated.current || fields[target.name]) && options && formRef.current) {
               const invalidNumbers = new Set(Array.from(formRef.current.elements)
                 .filter((input): input is HTMLInputElement => input instanceof HTMLInputElement && input.validity.badInput)
                 .map((input) => input.name));
