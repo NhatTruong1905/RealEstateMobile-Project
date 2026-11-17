@@ -235,14 +235,14 @@ export function PropertiesPage() {
                 {mapView ? (
                   <div className="map-results-split">
                     <div className="map-property-list">
-                      {result!.content.map((property) => (
+                      {result!.content.map((property, index) => (
                         <div
                           id={`map-property-${property.id}`}
                           className={selectedProperty === property.id ? "map-property-item selected" : "map-property-item"}
                           onMouseEnter={() => setSelectedProperty(property.id)}
                           key={property.id}
                         >
-                          <PropertyCard property={property} />
+                          <PropertyCard property={property} priority={index < 2} />
                         </div>
                       ))}
                     </div>
@@ -263,8 +263,8 @@ export function PropertiesPage() {
                 ) : (
                   <>
                     <div className="property-grid two-cols">
-                      {result!.content.map((p) => (
-                        <PropertyCard property={p} key={p.id} />
+                      {result!.content.map((p, index) => (
+                        <PropertyCard property={p} key={p.id} priority={index < 2} />
                       ))}
                     </div>
                     <Pagination

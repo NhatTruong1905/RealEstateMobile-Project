@@ -5,12 +5,15 @@ import { Link } from "../ui/Navigation";
 import { useNavigate } from "../../hooks/useNavigate";
 import { session } from "../../services/api/core/session";
 import { favoriteApi, favoriteStore } from "../../services/api/favorite/favoriteApi";
-import { fallbackPropertyImage } from "../../config/assets";
+import { getPropertyImages } from "../../services/images/propertyImages";
+import { prefetchImage } from "../../services/images/imagePrefetch";
+import { PropertyImage } from "./PropertyImage";
 import type { Property } from "../../types";
 import { formatMoney } from "../../utils/format";
 
-export function PropertyCard({ property }: { property: Property }) {
-  const image = property.images?.[0] || property.image || fallbackPropertyImage;
+export function PropertyCard({ property, priority = false }: { property: Property; priority?: boolean }) {
+  const image = getPropertyImages(property)[0];
+  const warmCover = () => prefetchImage(image);
   const navigate = useNavigate();
   const location = useLocation();
   const [saved, setSaved] = useState(() =>
@@ -51,15 +54,12 @@ export function PropertyCard({ property }: { property: Property }) {
   }
 
   return (
-    <article className="property-card">
+    <article className="property-card" onPointerEnter={warmCover} onFocus={warmCover} onTouchStart={warmCover}>
       <Link className="property-image" to={`/properties/${property.id}`}>
-        <img
+        <PropertyImage
           src={image}
-          onError={(event) => {
-            event.currentTarget.src = fallbackPropertyImage;
-          }}
           alt=""
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
           decoding="async"
         />
         <span className="property-type">

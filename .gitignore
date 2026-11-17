@@ -31,6 +31,5 @@ key.properties
 *.keystore
 *.jks
 
-# Local agent instructions and skills
-/AGENTS.md
+# Local agent documentation
 /docs/agent-rules/

@@ -52,8 +52,8 @@ function DataPropertyPage({
           <LoadingGrid />
         ) : items.length ? (
           <div className="property-grid">
-            {items.map((p) => (
-              <PropertyCard key={p.id} property={p} />
+            {items.map((p, index) => (
+              <PropertyCard key={p.id} property={p} priority={index < 2} />
             ))}
           </div>
         ) : (
