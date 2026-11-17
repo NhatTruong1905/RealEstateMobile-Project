@@ -1,3 +1,5 @@
+import { preconnect } from "react-dom";
+import { imageOrigin } from "./config/imageDelivery";
 import { createBrowserRouter, createRoutesFromElements, Navigate, Outlet, Route, RouterProvider, ScrollRestoration } from "react-router-dom";
 import { PublicLayout } from "./layouts/PublicLayout";
 import { SellerLayout } from "./layouts/SellerLayout";
@@ -57,5 +59,6 @@ const router = createBrowserRouter(createRoutesFromElements(
 ));
 
 export default function App() {
+  if (imageOrigin) preconnect(imageOrigin);
   return <RouterProvider router={router} />;
 }

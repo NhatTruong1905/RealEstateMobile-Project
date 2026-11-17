@@ -160,8 +160,8 @@ export function HomePage() {
         />
         {data.length ? (
           <div className="property-grid">
-            {data.map((p) => (
-              <PropertyCard property={p} key={p.id} />
+            {data.map((p, index) => (
+              <PropertyCard property={p} key={p.id} priority={index < 2} />
             ))}
           </div>
         ) : (
