@@ -1,6 +1,5 @@
 import re
 import httpx
-from rag.source import read_source
 
 
 def validate_record(row):
@@ -29,8 +28,6 @@ class PropertySource:
             return response.json()
 
     def get(self, pid):
-        if self.settings.source_provider == "mock":
-            return read_source(self.settings.source_path).get(pid)
         if not re.fullmatch(r"[1-9][0-9]{0,9}", str(pid)):
             raise ValueError("Invalid backend property ID")
         row = validate_record(self._get("/properties/" + str(pid)))
@@ -39,8 +36,6 @@ class PropertySource:
         return row
 
     def get_many(self, ids):
-        if self.settings.source_provider == "mock":
-            return read_source(self.settings.source_path)
         ids = list(dict.fromkeys(ids))
         if not ids:
             return {}

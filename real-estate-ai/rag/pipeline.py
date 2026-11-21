@@ -22,9 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class RAGPipeline:
-    def __init__(self, papers_dir: str = "./papers", db_dir: str = "./vector_database"):
-        self.papers_dir = papers_dir
-        self.db_dir = db_dir
+    def __init__(self):
         self.rag_chain = None
         self.retriever = None
         self.summary_chain = None
@@ -36,7 +34,7 @@ class RAGPipeline:
             embedding = create_embedding(self.settings)
             llm = create_llm(self.settings)
             self.summary_chain = create_llm(self.settings).with_structured_output(RealEstateIntentSummary)
-            self.retriever = create_retriever(self.settings, embedding, self.db_dir,
+            self.retriever = create_retriever(self.settings, embedding,
                                               store_factory=QdrantParentStore)
             self.reranker = Reranker(self.settings)
             prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)

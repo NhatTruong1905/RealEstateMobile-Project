@@ -10,7 +10,6 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient, models
 
-from rag.source import read_source
 from rag.property_source import PropertySource, validate_record
 from rag.embedding_contract import embedding_contract
 
@@ -79,19 +78,6 @@ class QdrantParentStore:
                     "collection": self.settings.collection, "contract": contract}),))
         return contract
 
-    def sync(self, records, limit=20, max_chunks=100, offset=0):
-        if not self.settings.collection.endswith("_mock"):
-            raise ValueError("Mock data requires a collection ending in _mock")
-        result = dict(upsert=0, delete=0, skipped=0, failed=0)
-        for row in list(records.values())[offset:offset + limit]:
-            try:
-                self._sync_one(row, max_chunks)
-                result[self.last_action] += 1
-            except Exception as exc:
-                result["failed"] += 1
-                log.error("sync status=failed reason=%s", type(exc).__name__)
-        return result
-
     def apply_property(self, row, max_chunks=100):
         if self.settings.source_provider != "backend" or self.settings.collection.endswith("_mock"):
             raise ValueError("Live indexing requires backend source and a non-mock collection")
@@ -104,7 +90,7 @@ class QdrantParentStore:
                                     must_not=[models.HasIdCondition(has_id=points)] if points else None)
         self.client.delete(self.settings.collection, points_selector=models.FilterSelector(filter=stale_filter), wait=True)
 
-    def _sync_one(self, row, max_chunks, source_kind="mock"):
+    def _sync_one(self, row, max_chunks, source_kind):
         pid, version = row["id"], row["version"]
         text = row.get("text", "")
         content_hash = digest(text)

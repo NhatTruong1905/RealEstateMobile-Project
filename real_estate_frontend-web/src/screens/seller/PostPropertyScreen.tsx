@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, ImagePlus, MapPin, Pencil, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, ImagePlus, MapPin, Pencil, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { Link } from "../../components/ui/Navigation";
 import {
   sellerApi,
@@ -71,10 +71,12 @@ export function PostProperty() {
   const [optionsLoading, setOptionsLoading] = useState(true);
   function loadOptions() {
     setOptionsLoading(true);
-    setOptionsError("");
     sellerApi
       .options()
-      .then(setOptions)
+      .then((value) => {
+        setOptions(value);
+        setOptionsError("");
+      })
       .catch((e: Error) => setOptionsError(e.message))
       .finally(() => setOptionsLoading(false));
   }
@@ -243,8 +245,22 @@ export function PostProperty() {
           </button>
         </li>)}</ol>
       </nav>
-      {optionsLoading && <p role="status">Đang tải danh mục...</p>}
-      {optionsError && <div className="post-notice" role="alert">{optionsError}<LoadingButton type="button" loading={optionsLoading} onClick={loadOptions}>Tải lại danh mục</LoadingButton></div>}
+      {optionsLoading && !optionsError && <p role="status">Đang tải danh mục...</p>}
+      {optionsError && (
+        <div className="post-notice">
+          <p role="alert">{optionsError}</p>
+          <LoadingButton
+            className="button button-secondary"
+            type="button"
+            loading={optionsLoading}
+            loadingLabel="Đang tải lại…"
+            onClick={loadOptions}
+          >
+            <RefreshCw size={16} aria-hidden="true" />
+            Thử lại
+          </LoadingButton>
+        </div>
+      )}
       <form ref={formRef} className="property-form post-form" noValidate onSubmit={submit}
         onBlur={(event) => {
           const target = event.target;

@@ -24,8 +24,7 @@ class Settings:
     qdrant_api_key: str = field(default="", repr=False)
     collection: str = "realestate_gemini_dev_v1"
     state_path: str = "./vector_database/qdrant-dev.sqlite3"
-    source_path: str = ""
-    source_provider: str = "mock"
+    source_provider: str = "backend"
     property_api_url: str = "http://127.0.0.1:8080/api/internal/ai"
     property_api_token: str = field(default="", repr=False)
     source_timeout: float = 10.0
@@ -58,8 +57,7 @@ class Settings:
             qdrant_api_key=os.getenv("QDRANT_API_KEY", ""),
             collection=os.getenv("QDRANT_COLLECTION", "realestate_gemini_dev_v1"),
             state_path=os.getenv("QDRANT_STATE_PATH", "./vector_database/qdrant-dev.sqlite3"),
-            source_path=os.getenv("INDEX_SOURCE_JSON", ""),
-            source_provider=os.getenv("INDEX_SOURCE_PROVIDER", "mock"),
+            source_provider=os.getenv("INDEX_SOURCE_PROVIDER", "backend"),
             property_api_url=os.getenv("PROPERTY_API_URL", "http://127.0.0.1:8080/api/internal/ai"),
             property_api_token=os.getenv("PROPERTY_API_TOKEN", ""),
             source_timeout=positive("PROPERTY_API_TIMEOUT_SECONDS", 10, float),
@@ -77,13 +75,13 @@ class Settings:
         )
         if settings.llm_provider not in {"gemini", "legacy"}:
             raise ValueError("LLM_PROVIDER must be gemini/legacy")
-        if settings.vector_provider not in {"qdrant", "faiss"}:
-            raise ValueError("VECTOR_STORE_PROVIDER must be qdrant/faiss")
+        if settings.vector_provider != "qdrant":
+            raise ValueError("VECTOR_STORE_PROVIDER must be qdrant")
         if settings.top_n > settings.candidate_limit:
             raise ValueError("RERANK_TOP_N exceeds RERANK_CANDIDATE_LIMIT")
-        if settings.source_provider not in {"mock", "backend"}:
-            raise ValueError("INDEX_SOURCE_PROVIDER must be mock/backend")
-        if settings.source_provider == "backend" and not settings.property_api_token:
+        if settings.source_provider != "backend":
+            raise ValueError("INDEX_SOURCE_PROVIDER must be backend")
+        if not settings.property_api_token:
             raise ValueError("Missing PROPERTY_API_TOKEN")
         for name in ("qdrant_url", "rerank_base_url", "property_api_url"):
             url = urlsplit(getattr(settings, name))
