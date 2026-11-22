@@ -6,7 +6,7 @@ Rà soát ngày 21/11/2026. Mục tiêu của lần chạy đầu là hỏi chat
 
 - Web và Flutter gửi câu hỏi đến FastAPI. Chatbot tìm tin phù hợp trong Qdrant, đối chiếu với Spring Boot để lấy dữ liệu hiện tại rồi dùng Gemini sinh câu trả lời.
 - Lần đầu, lệnh `sync-backend` đưa dữ liệu từ Spring Boot vào Qdrant. Các lần duyệt, sửa và gỡ tin tiếp theo đi qua outbox của backend, RabbitMQ và worker Python.
-- API và worker dùng chung thư mục `vector_database/` trong Compose. Thư mục này chứa manifest embedding và state SQLite dùng cùng collection Qdrant.
+- API và worker đọc trạng thái chỉ mục từ schema `chatbot_index` trên PostgreSQL. Qdrant Cloud lưu vector.
 
 ## Chuẩn bị
 
@@ -14,6 +14,7 @@ Rà soát ngày 21/11/2026. Mục tiêu của lần chạy đầu là hỏi chat
 | --- | --- |
 | Gemini | Điền `GEMINI_LLM_MODEL` bằng model ID mà project chứa `GOOGLE_API_KEY` truy cập được. Model cần hỗ trợ streaming và structured output. Xác nhận quota cho cả chat và embedding. |
 | Qdrant Cloud | Điền `QDRANT_URL` và `QDRANT_API_KEY` bằng endpoint và Database API key có quyền đọc/ghi. Dùng collection dev riêng theo `QDRANT_COLLECTION`. |
+| Supabase PostgreSQL | Đặt `QDRANT_STATE_DATABASE_URL` từ Session pooler và `QDRANT_STATE_DATABASE_CA_FILE=./deploy/supabase-prod-ca-2021.crt` cho API và worker. |
 | RabbitMQ Cloud | Điền `RABBITMQ_URL` bằng URL AMQPS. Chuẩn bị vhost dev và quyền configure/write/read. Xác nhận gói hỗ trợ quorum queues nếu giữ `RABBITMQ_QUEUE_TYPE=quorum`. |
 | Spring Boot và DB dev | Chuẩn bị DB có vài tin đã duyệt. Áp dụng migration `004_property_index_mysql_forward.sql` hoặc `004_property_index_postgresql_forward.sql` trong `real-estate-backend/db/migrations/` theo DB đang dùng. Nếu DB đã áp dụng migration, kiểm tra cột `property.index_version` và bảng `property_index_outbox`. |
 | Môi trường chạy AI | Mở Docker Desktop và chạy `docker version` để xác nhận phần Server hoạt động. Có thể dùng Python trong WSL nếu bạn đã thiết lập kết nối từ WSL tới backend. |
@@ -31,13 +32,13 @@ Bốn biến Gemini model, Qdrant URL/key và RabbitMQ URL ở trên vẫn là p
    docker compose --profile app run --rm worker python -m rag.broker check
    ```
 
-   Lần chạy đầu, `setup-check` báo `needs_setup` và trả mã 1 nếu chưa có `embedding_smoke` hoặc `parent_state`. Nếu chỉ hai mục này còn thiếu, tiếp tục kiểm tra broker và tạo chúng ở bước 3.
+   Với chỉ mục PostgreSQL mới, `setup-check` báo `needs_setup` cho đến khi chạy đồng bộ lần đầu.
 
 3. Khi migration và broker đã sẵn sàng, đặt `PROPERTY_INDEX_ENABLED=true` và khởi động lại Spring Boot. Kiểm tra Gemini và đồng bộ một trang nhỏ. Các lệnh có `--allow-api-calls` có thể dùng quota hoặc phát sinh phí.
 
    ```powershell
-   docker compose --profile app run --rm worker python -m rag.dev gemini-smoke --allow-api-calls
-   docker compose --profile app run --rm worker python -m rag.dev sync-backend --allow-api-calls --limit 20 --after 0
+   .\.venv\Scripts\python.exe -m rag.dev gemini-smoke --allow-api-calls
+   .\.venv\Scripts\python.exe -m rag.dev sync-backend --allow-api-calls --limit 20 --after 0
    ```
 
 4. Lặp `sync-backend` với giá trị `next_after` trả về cho đến khi hết dữ liệu. Nếu `failed > 0`, sửa lỗi rồi tiếp tục từ cursor được trả về để xử lý lại tin lỗi. Kiểm tra Qdrant và khởi động API cùng worker.
@@ -49,6 +50,16 @@ Bốn biến Gemini model, Qdrant URL/key và RabbitMQ URL ở trên vẫn là p
    ```
 
 ## Kiểm tra kết quả
+
+### Chạy với Supabase PostgreSQL
+
+API và worker dùng chung `QDRANT_STATE_DATABASE_URL` và schema `chatbot_index`. Chứng chỉ Supabase có sẵn trong image tại `./deploy/supabase-prod-ca-2021.crt`.
+
+```powershell
+docker compose -f compose.yaml -f compose.postgres.yaml --profile app up -d --build api worker
+```
+
+### Kiểm tra chatbot
 
 1. Mở Swagger tại `http://127.0.0.1:8000/docs`. Gọi `POST /api/chat-rag` và `POST /api/chat-rag/stream` với JSON có trường `question`. Hỏi về khu vực hoặc mức giá của một tin đã đưa vào index. Kiểm tra câu trả lời có thông tin khớp với tin. Endpoint stream truyền từng phần văn bản.
 2. Duyệt một tin thử trong admin. Kiểm tra outbox chuyển sang `SENT`, worker xử lý thành công và chatbot tìm được tin. Sửa một chi tiết có thể đối chiếu rồi hỏi lại. Gỡ tin, thử bằng cuộc hội thoại mới và kiểm tra chatbot đã loại tin khỏi kết quả.

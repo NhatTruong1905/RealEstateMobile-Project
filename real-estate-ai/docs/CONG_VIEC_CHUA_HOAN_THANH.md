@@ -28,7 +28,7 @@ Không đưa secret lên Git/chat. Không ghi đè `.env` thật trong lần c�
 - [ ] Sync batch nhỏ, tiếp tục bằng `next_after`; kiểm tra parent/points, restart và embedding contract trên Cloud thật.
 - [ ] Chạy worker/publisher, kiểm tra duyệt mới, sửa, ẩn/xóa và sự kiện cũ không khôi phục tin đã gỡ.
 - [ ] Kiểm tra mất kết nối broker/embedding/Qdrant, retry/DLQ/redrive và độ mới index trên tài khoản cloud thật.
-- [ ] Thiết lập backup/restore SQLite và Qdrant cùng generation; không chạy state riêng trên nhiều replica.
+- [ ] Thiết lập sao lưu và khôi phục trạng thái PostgreSQL cùng phiên bản với chỉ mục Qdrant.
 - [ ] Xác minh dữ liệu FAISS cũ trước khi tái sử dụng hoặc dọn riêng; không tự re-index hàng loạt lúc khởi động API.
 
 Các module đã có trong mã không thay cho việc nghiệm thu các bước này bằng dịch vụ thật.

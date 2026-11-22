@@ -13,7 +13,7 @@ Dev tiếp tục dùng Qwen3-Reranker-0.6B qua vLLM local. Rerank API production
 - Backend: `index_version`, indexing outbox riêng, ghi cùng transaction duyệt/sửa/xóa mềm; publisher RabbitMQ có persistent messages, mandatory returns, confirms và retry outbox. No-op không tăng version hoặc thay audit timestamp.
 - API nguồn nội bộ có shared token: hydrate theo ID, batch resolve và keyset snapshot; tin không công khai chỉ trả tombstone, không lộ email/nhận xét duyệt.
 - AI worker: hydrate trạng thái mới nhất, embedding phần nội dung thay đổi, sync Qdrant và parent/version state, manual ACK; retry có TTL/backoff, DLQ, redrive có giới hạn.
-- Qdrant: index `parent_id` phục vụ cleanup/filter; khóa SQLite giữ xuyên thao tác ghi/cleanup để tránh race giữa hai generation; retrieval xác minh nguồn chuẩn và fail closed khi nguồn không khả dụng.
+- Qdrant dùng index `parent_id` để lọc và dọn vector. Phiên bản hiện tại dùng khóa giao dịch PostgreSQL khi cập nhật chỉ mục. Retrieval xác minh dữ liệu với backend trước khi trả kết quả.
 - Rerank client: hỗ trợ Bearer API key để dùng vLLM local hoặc endpoint production tương thích schema.
 - Compose: không chạy broker RabbitMQ; worker dùng URL cloud chung với backend. vLLM pooling 0.6B FP16 và profile `app` chạy API/worker bằng Linux, dùng chung volume state. Không đóng secrets/model weights vào image.
 - `.env.example`: cấu hình Cloud, token nội bộ, broker, rerank và tùy chọn key LLM/embedding riêng. `.env` thật của người dùng không bị ghi đè.
@@ -23,7 +23,7 @@ Dev tiếp tục dùng Qwen3-Reranker-0.6B qua vLLM local. Rerank API production
 - Đã tải model chính thức `Qwen/Qwen3-Reranker-0.6B` vào `models/Qwen3-Reranker-0.6B/`.
 - Revision: `e61197ed45024b0ed8a2d74b80b4d909f1255473`; weights `model.safetensors` có 1.191.588.280 byte. Manifest nằm cạnh model.
 - Thư mục model và cache bị Git bỏ qua; chỉ README/downloader/config được theo dõi.
-- Lệnh xóa model 4B bị automatic approval review chặn. Bản 4B đã chuyển vào `vector_database/unused-models/Qwen3-Reranker-4B/` (Git bỏ qua), không được cấu hình sử dụng; dung lượng chưa được giải phóng. Người dùng có thể xóa thủ công thư mục đó.
+- Model 4B cũ nằm trong thư mục lưu trữ ngoài repo và chưa được xóa khỏi ổ D.
 
 ## Bằng chứng và giới hạn
 
@@ -55,11 +55,11 @@ python -m rag.dev rerank-check
 
 Các kết quả kiểm thử nêu trên là bằng chứng lịch sử trước khi gỡ thư mục `tests/` theo yêu cầu người dùng. Repo hiện không còn suite test AI để chạy lại bằng pytest. Kiểm tra kết nối thật vẫn dùng các lệnh `python -m rag.dev ...` và `python -m rag.broker check` trong mã runtime, theo mục 6 hướng dẫn chính.
 
-Mọi thay đổi còn ở working tree; chưa commit, push hoặc deploy. SQLite state hiện chỉ hỗ trợ một máy/volume chung, chưa phải parent store cho nhiều replica production.
+Các kết quả trong mục này mô tả lần kiểm tra trước khi chuyển trạng thái chỉ mục sang PostgreSQL.
 
 ## Dung lượng Docker và cache sau kiểm thử
 
-Image vLLM rất lớn; lần giải nén đã làm ổ C gần đầy và Docker không ổn định. Tác vụ build/khởi động lỗi đã dừng; cache pip được chuyển nguyên thư mục từ `C:/Users/admin/AppData/Local/pip/Cache` sang `real-estate-ai/vector_database/temporary-cache-backup/Cache` trên ổ D (khoảng 828 MB, có thể khôi phục). Ổ C có lại khoảng 4,7 GB tại lần đo sau đó. Không xóa volume/dữ liệu CVAT hoặc project khác.
+Lần giải nén image vLLM làm ổ C gần đầy và Docker không ổn định. Cache pip cũ, khoảng 828 MB, vẫn nằm trong thư mục lưu trữ ngoài repo trên ổ D. Ổ C có lại khoảng 4,7 GB tại lần đo sau đó.
 
 Trước khi build lại vLLM, cần đủ chỗ tại nơi Docker lưu disk image, không chỉ nơi đặt repo/model. Nên chuẩn bị khoảng 30–40 GB trống cho image/layers tạm, hoặc chuyển nơi lưu disk image Docker sang ổ D bằng chức năng chính thức của Docker Desktop. Chưa tự chuyển VHDX vì đó là dữ liệu Docker dùng chung với workload khác. Model 0.6B nằm trên D, nhưng điều đó không tự chuyển Docker layers khỏi C.
 

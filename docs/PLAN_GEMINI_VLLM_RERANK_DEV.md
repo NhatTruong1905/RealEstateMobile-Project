@@ -24,7 +24,7 @@ Duyệt / sửa / gỡ property
   → RabbitMQ Cloud
   → AI worker hydrate trạng thái hiện tại từ backend
   → normalize / chunk / embedding phần đổi
-  → Qdrant Cloud + SQLite parent/version state
+  → Qdrant Cloud + Supabase PostgreSQL
   → ACK sau khi ghi hoàn tất
 ```
 
@@ -77,10 +77,10 @@ Chi tiết từng bước và dọn tài nguyên local: [mục 7 của hướng 
 
 - Người dùng tự điền key/URL vào `.env` theo bảng trong hướng dẫn service; không đưa secret vào Git hoặc tài liệu.
 - Key Gemini có thể dùng chung qua `GOOGLE_API_KEY`, hoặc tách `GOOGLE_LLM_API_KEY` và `GOOGLE_EMBEDDING_API_KEY`.
-- Đổi key đơn thuần với cùng embedding contract không cần re-index. Đổi model/dimension/task/normalization cần collection **và** SQLite state mới; smoke dimension và re-index có giới hạn ngân sách.
+- Đổi key đơn thuần với cùng embedding contract không cần re-index. Đổi model/dimension/task/normalization cần collection và trạng thái PostgreSQL riêng, sau đó kiểm tra kích thước vector và lập chỉ mục lại.
 - Không tự nhận collection đã tồn tại nhưng thiếu manifest tương ứng; không tự ghi đè/xóa index khi mismatch. Giữ dữ liệu FAISS cũ đến khi có quyết định chuyển/dọn riêng.
 - Runtime kiểm tra trạng thái/quyền từ backend, không dùng payload Qdrant cũ để cho phép hiển thị tin đã gỡ. Không coi bản ghi vắng trong một trang snapshot là lệnh xóa.
-- SQLite parent/version state hiện chỉ dành cho một máy/volume dùng chung. Scale nhiều máy cần store và concurrency control chung; không chạy nhiều state riêng trỏ cùng collection.
+- Các replica dùng chung trạng thái PostgreSQL và cùng collection Qdrant.
 
 ## 7. Các việc chưa nghiệm thu live
 

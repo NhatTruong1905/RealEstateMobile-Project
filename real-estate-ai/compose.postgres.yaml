@@ -1,0 +1,9 @@
+services:
+  api:
+    environment:
+      QDRANT_STATE_DATABASE_URL: ${QDRANT_STATE_DATABASE_URL:?Set the PostgreSQL index state connection string}
+    volumes: !reset []
+  worker:
+    environment:
+      QDRANT_STATE_DATABASE_URL: ${QDRANT_STATE_DATABASE_URL:?Set the PostgreSQL index state connection string}
+    volumes: !reset []

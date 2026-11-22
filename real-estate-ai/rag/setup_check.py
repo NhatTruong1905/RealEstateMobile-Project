@@ -1,6 +1,5 @@
-from pathlib import Path
-
 from rag.config import Settings
+from rag.index_state import IndexState
 
 
 def configured(value):
@@ -31,10 +30,13 @@ def check_setup(settings: Settings):
     add("rabbitmq_config", valid_broker, "Set RABBITMQ_URL; this offline check does not connect")
     if settings.qdrant_url.startswith("https://"):
         add("qdrant_cloud_key", configured(settings.qdrant_api_key), "Set cluster Database API key, not management key")
-    add("embedding_smoke", Path("vector_database/embedding-smoke.json").is_file(),
-        "After confirming budget, run python -m rag.dev gemini-smoke --allow-api-calls")
-    add("parent_state", Path(settings.state_path).is_file(),
-        "After smoke succeeds and Qdrant is running, run the bounded sync command")
+    state = IndexState(settings)
+    try:
+        with state.connect() as db:
+            ready = bool(state.execute(db, "SELECT value FROM manifest WHERE id=1").fetchone())
+    except Exception:
+        ready = False
+    add("postgres_index_state", ready, "Verify the PostgreSQL connection and initialize the index state")
     return {"status": "configured_offline" if all(c["status"] == "ok" for c in checks) else "needs_setup",
             "checks": checks, "live_services_verified": False,
             "rerank": "enabled_requires_live_smoke" if settings.rerank_enabled else "disabled"}

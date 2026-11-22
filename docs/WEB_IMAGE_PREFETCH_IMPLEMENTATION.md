@@ -36,7 +36,6 @@ Chưa thay đổi Cloudflare, bucket, cache header, upload hoặc backend. API h
 Chạy trong thư mục web:
 
 ```sh
-npm run test:images
 npm run build
 npm run lint
 ```

@@ -1,18 +1,23 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { session } from "../services/api/core/session";
 
+function hasActiveSession() {
+  const parts = session.token?.split(".");
+  if (parts?.length !== 3 || parts.some((part) => !part)) return false;
+
+  try {
+    const { exp } = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof exp === "number" && Number.isFinite(exp) && exp > Date.now() / 1000;
+  } catch {
+    return false;
+  }
+}
+
+function subscribe(sync: () => void) {
+  addEventListener("session-change", sync);
+  return () => removeEventListener("session-change", sync);
+}
+
 export function useAuthenticated() {
-  const [authenticated, setAuthenticated] = useState(Boolean(session.token));
-
-  useEffect(() => {
-    const sync = () => setAuthenticated(Boolean(session.token));
-    addEventListener("session-change", sync);
-    addEventListener("storage", sync);
-    return () => {
-      removeEventListener("session-change", sync);
-      removeEventListener("storage", sync);
-    };
-  }, []);
-
-  return authenticated;
+  return useSyncExternalStore(subscribe, hasActiveSession);
 }
