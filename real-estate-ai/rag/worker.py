@@ -4,12 +4,10 @@ import logging
 import time
 import uuid
 from datetime import datetime
-from pathlib import Path
 import httpx
 import pika
 from dotenv import load_dotenv
 from rag.config import Settings
-from rag.embedding_contract import embedding_contract
 from rag.messaging import BrokerSettings, EXCHANGE, QUEUE, RETRY, DLQ, declare_topology
 from rag.providers import create_embedding
 from rag.qdrant_store import QdrantParentStore
@@ -46,7 +44,19 @@ def parse_event(body):
 
 
 def process_event(store, event):
-    row = store.source.get(event["propertyId"])
+    property_id = event["propertyId"]
+    try:
+        row = store.source.get(property_id)
+    except httpx.HTTPStatusError as exc:
+        if event["operation"] != "delete" or exc.response.status_code != 404:
+            raise
+        row = {
+            "id": property_id,
+            "version": event["aggregateVersion"],
+            "public": False,
+            "text": "",
+            "metadata": {},
+        }
     if row["version"] < event["aggregateVersion"]:
         raise RuntimeError("Source behind event version")
     return store.apply_property(row)
@@ -80,7 +90,6 @@ def delivery_handler(store, settings):
 def main():
     load_dotenv()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--manifest", default="vector_database/embedding-smoke.json")
     parser.add_argument("--once", action="store_true", help="Process at most one message for a smoke test")
     args = parser.parse_args()
     settings = Settings.from_env()
@@ -90,10 +99,7 @@ def main():
     store = QdrantParentStore(settings, create_embedding(settings))
     connection = None
     try:
-        contract = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
-        if contract != embedding_contract(settings, contract["dimension"]):
-            raise ValueError("Smoke manifest mismatch")
-        store.validate(contract, create=True)
+        store.validate()
         while True:
             try:
                 connection = pika.BlockingConnection(broker.parameters())

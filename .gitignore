@@ -31,5 +31,4 @@ key.properties
 *.keystore
 *.jks
 
-# Local agent documentation
-/docs/agent-rules/
+

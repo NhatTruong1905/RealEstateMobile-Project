@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:real_estate_frontend/dto/ChatMessageDTO.dart';
 import 'package:real_estate_frontend/layout/Footer.dart';
 import 'package:real_estate_frontend/screens/Account.dart';
+import 'package:real_estate_frontend/screens/Auth.dart';
 import 'package:real_estate_frontend/screens/Home.dart';
 import 'package:real_estate_frontend/screens/SaveNews.dart';
 import 'package:real_estate_frontend/screens/seller/PostProperty.dart';
@@ -72,6 +73,15 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _openPostModal() async {
+    final loggedIn = await _hasActiveSession();
+    if (!mounted) return;
+    if (!loggedIn) {
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
+      return;
+    }
+
     final res = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const PostPropertyScreen()),
@@ -83,11 +93,32 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  Future<bool> _hasActiveSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('is_logged_in') != true) return false;
+
+    final parts = prefs.getString('jwt_token')?.split('.');
+    if (parts == null ||
+        parts.length != 3 ||
+        parts.any((part) => part.isEmpty)) {
+      return false;
+    }
+    try {
+      final claims = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      final expiration = claims is Map ? claims['exp'] : null;
+      return expiration is num &&
+          expiration.isFinite &&
+          expiration > DateTime.now().millisecondsSinceEpoch / 1000;
+    } on FormatException {
+      return false;
+    }
+  }
+
   Future<void> _toggleMode(bool isSeller) async {
     if (isSeller) {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token');
-      if (token == null || token.isEmpty) {
+      if (!await _hasActiveSession()) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

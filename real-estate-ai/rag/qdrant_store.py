@@ -1,10 +1,7 @@
 import hashlib
 import json
 import logging
-import sqlite3
 import uuid
-from contextlib import contextmanager
-from pathlib import Path
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -12,6 +9,7 @@ from qdrant_client import QdrantClient, models
 
 from rag.property_source import PropertySource, validate_record
 from rag.embedding_contract import embedding_contract
+from rag.index_state import IndexState
 
 log = logging.getLogger(__name__)
 
@@ -30,24 +28,13 @@ class QdrantParentStore:
         self.source = PropertySource(settings)
         self.client = client or QdrantClient(url=settings.qdrant_url,
                                             api_key=settings.qdrant_api_key or None, timeout=10)
-        Path(settings.state_path).parent.mkdir(parents=True, exist_ok=True)
-        with self.connect() as db:
-            db.execute("CREATE TABLE IF NOT EXISTS manifest (id INTEGER PRIMARY KEY CHECK(id=1), value TEXT NOT NULL)")
-            db.execute("CREATE TABLE IF NOT EXISTS parents (id TEXT PRIMARY KEY, version INTEGER NOT NULL, hash TEXT NOT NULL, document TEXT NOT NULL, points TEXT NOT NULL, public INTEGER NOT NULL)")
+        self.state = IndexState(settings)
+        self.state.initialize()
         self.splitter = RecursiveCharacterTextSplitter(chunk_size=450, chunk_overlap=50)
 
-    @contextmanager
-    def connect(self):
-        connection = sqlite3.connect(self.settings.state_path, timeout=30)
-        try:
-            with connection:
-                yield connection
-        finally:
-            connection.close()
-
     def validate(self, contract=None, create=False):
-        with self.connect() as db:
-            saved = db.execute("SELECT value FROM manifest WHERE id=1").fetchone()
+        with self.state.connect() as db:
+            saved = self.state.execute(db, "SELECT value FROM manifest WHERE id=1").fetchone()
         if saved:
             existing = json.loads(saved[0])
             if existing.get("collection") != self.settings.collection:
@@ -73,8 +60,8 @@ class QdrantParentStore:
         else:
             raise ValueError("Qdrant collection missing; refusing automatic rebuild")
         if not saved:
-            with self.connect() as db:
-                db.execute("INSERT INTO manifest VALUES (1, ?)", (json.dumps({
+            with self.state.connect() as db:
+                self.state.execute(db, "INSERT INTO manifest VALUES (1, ?)", (json.dumps({
                     "collection": self.settings.collection, "contract": contract}),))
         return contract
 
@@ -96,9 +83,9 @@ class QdrantParentStore:
         content_hash = digest(text)
         document = json.dumps({"text": text, "metadata": {**row.get("metadata", {}),
                                "source_id": pid, "source_kind": source_kind, "source_version": version}}, ensure_ascii=False)
-        with self.connect() as db:
-            db.execute("BEGIN IMMEDIATE")
-            old = db.execute("SELECT version, hash, document, points, public FROM parents WHERE id=?", (pid,)).fetchone()
+        with self.state.connect() as db:
+            self.state.lock_property(db, pid)
+            old = self.state.execute(db, "SELECT version, hash, document, points, public FROM parents WHERE id=?", (pid,)).fetchone()
             if old and version <= old[0]:
                 if version == old[0] and (content_hash != old[1] or bool(row["public"]) != bool(old[4]) or document != old[2]):
                     raise ValueError("Changed record must increment version")
@@ -115,8 +102,8 @@ class QdrantParentStore:
                     if len(chunks) > max_chunks:
                         raise ValueError("Record exceeds chunk budget")
                     vectors = self.embedding.embed_documents(chunks)
-                    with self.connect() as manifest_db:
-                        contract = json.loads(manifest_db.execute("SELECT value FROM manifest WHERE id=1").fetchone()[0])["contract"]
+                    contract = json.loads(self.state.execute(
+                        db, "SELECT value FROM manifest WHERE id=1").fetchone()[0])["contract"]
                     if len(vectors) != len(chunks) or any(len(v) != contract["dimension"] for v in vectors):
                         raise ValueError("Embedding dimensions/count mismatch")
                     points = [str(uuid.uuid5(uuid.NAMESPACE_URL, f"{self.settings.collection}:{pid}:{content_hash}:{i}")) for i in range(len(chunks))]
@@ -124,8 +111,10 @@ class QdrantParentStore:
                         id=point, vector=vector, payload={"parent_id": pid, "content_hash": content_hash,
                                                         "chunk": chunk, "source_kind": source_kind})
                         for point, vector, chunk in zip(points, vectors, chunks)], wait=True)
-            db.execute("INSERT OR REPLACE INTO parents VALUES (?, ?, ?, ?, ?, ?)",
-                       (pid, version, content_hash, document, json.dumps(points), int(row["public"])))
+            self.state.execute(db, "INSERT INTO parents VALUES (?, ?, ?, ?, ?, ?) "
+                               "ON CONFLICT(id) DO UPDATE SET version=excluded.version, hash=excluded.hash, "
+                               "document=excluded.document, points=excluded.points, public=excluded.public",
+                               (pid, version, content_hash, document, json.dumps(points), int(row["public"])))
             self._delete_stale(pid, points)
         self.last_action = "upsert" if row["public"] else "delete"
 
@@ -138,23 +127,30 @@ class QdrantParentStore:
         except Exception:
             log.warning("retrieval status=degraded reason=source_unavailable")
             return []
+        if not source:
+            return []
+        placeholders = ", ".join("?" for _ in source)
+        with self.state.connect() as db:
+            rows = self.state.execute(
+                db, f"SELECT id, version, hash, document, points, public FROM parents WHERE id IN ({placeholders})",
+                tuple(source),
+            ).fetchall()
+        parents = {row[0]: row[1:] for row in rows}
         documents, seen = [], set()
-        with self.connect() as db:
-            for hit in hits:
-                pid = (hit.payload or {}).get("parent_id")
-                if pid in seen:
-                    continue
-                row = db.execute("SELECT version, hash, document, points, public FROM parents WHERE id=?", (pid,)).fetchone()
-                current = source.get(pid)
-                if not row or not row[4] or not current or not current["public"]:
-                    continue
-                if current["version"] != row[0] or digest(current["text"]) != row[1] or str(hit.id) not in json.loads(row[3]):
-                    continue
-                stored = json.loads(row[2])
-                if stored["metadata"] != {**current.get("metadata", {}), "source_id": pid, "source_kind": self.settings.source_provider, "source_version": current["version"]}:
-                    continue
-                seen.add(pid)
-                documents.append(Document(page_content=stored["text"], metadata=stored["metadata"]))
+        for hit in hits:
+            pid = (hit.payload or {}).get("parent_id")
+            if pid in seen:
+                continue
+            row, current = parents.get(pid), source.get(pid)
+            if not row or not row[4] or not current or not current["public"]:
+                continue
+            if current["version"] != row[0] or digest(current["text"]) != row[1] or str(hit.id) not in json.loads(row[3]):
+                continue
+            stored = json.loads(row[2])
+            if stored["metadata"] != {**current.get("metadata", {}), "source_id": pid, "source_kind": self.settings.source_provider, "source_version": current["version"]}:
+                continue
+            seen.add(pid)
+            documents.append(Document(page_content=stored["text"], metadata=stored["metadata"]))
         return documents
 
     def close(self):

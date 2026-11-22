@@ -8,8 +8,6 @@ services:
     environment:
       PROPERTY_API_URL: ${PROPERTY_API_CONTAINER_URL:-http://host.docker.internal:8080/api/internal/ai}
       RERANK_BASE_URL: ${RERANK_CONTAINER_BASE_URL:-http://host.docker.internal:8001}
-    volumes:
-      - ./vector_database:/app/vector_database
     ports:
       - "127.0.0.1:8000:8000"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -21,8 +19,6 @@ services:
     env_file: .env
     environment:
       PROPERTY_API_URL: ${PROPERTY_API_CONTAINER_URL:-http://host.docker.internal:8080/api/internal/ai}
-    volumes:
-      - ./vector_database:/app/vector_database
     command: ["python", "-m", "rag.worker"]
     restart: unless-stopped
   reranker:

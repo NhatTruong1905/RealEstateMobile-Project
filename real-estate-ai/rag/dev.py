@@ -16,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser(description="Explicit dev smoke/sync; never runs at API startup")
     parser.add_argument("command", choices=["setup-check", "gemini-smoke", "sync-backend", "qdrant-check", "rerank-check"])
     parser.add_argument("--allow-api-calls", action="store_true", help="Acknowledge configured Gemini calls may incur cost")
-    parser.add_argument("--manifest", default="./vector_database/embedding-smoke.json")
+    parser.add_argument("--manifest", default="./embedding-smoke.json")
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--max-chunks", type=int, default=100)
     parser.add_argument("--after", type=int, default=0, help="Backend keyset cursor; resume with next_after")
@@ -77,10 +77,14 @@ def main():
             print(json.dumps({"status": "ok", "collection": settings.collection, "contract": contract,
                               "points": store.client.count(settings.collection, exact=True).count}))
             return 0
-        contract = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
-        if contract != embedding_contract(settings, contract["dimension"]):
-            raise ValueError("Smoke manifest does not match configuration")
-        store.validate(contract, create=True)
+        manifest = Path(args.manifest)
+        if manifest.is_file():
+            contract = json.loads(manifest.read_text(encoding="utf-8"))
+            if contract != embedding_contract(settings, contract["dimension"]):
+                raise ValueError("Smoke manifest does not match configuration")
+            store.validate(contract, create=True)
+        else:
+            store.validate()
         rows = store.source.page(args.after, args.limit)
         result = dict(upsert=0, delete=0, skipped=0, failed=0)
         cursor = args.after

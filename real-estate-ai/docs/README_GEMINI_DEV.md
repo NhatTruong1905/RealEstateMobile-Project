@@ -5,7 +5,7 @@ Cập nhật 14/11/2026. Hướng dẫn vận hành: [SETUP_FULL_STACK.md](SETUP
 ## Cấu hình thống nhất
 
 - Gemini API cho LLM và embedding; key nằm trong `.env`, có thể tách key theo hai vai trò.
-- Qdrant Cloud lưu vector; SQLite giữ parent/version/manifest trên volume bền vững dùng chung trong một máy.
+- Qdrant Cloud lưu vector. Supabase PostgreSQL lưu trạng thái tin, phiên bản và manifest dùng chung giữa API và worker.
 - RabbitMQ Cloud qua AMQPS nhận sự kiện từ backend transactional outbox; không có broker RabbitMQ local trong Compose.
 - Qwen3-Reranker-0.6B qua vLLM local cho dev. Provider API rerank production là bước sau, chưa thay trong cấu hình đang có.
 - Dependency API/tải model/công cụ được gom vào `requirements.txt`. vLLM chạy trong Linux runtime riêng, không cài vào venv Windows.
@@ -34,7 +34,7 @@ Backend Java đã có migration `004_property_index_*`, outbox/publisher và API
 
 Chưa nghiệm thu Gemini/Qdrant Cloud/RabbitMQ Cloud bằng tài khoản người dùng. Chưa chạy inference Qwen 0.6B: image vLLM đã chọn cần xử lý driver và dung lượng Docker. Việc tải model hoặc Compose config hợp lệ không chứng minh serving/quality. Giữ `RERANK_ENABLED=false` đến khi rerank-check đạt.
 
-API startup không tự embed toàn bộ; sync/worker có thể dùng quota Gemini. Nguồn backend là chuẩn về quyền/trạng thái, không dùng payload vector cũ để cho phép tin đã gỡ xuất hiện. Stream hiện là text streaming, chưa phải structured SSE. SQLite state hiện không dành cho nhiều replica với các file state riêng.
+API startup không tự embed toàn bộ. Sync và worker có thể dùng quota Gemini. Chatbot xác minh quyền và trạng thái tin với backend. API trả stream văn bản.
 
 ## Sau này đổi rerank sang API
 

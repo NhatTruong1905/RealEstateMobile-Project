@@ -37,7 +37,11 @@ async def chat_stream_endpoint(request: ChatRequest):
 
     return StreamingResponse(
         token_generator(),
-        media_type="text/plain; charset=utf-8"
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

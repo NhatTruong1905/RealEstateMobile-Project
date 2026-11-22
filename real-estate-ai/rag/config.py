@@ -23,7 +23,7 @@ class Settings:
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str = field(default="", repr=False)
     collection: str = "realestate_gemini_dev_v1"
-    state_path: str = "./vector_database/qdrant-dev.sqlite3"
+    state_database_url: str = field(default="", repr=False)
     source_provider: str = "backend"
     property_api_url: str = "http://127.0.0.1:8080/api/internal/ai"
     property_api_token: str = field(default="", repr=False)
@@ -56,7 +56,7 @@ class Settings:
             qdrant_url=os.getenv("QDRANT_URL", "http://localhost:6333"),
             qdrant_api_key=os.getenv("QDRANT_API_KEY", ""),
             collection=os.getenv("QDRANT_COLLECTION", "realestate_gemini_dev_v1"),
-            state_path=os.getenv("QDRANT_STATE_PATH", "./vector_database/qdrant-dev.sqlite3"),
+            state_database_url=os.getenv("QDRANT_STATE_DATABASE_URL", "").strip(),
             source_provider=os.getenv("INDEX_SOURCE_PROVIDER", "backend"),
             property_api_url=os.getenv("PROPERTY_API_URL", "http://127.0.0.1:8080/api/internal/ai"),
             property_api_token=os.getenv("PROPERTY_API_TOKEN", ""),
@@ -83,6 +83,8 @@ class Settings:
             raise ValueError("INDEX_SOURCE_PROVIDER must be backend")
         if not settings.property_api_token:
             raise ValueError("Missing PROPERTY_API_TOKEN")
+        if not settings.state_database_url:
+            raise ValueError("Missing QDRANT_STATE_DATABASE_URL")
         for name in ("qdrant_url", "rerank_base_url", "property_api_url"):
             url = urlsplit(getattr(settings, name))
             if url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password or url.query or url.fragment:

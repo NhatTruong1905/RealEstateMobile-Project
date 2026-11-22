@@ -9,4 +9,4 @@ __pycache__
 .env
 .env.*
 models
-vector_database
+embedding-smoke.json

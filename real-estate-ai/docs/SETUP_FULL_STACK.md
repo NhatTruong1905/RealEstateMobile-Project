@@ -13,7 +13,7 @@ flowchart LR
     W --> SRC[Backend Property API nội bộ có token]
     W --> EMB[Gemini embedding]
     W --> Q[Qdrant Cloud]
-    W --> S[SQLite parent/version state]
+    W --> S[Supabase PostgreSQL]
     CHAT[Chat API] --> Q
     CHAT --> SRC
     CHAT --> R[Qwen3-Reranker-0.6B qua vLLM local]
@@ -41,7 +41,8 @@ Làm trong `real-estate-ai/`. Nếu đã có `.env`, **giữ nguyên key cũ**, 
 | `QDRANT_URL` | Vào [Qdrant Cloud](https://cloud.qdrant.io/), tạo cluster, copy HTTPS cluster endpoint từ trang cluster. Dùng đúng REST endpoint/port do console cung cấp. |
 | `QDRANT_API_KEY` | Tạo **Database API key** của cluster, có quyền đọc/ghi collection cần dùng. Không dùng Cloud Management key. |
 | `QDRANT_COLLECTION` | Tự đặt, ví dụ `realestate_gemini_dev_v1`. Collection thật không có hậu tố `_mock`; dev/prod tách collection. CLI sẽ tạo collection theo dimension đã smoke. |
-| `QDRANT_STATE_PATH` | File SQLite local, ví dụ `./vector_database/qdrant-dev.sqlite3`; backup cùng collection Qdrant. |
+| `QDRANT_STATE_DATABASE_URL` | Chuỗi kết nối PostgreSQL dùng chung cho API và worker. |
+| `QDRANT_STATE_DATABASE_CA_FILE` | Đường dẫn chứng chỉ CA để xác minh máy chủ PostgreSQL qua TLS. |
 | `PROPERTY_API_URL` | URL backend tới `/api/internal/ai`, ví dụ `http://127.0.0.1:8080/api/internal/ai`. Nếu backend có context path thì thêm trước `/api`. |
 | `PROPERTY_API_TOKEN` | Secret ngẫu nhiên do bạn tạo, dùng chung giữa backend và AI, khác JWT/Gemini key. |
 | `RERANK_API_KEY` | Dev: secret ngẫu nhiên bảo vệ vLLM local, không phải HF token. Khi chuyển API: dùng secret provider cấp nếu provider hỗ trợ Bearer auth; xem mục 7. |
@@ -150,7 +151,7 @@ Các lệnh có `--allow-api-calls` gọi Gemini và có thể tính phí; chạ
 .\.venv\Scripts\python.exe -m rag.dev sync-backend --allow-api-calls --limit 20 --after 0
 ```
 
-`setup-check` kiểm tra offline, không chứng minh dịch vụ live. `gemini-smoke` đo dimension, kiểm tra LLM/structured output/stream, ghi `vector_database/embedding-smoke.json`. `sync-backend` tạo collection và manifest phù hợp, đồng bộ một trang; dùng `next_after` để tiếp tục đến trang rỗng. Nếu có `failed>0`, sửa lỗi và chạy lại từ cursor trả về; không tăng cursor vượt lỗi.
+`setup-check` kiểm tra cấu hình và manifest PostgreSQL. `gemini-smoke` kiểm tra kích thước vector, LLM, structured output và stream rồi ghi `embedding-smoke.json`. `sync-backend` tạo collection và manifest phù hợp, đồng bộ một trang. Dùng `next_after` để tiếp tục. Nếu có lỗi, sửa lỗi rồi chạy lại từ cursor trả về.
 
 Khởi động worker sau smoke, trước hoặc trong lúc snapshot để queue giữ các thay đổi:
 
@@ -175,21 +176,21 @@ Sau khi Docker Engine ổn định, có thể dùng profile `app` thay `.venv` W
 
 ```powershell
 docker compose --profile app build worker api
-docker compose --profile app run --rm worker python -m rag.dev gemini-smoke --allow-api-calls
-docker compose --profile app run --rm worker python -m rag.dev sync-backend --allow-api-calls --limit 20 --after 0
+.\.venv\Scripts\python.exe -m rag.dev gemini-smoke --allow-api-calls
+.\.venv\Scripts\python.exe -m rag.dev sync-backend --allow-api-calls --limit 20 --after 0
 docker compose --profile app up -d worker
 # Lặp sync-backend theo next_after đến trang rỗng, rồi:
 docker compose --profile app up -d api
 docker compose --profile app run --rm worker python -m rag.broker check
 ```
 
-Broker nằm trên cloud; có thể kiểm tra bằng `docker compose --profile app run --rm worker python -m rag.broker check` trước khi gọi Gemini. Hai service mount cùng `vector_database/`, không mount model vào API/worker. File `.env` được truyền lúc chạy, không đóng vào image. Chỉ chạy một bộ API/worker cho collection/state này. Không chạy đồng thời bản Windows với bản Docker nếu chưa kiểm chứng khóa SQLite xuyên hai môi trường.
+Kiểm tra broker bằng `docker compose --profile app run --rm worker python -m rag.broker check` trước khi gọi Gemini. API và worker nhận cấu hình từ `.env` lúc chạy và dùng cùng trạng thái trên PostgreSQL.
 
 ## 7. Chuyển production
 
 ### 7.1. LLM và embedding
 
-Thay key Gemini bằng key production trong `.env` hoặc secret store. Có thể tách `GOOGLE_LLM_API_KEY` và `GOOGLE_EMBEDDING_API_KEY`; để trống thì dùng chung `GOOGLE_API_KEY`. Đổi key đơn thuần với cùng embedding contract không cần re-embed. Đổi provider phải có adapter phù hợp; đổi model/dimension/task/normalization cần collection **và** SQLite state mới, smoke dimension và re-index trước khi chuyển traffic. Không ghi vector khác contract vào collection cũ.
+Lưu key Gemini production trong `.env` hoặc secret store. Có thể dùng riêng `GOOGLE_LLM_API_KEY` và `GOOGLE_EMBEDDING_API_KEY` hoặc dùng chung `GOOGLE_API_KEY`. Khi đổi model, kích thước vector, tác vụ hoặc cách chuẩn hóa, tạo collection và database trạng thái riêng rồi kiểm tra và lập chỉ mục lại trước khi chuyển traffic.
 
 ### 7.2. Thay rerank local bằng API
 
@@ -248,8 +249,8 @@ Chỉ bỏ hẳn `deploy/` sau khi không còn template local được dùng và
 
 ### 7.4. State và vận hành
 
-- SQLite parent/version state hiện dành cho một máy, lưu trên volume local bền vững và dùng chung file giữa API/worker trên máy đó. Không chạy các replica với state riêng trỏ cùng collection; scale nhiều máy cần store và distributed concurrency control dùng chung, không dùng SQLite network filesystem để thay distributed DB.
-- Backup/restore Qdrant + SQLite + embedding manifest theo cùng generation; collection mới không tự nhận state cũ. Reconcile bằng keyset scan từ `after=0`; không coi property vắng trong một trang là lệnh xóa.
+- Mọi replica dùng chung trạng thái PostgreSQL cho cùng collection Qdrant.
+- Sao lưu và khôi phục Qdrant cùng trạng thái PostgreSQL tương ứng. Đối chiếu dữ liệu bằng cách quét từ `after=0`. Sự kiện xóa tin đến từ backend.
 - Qdrant Cloud và RabbitMQ Cloud vẫn giữ nguyên vai trò khi đổi rerank. Dùng key/vhost/quyền riêng cho production; nghiệm thu reconnect, retry/DLQ và cập nhật/gỡ tin trên dịch vụ thật.
 - Auth/rate limit/public exposure, lưu hội thoại theo tài khoản, structured cards và benchmark cần nghiệm thu riêng. Mã và bằng chứng local hiện có không đồng nghĩa chatbot production-ready.
 
