@@ -44,7 +44,59 @@ Backend có profile mặc định MySQL và profile production PostgreSQL. Postg
 
 ## 3. Kiến trúc mục tiêu
 
-Các sơ đồ dưới đây mô tả **kiến trúc mục tiêu**, không xác nhận mọi thành phần đã triển khai. Các khối trong AI Service là module, không bắt buộc tách thành microservice riêng.
+### 3.0. Pipeline chatbot trong cấu hình dev
+
+#### Luồng tìm kiếm và trả lời
+
+```mermaid
+flowchart TD
+    Client["Web / Flutter"] -->|"Câu hỏi và lịch sử chat"| API["FastAPI: POST /api/chat-rag/stream"]
+    API --> History["Chuẩn bị truy vấn từ câu hỏi và lịch sử"]
+    History -.->|"Tóm tắt khi lịch sử dài"| LLM["Google Gemini API · LLM"]
+    LLM -.->|"Tiêu chí tìm kiếm"| History
+    History --> Greeting{"Chỉ chào hỏi?"}
+    Greeting -->|"Không · gửi truy vấn"| Emb["Google Gemini API · Embedding"]
+    Emb -->|"Vector truy vấn"| Vector["Qdrant Cloud · tìm đoạn tin tương đồng"]
+    Vector -->|"ID đoạn và tin tương ứng"| Verify["FastAPI · xác minh và lọc tin"]
+    State["Supabase PostgreSQL · chatbot_index"] -->|"Tin gốc, phiên bản, trạng thái chỉ mục"| Verify
+    Source["Spring Boot · API tin nội bộ"] -->|"Trạng thái công khai và dữ liệu hiện tại"| Verify
+    Verify --> Rank{"Bật rerank?"}
+    Rank -->|"Có · truy vấn và ứng viên"| Qwen["vLLM local · Qwen3-Reranker-0.6B"]
+    Qwen -->|"Thứ tự mới hoặc giữ thứ tự cũ nếu lỗi"| Context["FastAPI · ghép ngữ cảnh và tạo prompt"]
+    Rank -->|"Không · giữ thứ tự tìm kiếm"| Context
+    Greeting -->|"Có · bỏ qua tìm tin"| Context
+    Context -->|"Câu hỏi, lịch sử đã xử lý và tin được chọn"| LLM
+    LLM -->|"Các đoạn câu trả lời"| API
+    API -->|"Stream văn bản text/plain"| Client
+```
+
+API `POST /api/chat-rag` dùng cùng pipeline và trả câu trả lời đầy đủ dưới dạng JSON. Rerank mặc định tắt. Hugging Face là nguồn tải model Qwen cho vLLM local.
+
+#### Luồng nạp và đồng bộ tin
+
+```mermaid
+flowchart TD
+    Change["Duyệt, sửa hoặc gỡ tin"] --> Spring["Spring Boot · nguồn dữ liệu nghiệp vụ"]
+    Spring -->|"Cùng giao dịch với thay đổi tin"| Outbox["DB nghiệp vụ · property_index_outbox"]
+    Outbox --> Publisher["Spring Boot · outbox publisher"]
+    Publisher -->|"Sự kiện mang ID và phiên bản tin"| Rabbit["RabbitMQ Cloud"]
+    Rabbit --> Worker["Python worker"]
+    Worker -->|"Lấy trạng thái mới nhất theo ID"| Source["Spring Boot · API tin nội bộ"]
+    Source -->|"Tin công khai hoặc dấu hiệu đã gỡ"| Worker
+    Bootstrap["sync-backend · nạp lần đầu"] -->|"Đọc từng trang tin công khai"| Source
+    Bootstrap --> Index["Cập nhật chỉ mục"]
+    Worker --> Index
+    Index -->|"Các đoạn nội dung mới hoặc thay đổi"| Emb["Google Gemini API · Embedding"]
+    Emb -->|"Vector của từng đoạn"| Index
+    Index -->|"Thêm, cập nhật hoặc dọn vector"| Vector["Qdrant Cloud"]
+    Index -->|"Lưu tin gốc, phiên bản, trạng thái và ID vector"| State["Supabase PostgreSQL · chatbot_index"]
+    Worker -.->|"Thử lại khi lỗi xử lý"| Rabbit
+    Worker -.->|"Sự kiện không thể xử lý"| DLQ["RabbitMQ · hàng đợi lỗi"]
+```
+
+Tin vừa duyệt xuất hiện trong kết quả sau khi được lập chỉ mục. Trạng thái outbox `SENT` xác nhận publisher đã gửi sự kiện. Cấu hình dịch vụ và các bước chạy thử nằm trong [hướng dẫn chatbot dev](../real-estate-ai/docs/SETUP_CHATBOT.md).
+
+Các mục 3.1–3.3 mô tả kiến trúc nghiên cứu mục tiêu. Các khối trong AI Service biểu diễn các module có thể chạy trong cùng một dịch vụ.
 
 ### 3.1. Kiến trúc toàn hệ thống
 
