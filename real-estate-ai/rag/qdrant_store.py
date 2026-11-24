@@ -29,10 +29,11 @@ class QdrantParentStore:
         self.client = client or QdrantClient(url=settings.qdrant_url,
                                             api_key=settings.qdrant_api_key or None, timeout=10)
         self.state = IndexState(settings)
-        self.state.initialize()
         self.splitter = RecursiveCharacterTextSplitter(chunk_size=450, chunk_overlap=50)
 
     def validate(self, contract=None, create=False):
+        if create:
+            self.state.initialize()
         with self.state.connect() as db:
             saved = self.state.execute(db, "SELECT value FROM manifest WHERE id=1").fetchone()
         if saved:
@@ -118,15 +119,21 @@ class QdrantParentStore:
             self._delete_stale(pid, points)
         self.last_action = "upsert" if row["public"] else "delete"
 
-    def invoke(self, query):
-        vector = self.embedding.embed_query(query)
-        hits = self.client.query_points(self.settings.collection, query=vector,
-                                       limit=max(25, self.settings.candidate_limit * 5), with_payload=True).points
-        try:
-            source = self.source.get_many([(h.payload or {}).get("parent_id") for h in hits])
-        except Exception:
-            log.warning("retrieval status=degraded reason=source_unavailable")
-            return []
+    def invoke(self, query, *, lexical_query=None, property_id=None):
+        limit = min(500, max(25, self.settings.candidate_limit * 5))
+        dense = {}
+        if property_id is None:
+            vector = self.embedding.embed_query(query)
+            hits = self.client.query_points(self.settings.collection, query=vector,
+                                           limit=limit, with_payload=True).points
+            for hit in hits:
+                pid = (hit.payload or {}).get("parent_id")
+                dense.setdefault(pid, set()).add(str(hit.id))
+        lexical = [property_id] if property_id is not None else (
+            self.state.search_text(lexical_query, limit) if lexical_query else []
+        )
+        candidate_ids = list(dict.fromkeys([*dense, *lexical]))
+        source = self.source.get_many(candidate_ids)
         if not source:
             return []
         placeholders = ", ".join("?" for _ in source)
@@ -136,20 +143,25 @@ class QdrantParentStore:
                 tuple(source),
             ).fetchall()
         parents = {row[0]: row[1:] for row in rows}
-        documents, seen = [], set()
-        for hit in hits:
-            pid = (hit.payload or {}).get("parent_id")
-            if pid in seen:
-                continue
+        documents = []
+        if lexical:
+            scores = {}
+            for ranking in (dense, lexical):
+                for rank, pid in enumerate(ranking):
+                    scores[pid] = scores.get(pid, 0) + 1 / (10 + rank)
+            candidate_ids.sort(key=scores.__getitem__, reverse=True)
+        lexical_ids = set(lexical)
+        for pid in candidate_ids:
             row, current = parents.get(pid), source.get(pid)
             if not row or not row[4] or not current or not current["public"]:
                 continue
-            if current["version"] != row[0] or digest(current["text"]) != row[1] or str(hit.id) not in json.loads(row[3]):
+            if current["version"] != row[0] or digest(current["text"]) != row[1]:
+                continue
+            if pid not in lexical_ids and not dense[pid].intersection(json.loads(row[3])):
                 continue
             stored = json.loads(row[2])
             if stored["metadata"] != {**current.get("metadata", {}), "source_id": pid, "source_kind": self.settings.source_provider, "source_version": current["version"]}:
                 continue
-            seen.add(pid)
             documents.append(Document(page_content=stored["text"], metadata=stored["metadata"]))
         return documents
 

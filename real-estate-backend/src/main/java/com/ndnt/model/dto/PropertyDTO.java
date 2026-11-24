@@ -18,6 +18,7 @@ import java.util.List;
 @Setter
 @Getter
 public class PropertyDTO extends BaseDTO {
+    private Long reviewVersion;
     private Integer userId;
     private String userFullname;
     private String userEmail;
@@ -39,6 +40,7 @@ public class PropertyDTO extends BaseDTO {
     @NotBlank(message = "Vui lòng nhập địa chỉ đầy đủ.")
     @Size(max = 255, message = "Địa chỉ đầy đủ không được vượt quá 255 ký tự.")
     private String address;
+    @Size(max = 45, message = "Tỉnh/thành phố không được vượt quá 45 ký tự.")
     private String city;
     @Positive(message = "Lựa chọn phường/xã không hợp lệ. Vui lòng chọn lại.")
     private Integer wardId;

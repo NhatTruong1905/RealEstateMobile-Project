@@ -35,6 +35,34 @@
             margin-top: 5px;
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
         }
+
+        .property-review {
+            background: #f5f7fb;
+            border: 1px solid #dce4ef;
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+        }
+
+        .property-review .btn {
+            min-height: 44px;
+        }
+
+        .property-review-title {
+            color: #1a2b4c;
+        }
+
+        .property-status {
+            min-height: 42px;
+            background-color: #f8fafc;
+        }
+
+        #reject-dialog {
+            width: min(32rem, calc(100% - 2rem));
+        }
+
+        #reject-dialog::backdrop {
+            background: rgba(26, 43, 76, 0.45);
+        }
     </style>
 
 
@@ -57,6 +85,7 @@
             <form id="formProperty" th:action="@{/admin/api/properties}" th:object="${property}" method="post">
 
                 <input type="hidden" th:field="*{id}"/>
+                <input type="hidden" th:if="${property.id != null}" th:field="*{reviewVersion}"/>
                 <div role="alert" id="form-error" class="alert alert-danger mb-4" style="display: none; font-size: 0.9rem;"></div>
 
                 <div class="mb-4">
@@ -144,8 +173,17 @@
                         <div class="mb-4">
                             <label for="status" class="form-label fw-bold text-dark">Trạng thái <span
                                     class="text-danger">*</span></label>
-                            <input type="hidden" id="status" th:field="*{status}" />
-                            <p class="form-control-plaintext" th:text="*{status}"></p>
+                            <select id="status" class="form-select property-status rounded-3 py-2"
+                                    th:field="*{status}" required aria-describedby="status-help"
+                                    th:disabled="${property.id == null or property.status != 'Chờ duyệt'}">
+                                <option th:each="item : ${status}" th:value="${item.status}"
+                                        th:if="${item.status != 'Đã xóa' or property.status == 'Đã xóa'}"
+                                        th:text="${item.status}"></option>
+                            </select>
+                            <div id="status-help" class="form-text"
+                                 th:text="${property.id == null ? 'Tin mới sẽ ở trạng thái Chờ duyệt.' :
+                                          (property.status == 'Chờ duyệt' ? 'Chọn trạng thái rồi bấm Lưu bài đăng.' :
+                                          'Chỉ tin đang chờ duyệt mới có thể đổi trạng thái tại đây.')}"></div>
                             <div id="error-status" class="text-danger fst-italic small mt-1 error-message"
                                  style="display: none;"></div>
                         </div>
@@ -210,10 +248,22 @@
                 </section>
                 <p id="approval-loading" role="status" hidden>Đang xử lý...</p>
                 <button id="reload-property" type="button" class="btn btn-outline-secondary" hidden>Tải lại trạng thái</button>
-                <div th:if="${property.id != null and property.status == 'Chờ duyệt'}" sec:authorize="hasAnyRole('ADMIN','STAFF')" class="d-flex gap-2 mb-3">
-                    <button id="approve-property" type="button" class="btn btn-success">Phê duyệt</button>
-                    <button id="reject-property" type="button" class="btn btn-danger">Từ chối</button>
-                </div>
+                <section th:if="${property.id != null and property.status == 'Chờ duyệt'}"
+                         sec:authorize="hasAnyRole('ADMIN','STAFF')" aria-labelledby="property-review-title"
+                         class="property-review d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div>
+                        <h4 id="property-review-title" class="property-review-title fs-6 fw-semibold mb-1">Xét duyệt bài đăng</h4>
+                        <p class="small text-muted mb-0">Duyệt để công khai tin hoặc từ chối kèm lý do.</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button id="reject-property" type="button" class="btn btn-outline-danger rounded-3 px-3">
+                            <i class="bi bi-x-circle me-1" aria-hidden="true"></i> Từ chối
+                        </button>
+                        <button id="approve-property" type="button" class="btn btn-success rounded-3 px-3">
+                            <i class="bi bi-check2-circle me-1" aria-hidden="true"></i> Phê duyệt
+                        </button>
+                    </div>
+                </section>
                 <div class="d-flex gap-2 pt-3 border-top mt-2">
                     <button type="submit" class="btn px-4 py-2 fw-medium text-white rounded-3 shadow-sm"
                             style="background-color: #1a2b4c;">
@@ -227,14 +277,16 @@
         </div>
     </div>
 
-    <dialog id="reject-dialog" aria-labelledby="reject-title" class="rounded-3 border p-4">
-        <h3 id="reject-title">Từ chối bài đăng</h3>
-        <p>Lý do sẽ được thông báo cho người đăng.</p>
-        <label for="rejection-reason">Lý do từ chối <span class="text-danger">*</span> (1–1000 ký tự)</label>
-        <textarea id="rejection-reason" rows="5" maxlength="1000" class="form-control" required></textarea>
+    <dialog id="reject-dialog" aria-labelledby="reject-title" class="rounded-4 border p-4 shadow">
+        <h3 id="reject-title" class="h5 fw-semibold mb-2">Từ chối bài đăng</h3>
+        <p class="text-muted">Lý do sẽ được thông báo cho người đăng.</p>
+        <label for="rejection-reason" class="form-label">Lý do từ chối <span class="text-danger">*</span> (1–1000 ký tự)</label>
+        <textarea id="rejection-reason" rows="5" maxlength="1000" class="form-control rounded-3" required></textarea>
         <p id="error-rejectionReason" role="alert" class="text-danger error-message"></p>
-        <button type="button" id="cancel-reject" class="btn btn-light">Hủy</button>
-        <button type="button" id="confirm-reject" class="btn btn-danger" disabled>Xác nhận từ chối</button>
+        <div class="d-flex flex-wrap justify-content-end gap-2">
+            <button type="button" id="cancel-reject" class="btn btn-light border rounded-3">Hủy</button>
+            <button type="button" id="confirm-reject" class="btn btn-danger rounded-3" disabled>Xác nhận từ chối</button>
+        </div>
     </dialog>
     <script th:src="@{/js/property-approval.js}"></script>
     <script>PropertyApproval.mount(document.getElementById('formProperty'));</script>

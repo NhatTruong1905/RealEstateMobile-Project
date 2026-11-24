@@ -16,6 +16,24 @@ export interface PropertyOptions {
 }
 
 export const sellerApi = {
+  async get(id: number): Promise<Property> {
+    const response = await request<ApiEnvelope<Property>>(`/secure/properties/${id}/mine`);
+    if (!response.data) throw new Error("Không tải được tin đăng.");
+    return response.data;
+  },
+  async saveRejectedDraft(id: number, data: FormData): Promise<Property> {
+    data.set("id", String(id));
+    const response = await request<ApiEnvelope<Property>>("/secure/properties?rejectedDraft=true", {
+      method: "POST", body: data,
+    });
+    if (!response.data?.id) throw new Error("Máy chủ chưa xác nhận lưu tin.");
+    return response.data;
+  },
+  async resubmit(id: number): Promise<Property> {
+    const response = await request<ApiEnvelope<Property>>(`/secure/properties/${id}/resubmit`, { method: "POST" });
+    if (!response.data?.id) throw new Error("Máy chủ chưa xác nhận gửi lại tin.");
+    return response.data;
+  },
   async options(): Promise<PropertyOptions> {
     const response = await request<ApiEnvelope<PropertyOptions>>(
       "/secure/property-options",

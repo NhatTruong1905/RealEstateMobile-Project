@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, ImagePlus, MapPin, Pencil, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { Link } from "../../components/ui/Navigation";
 import {
@@ -25,13 +26,49 @@ function PhotoImage({ file, alt }: { file: File; alt: string }) {
   return source ? <img src={source} alt={alt} /> : <span className="post-photo-loading" role="img" aria-label={alt}><ImagePlus aria-hidden="true" /></span>;
 }
 
-export function PostProperty() {
+export function EditRejectedProperty() {
+  const { id } = useParams();
+  const [result, setResult] = useState<{ id: string | undefined; property?: Property; error?: string }>();
+  useEffect(() => {
+    let active = true;
+    const propertyId = Number(id);
+    if (!Number.isSafeInteger(propertyId) || propertyId < 1) {
+      return;
+    }
+    sellerApi.get(propertyId)
+      .then((property) => { if (active) setResult({ id, property }); })
+      .catch((error: Error) => { if (active) setResult({ id, error: error.message }); });
+    return () => { active = false; };
+  }, [id]);
+  const invalid = !id || !/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id));
+  const current = result?.id === id ? result : undefined;
+  if (!invalid && !current) return <p role="status">Đang tải tin đăng...</p>;
+  if (current?.property?.status === "Từ chối") {
+    return <PostProperty key={id} revision={current.property} />;
+  }
+  return (
+    <div className="post-notice">
+      <p role="alert">{current?.error || "Chỉ có thể sửa và gửi lại tin đang bị từ chối."}</p>
+      <Link className="text-link" to="/seller/properties">Về danh sách tin</Link>
+    </div>
+  );
+}
+
+function initialFields(property?: Property): Record<string, string> {
+  if (!property) return {};
+  const names = ["title", "price", "area", "typeId", "categoryId", "address", "city", "wardId", "legal",
+    "bedroomCount", "bathroomCount", "floorCount", "direction", "description"] as const;
+  return Object.fromEntries(names.map((name) => [name, String(property[name] ?? "")]));
+}
+
+export function PostProperty({ revision }: { revision?: Property } = {}) {
   const [step, setStep] = useState(0);
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState(() => initialFields(revision));
+  const [existingImages, setExistingImages] = useState(() => revision?.images ?? []);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState("");
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(Boolean(revision));
   const formRef = useRef<HTMLFormElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusStep = useRef(false);
@@ -57,7 +94,7 @@ export function PostProperty() {
       return;
     }
     const unique = incoming.filter((file) => !photos.some((old) => old.name === file.name && old.size === file.size && old.lastModified === file.lastModified));
-    if (photos.length + unique.length > 5) { setPhotoError("Chỉ chọn tối đa 5 ảnh."); return; }
+    if (existingImages.length + photos.length + unique.length > 5) { setPhotoError("Chỉ giữ tối đa 5 ảnh, tính cả ảnh hiện có."); return; }
     setPhotos((current) => [...current, ...unique]);
     setPhotoError("");
     setFields((current) => { const next = { ...current }; delete next.files; return next; });
@@ -130,7 +167,11 @@ export function PostProperty() {
     setLoading(true);
     try {
       for (const file of files) data.append("files", await resizePropertyImage(file));
-      setSaved(await sellerApi.create(data));
+      if (revision?.images?.length && existingImages.length !== revision.images.length) {
+        if (existingImages.length) existingImages.forEach((image) => data.append("images", image));
+        else data.set("images", "");
+      }
+      setSaved(await (revision ? sellerApi.saveRejectedDraft(revision.id, data) : sellerApi.create(data)));
     } catch (failure) {
       setError(
         failure instanceof TypeError
@@ -154,32 +195,70 @@ export function PostProperty() {
       setLoading(false);
     }
   }
-  if (saved)
+  async function resubmit() {
+    if (!saved || submitting.current) return;
+    submitting.current = true;
+    setLoading(true);
+    setError("");
+    try {
+      setSaved(await sellerApi.resubmit(saved.id));
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Chưa thể gửi lại tin.");
+    } finally {
+      submitting.current = false;
+      setLoading(false);
+    }
+  }
+  if (saved) {
+    const draft = Boolean(revision) && saved.status === "Từ chối";
+    const pending = saved.status === "Chờ duyệt";
+    const heading = draft ? "Đã lưu chỉnh sửa" : revision ? "Đã gửi lại để xét duyệt" : "Đã tiếp nhận tin";
     return (
-      <div className="post-success" role="status">
-        <CheckCircle2 size={44} aria-hidden="true" />
-        <h1>Đã tiếp nhận tin #{saved.id}</h1>
-        <p>
-          {saved.status === "Chờ duyệt"
-            ? receivedMessage
-            : `Trạng thái từ hệ thống: ${statusLabel(saved.status)}`}
-        </p>
-        <Link className="button button-primary" to="/seller/properties">
-          Xem bài đăng của tôi
-        </Link>
-      </div>
+      <section className="post-success" aria-labelledby="post-success-heading">
+        <div className="post-success-summary" role="status">
+          <span className="post-success-icon"><CheckCircle2 size={26} aria-hidden="true" /></span>
+          <div>
+            <h1 id="post-success-heading">{heading}</h1>
+            <p>{draft
+              ? "Bản chỉnh sửa đã được lưu. Khi sẵn sàng, hãy gửi lại tin để được xét duyệt."
+              : pending ? receivedMessage : "Bạn có thể xem tin trong danh sách bài đăng của mình."}</p>
+          </div>
+        </div>
+        <dl className="post-success-details">
+          <div><dt>Mã tin</dt><dd>#{saved.id}</dd></div>
+          <div><dt>Trạng thái hiện tại</dt><dd>
+            <span className={`listing-review-badge ${draft ? "is-rejected" : pending ? "is-pending" : ""}`}>
+              {statusLabel(saved.status)}
+            </span>
+          </dd></div>
+        </dl>
+        {error && <p className="post-submit-error" role="alert">{error}</p>}
+        <div className="post-success-actions">
+          {draft && (
+            <LoadingButton className="button button-primary" type="button" loading={loading}
+              loadingLabel="Đang gửi lại…" onClick={() => void resubmit()}>
+              Gửi lại để xét duyệt <ArrowRight size={17} aria-hidden="true" />
+            </LoadingButton>
+          )}
+          <Link className={`button ${draft ? "button-secondary" : "button-primary"}`} to="/seller/properties">
+            Xem tin đăng của tôi
+          </Link>
+        </div>
+      </section>
     );
+  }
   function field(name: string, label: string, type = "text", required = false, placeholder?: string) {
     return (
       <label key={name}>
         <span id={`${name}-label`}>{label}{required && " *"}</span>
         <input
           name={name}
+          defaultValue={values[name] ?? ""}
           aria-labelledby={`${name}-label`}
           placeholder={placeholder}
           type={type}
           required={required}
-          maxLength={type === "text" ? (name === "legal" || name === "direction" ? 45 : 255) : undefined}
+          maxLength={type === "text" ? (["legal", "direction", "city"].includes(name) ? 45 : 255) : undefined}
           max={type === "number" ? (name.endsWith("Count") ? 2147483647 : name === "price" ? 9999999999999.99 : 99999999.99) : undefined}
           min={
             type === "number"
@@ -211,7 +290,7 @@ export function PostProperty() {
           name={name}
           aria-labelledby={`${name}-label`}
           required={!optional}
-          defaultValue=""
+          value={values[name] || ""}
           aria-invalid={!!fields[name]}
           aria-describedby={`${name}-error`}
         >
@@ -235,9 +314,10 @@ export function PostProperty() {
   return (
     <div className="post-page">
       <header className="post-header">
-        <div><h1>Đăng tin mới</h1><p>Giới thiệu bất động sản của bạn, từng bước một.</p></div>
+        <div><h1>{revision ? "Sửa tin bị từ chối" : "Đăng tin mới"}</h1><p>{revision ? `Tin #${revision.id}` : "Giới thiệu bất động sản của bạn, từng bước một."}</p></div>
         <Link className="text-link" to="/seller/properties"><ArrowLeft size={16} /> Tin đăng của tôi</Link>
       </header>
+      {revision?.rejectionReason && <div className="post-notice"><p><strong>Lý do từ chối:</strong> {revision.rejectionReason}</p></div>}
       <nav className="post-steps" aria-label="Các bước đăng tin">
         <ol>{steps.map((label, index) => <li key={label} className={index === step ? "current" : index < step ? "complete" : ""}>
           <button type="button" disabled={loading || index > step} aria-current={index === step ? "step" : undefined} onClick={() => goTo(index)}>
@@ -313,6 +393,7 @@ export function PostProperty() {
                 <section className="post-group" aria-labelledby="post-location">
                   <h3 id="post-location">Vị trí &amp; pháp lý</h3>
                   {field("address", "Địa chỉ đầy đủ", "text", true, "Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành")}
+                  {revision && field("city", "Tỉnh/thành phố", "text", false, "Ví dụ: Hồ Chí Minh")}
                   {select("wardId", "Phường/xã", options?.wards, true)}
                   <p className="post-help">Nếu chưa chọn phường/xã, hệ thống sẽ xác định từ địa chỉ. Chọn cụ thể khi địa chỉ chưa xác định được.</p>
                   {field("legal", "Thông tin pháp lý", "text", true, "Ví dụ: Sổ hồng riêng, hợp đồng mua bán…")}
@@ -322,7 +403,7 @@ export function PostProperty() {
                   <p className="post-help">Không bắt buộc. Thông tin cụ thể giúp người xem đánh giá bất động sản dễ hơn.</p>
                   <div className="post-grid post-grid-three">{field("bedroomCount", "Phòng ngủ", "number")}{field("bathroomCount", "Phòng tắm", "number")}{field("floorCount", "Số tầng", "number")}</div>
                   {field("direction", "Hướng nhà", "text", false, "Ví dụ: Đông Nam")}
-                  <label>Mô tả<textarea name="description" rows={5} placeholder="Giới thiệu không gian, nội thất, tiện ích xung quanh và điều kiện giao dịch…" /></label>
+                  <label>Mô tả<textarea name="description" defaultValue={values.description ?? ""} rows={5} placeholder="Giới thiệu không gian, nội thất, tiện ích xung quanh và điều kiện giao dịch…" /></label>
                 </details>
               </div>
               <div hidden={step !== 1} className="post-stage">
@@ -334,8 +415,19 @@ export function PostProperty() {
                 <p className="post-help">Chọn ảnh sáng, rõ nét: mặt tiền, phòng chính và các tiện ích. Ảnh lớn được tự động thu nhỏ, giữ nguyên tỷ lệ.</p>
                 <p id="post-photo-error" role={photoError || fields.files ? "alert" : undefined}>{photoError || fields.files}</p>
                 {photoError && <button type="button" className="button button-secondary" onClick={() => { setPhotoError(""); setFields((current) => { const next = { ...current }; delete next.files; return next; }); }}>Bỏ qua lượt chọn này</button>}
-                <p className="post-photo-count" role="status">Đã chọn {photos.length}/5 ảnh{photos.length === 0 ? " · Bạn có thể bổ sung ảnh hoặc tiếp tục." : ""}</p>
-                <div className="post-photos">{photos.map((photo, index) => <figure key={`${photo.name}-${photo.lastModified}-${index}`}>
+                <p className="post-photo-count" role="status">Đã chọn {existingImages.length + photos.length}/5 ảnh</p>
+                <div className="post-photos">
+                  {existingImages.map((image, index) => (
+                    <figure key={image}>
+                      <img src={image} alt={`Ảnh hiện có ${index + 1}`} />
+                      <figcaption><span>Ảnh hiện có</span><button className="icon-button" type="button"
+                        aria-label={`Xóa ảnh hiện có ${index + 1}`} onClick={() => {
+                          setExistingImages((current) => current.filter((url) => url !== image));
+                          setPhotoError("");
+                        }}><Trash2 size={18} aria-hidden="true" /></button></figcaption>
+                    </figure>
+                  ))}
+                  {photos.map((photo, index) => <figure key={`${photo.name}-${photo.lastModified}-${index}`}>
                   <PhotoImage file={photo} alt={`Ảnh đã chọn ${index + 1}`} />
                   <figcaption><span>{photo.name}</span><button className="icon-button" type="button" aria-label={`Xóa ảnh ${index + 1}`} onClick={() => { setPhotos((current) => current.filter((_, i) => i !== index)); setPhotoError(""); setFields((current) => { const next = { ...current }; delete next.files; return next; }); }}><Trash2 size={18} /></button></figcaption>
                 </figure>)}</div>
@@ -347,19 +439,23 @@ export function PostProperty() {
                 <dl className="post-review-facts">{[
                   ["Giao dịch", optionName("typeId", options?.types)], ["Phân khúc", optionName("categoryId", options?.categories)],
                   ["Diện tích", `${values.area || "—"} m²`], ["Phường/xã", values.wardId ? optionName("wardId", options?.wards) : "Xác định từ địa chỉ"],
+                  ...(revision ? [["Tỉnh/thành phố", values.city]] : []),
                   ["Pháp lý", values.legal], ["Phòng ngủ", values.bedroomCount], ["Phòng tắm", values.bathroomCount], ["Số tầng", values.floorCount], ["Hướng nhà", values.direction],
                 ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || "Chưa cung cấp"}</dd></div>)}</dl>
                 {values.description && <section><h3>Mô tả</h3><p className="post-review-description">{values.description}</p></section>}
-                <div className="post-review-title"><h3>Hình ảnh · {photos.length}/5</h3><button type="button" className="text-link" onClick={() => goTo(1)}><Pencil size={16} /> Sửa hình ảnh</button></div>
-                {photos.length ? <div className="post-review-photos">{photos.map((photo, index) => <figure key={index}><PhotoImage file={photo} alt={`Ảnh bất động sản ${index + 1}`} /><figcaption>{photo.name}</figcaption></figure>)}</div> : <p className="post-help">Chưa thêm hình ảnh. Bạn vẫn có thể gửi tin.</p>}
-                <div className="post-review-notice"><ShieldCheck size={22} /><p>Tin chưa được công khai ngay. Nhân viên sẽ xét duyệt và thông báo kết quả qua email đăng ký.</p></div>
+                <div className="post-review-title"><h3>Hình ảnh · {existingImages.length + photos.length}/5</h3><button type="button" className="text-link" onClick={() => goTo(1)}><Pencil size={16} /> Sửa hình ảnh</button></div>
+                {existingImages.length + photos.length > 0 ? <div className="post-review-photos">
+                  {existingImages.map((image, index) => <figure key={image}><img src={image} alt={`Ảnh hiện có ${index + 1}`} /></figure>)}
+                  {photos.map((photo, index) => <figure key={index}><PhotoImage file={photo} alt={`Ảnh bất động sản ${index + 1}`} /><figcaption>{photo.name}</figcaption></figure>)}
+                </div> : <p className="post-help">Chưa thêm hình ảnh. Bạn vẫn có thể gửi tin.</p>}
+                <div className="post-review-notice"><ShieldCheck size={22} /><p>{revision ? "Sau khi lưu chỉnh sửa, bạn có thể gửi lại tin để quản trị viên xét duyệt." : "Tin chưa được công khai ngay. Nhân viên sẽ xét duyệt và thông báo kết quả qua email đăng ký."}</p></div>
               </div>
               {Object.keys(fields).some((name) => name !== "files") && <p className="post-validation-note">Vui lòng kiểm tra các trường được đánh dấu phía trên.</p>}
               {error && <p className="post-submit-error" role="alert">{error}</p>}
               <footer className="post-actions">
                 {step > 0 && <button type="button" className="button button-secondary" onClick={() => goTo(step - 1)}><ArrowLeft size={18} /> Quay lại</button>}
                 <span className="post-step-caption">Bước {step + 1} / 3</span>
-                <LoadingButton className="button button-primary" type="submit" loading={loading} loadingLabel="Đang gửi…">{step === 2 ? <>Gửi tin chờ duyệt <CheckCircle2 size={18} /></> : <>Tiếp tục: {step === 0 ? "hình ảnh" : "kiểm tra"} <ArrowRight size={18} /></>}</LoadingButton>
+                <LoadingButton className="button button-primary" type="submit" loading={loading} loadingLabel={revision ? "Đang lưu…" : "Đang gửi…"}>{step === 2 ? <>{revision ? "Lưu chỉnh sửa" : "Gửi tin chờ duyệt"} <CheckCircle2 size={18} /></> : <>Tiếp tục: {step === 0 ? "hình ảnh" : "kiểm tra"} <ArrowRight size={18} /></>}</LoadingButton>
               </footer>
             </div>
             <aside className="post-guide" aria-label="Hướng dẫn đăng tin">

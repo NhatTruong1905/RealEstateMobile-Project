@@ -25,10 +25,13 @@ public interface PropertyRepository extends JpaRepository<PropertyEntity, Intege
 
     List<PropertyEntity> findByUser_Id(Integer userId);
 
-    List<PropertyEntity> findByUser_IdOrderByIdDesc(Integer userId);
+    @Query("select p from PropertyEntity p where p.user.id = :userId order by coalesce(p.modifiedDate, p.createdDate) desc nulls last, p.id desc")
+    List<PropertyEntity> findOwnedNewestFirst(@Param("userId") Integer userId);
 
     @EntityGraph(attributePaths = {"user", "type", "category", "ward", "ward.district"})
-    Page<PropertyEntity> findByUser_IdOrderByIdDesc(Integer userId, Pageable pageable);
+    @Query(value = "select p from PropertyEntity p where p.user.id = :userId order by coalesce(p.modifiedDate, p.createdDate) desc nulls last, p.id desc",
+            countQuery = "select count(p) from PropertyEntity p where p.user.id = :userId")
+    Page<PropertyEntity> findOwnedNewestFirst(@Param("userId") Integer userId, Pageable pageable);
     
     @Query("SELECT QUARTER(p.createdDate) AS quarter, COUNT(p) AS count " +
             "FROM PropertyEntity p " +

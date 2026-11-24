@@ -1,14 +1,15 @@
-import { Bath, BedDouble, Building2, ChevronLeft, Compass, Layers3, LoaderCircle, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Bath, BedDouble, Building2, ChevronLeft, CircleAlert, CircleCheck, Clock3, Compass, FileText, Layers3, LoaderCircle, MapPin, MessageCircle, Pencil, Phone } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { Link } from "../../components/ui/Navigation";
 import { usePropertyDetail } from "../../hooks/usePropertyDetail";
 import { PropertyGallery } from "../../components/property/PropertyGallery";
 import { State } from "../../components/ui/State";
-import { formatMoney } from "../../utils/format";
+import { formatDate, formatMoney, statusLabel } from "../../utils/format";
 
-export function PropertyDetailPage() {
+export function PropertyDetailPage({ owned = false }: { owned?: boolean }) {
   const { id = "" } = useParams();
-  const { property, error } = usePropertyDetail(id);
+  const { property, error } = usePropertyDetail(id, owned);
+  const backTo = owned ? "/seller/properties" : "/properties";
   if (error)
     return (
       <div className="container narrow page-space">
@@ -17,7 +18,7 @@ export function PropertyDetailPage() {
           title="Không thể mở tin này"
           text={error}
           action={
-            <Link className="button button-secondary" to="/properties">
+            <Link className="button button-secondary" to={backTo}>
               Về danh sách
             </Link>
           }
@@ -30,17 +31,25 @@ export function PropertyDetailPage() {
         <LoaderCircle className="spin" /> Đang tải thông tin...
       </div>
     );
+  const transactionType = property.typeId === 2 ? "Cho thuê" : "Mua bán";
+  const displayedType = owned
+    ? property.typeName || (property.typeId ? transactionType : "Chưa cập nhật")
+    : transactionType;
+  const rejected = property.status === "Từ chối";
+  const reviewTone = rejected ? "rejected" : property.status === "Chờ duyệt" ? "pending"
+    : property.status === "Đang mở bán" ? "approved" : "neutral";
+  const ReviewIcon = { rejected: CircleAlert, pending: Clock3, approved: CircleCheck, neutral: FileText }[reviewTone];
   return (
     <div className="page-shell detail-page">
       <div className="container">
-        <Link className="back-link" to="/properties">
-          <ChevronLeft /> Quay lại kết quả
+        <Link className="back-link" to={backTo}>
+          <ChevronLeft /> {owned ? "Tin đăng của tôi" : "Quay lại kết quả"}
         </Link>
         <PropertyGallery key={property.id} property={property} />
         <div className="detail-layout">
           <article>
             <div className="detail-kicker">
-              <span>{property.typeId === 2 ? "Cho thuê" : "Mua bán"}</span>
+              <span>{displayedType}</span>
               <span>Mã tin #{property.id}</span>
             </div>
             <h1>{property.title}</h1>
@@ -51,7 +60,9 @@ export function PropertyDetailPage() {
                 property.city ||
                 "Địa chỉ đang cập nhật"}
             </p>
-            <div className="detail-price">{formatMoney(property.price)}</div>
+            <div className="detail-price">{owned && property.price != null
+              ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(property.price)
+              : formatMoney(property.price)}</div>
             <div className="detail-stats">
               <div>
                 <Compass />
@@ -93,17 +104,50 @@ export function PropertyDetailPage() {
                   <dd>{property.legal || "Chưa cập nhật"}</dd>
                 </div>
                 <div>
-                  <dt>Loại hình</dt>
+                  <dt>{owned ? "Phân khúc" : "Loại hình"}</dt>
                   <dd>
                     {property.categoryName ||
-                      property.typeName ||
+                      (!owned && property.typeName) ||
                       "Chưa cập nhật"}
                   </dd>
                 </div>
+                {owned && <div>
+                  <dt>Địa chỉ đã nhập</dt>
+                  <dd>{property.address || "Chưa cập nhật"}</dd>
+                </div>}
+                {owned && property.city && <div>
+                  <dt>Tỉnh/thành phố</dt>
+                  <dd>{property.city}</dd>
+                </div>}
               </dl>
             </section>
           </article>
-          <aside className="contact-card">
+          {owned ? (
+            <aside className="listing-review-card" aria-labelledby="listing-review-status">
+              <header className="listing-review-header">
+                <h2 id="listing-review-status">Trạng thái tin</h2>
+                <span className={`listing-review-badge is-${reviewTone}`}>
+                  <ReviewIcon size={16} aria-hidden="true" />
+                  {statusLabel(property.status)}
+                </span>
+              </header>
+              <dl className="listing-review-dates">
+                <div><dt>Ngày đăng</dt><dd>{formatDate(property.createdDate)}</dd></div>
+                {property.reviewedAt && <div><dt>Lần xét duyệt gần nhất</dt><dd>{formatDate(property.reviewedAt)}</dd></div>}
+              </dl>
+              {rejected && (
+                <div className="listing-review-actions">
+                  {property.rejectionReason && <section className="listing-review-reason">
+                    <h3>Lý do từ chối</h3>
+                    <p>{property.rejectionReason}</p>
+                  </section>}
+                  <Link className="button button-primary full" to={`/seller/properties/${property.id}/edit`}>
+                    <Pencil size={16} aria-hidden="true" /> Sửa và gửi lại
+                  </Link>
+                </div>
+              )}
+            </aside>
+          ) : <aside className="contact-card">
             <span className="eyebrow">Liên hệ chủ tin</span>
             <h3>{property.userFullname || "Chủ bất động sản"}</h3>
             <p>{property.userEmail || "Email chưa cập nhật"}</p>
@@ -123,7 +167,7 @@ export function PropertyDetailPage() {
               <MessageCircle /> Mở tin nhắn
             </Link>
             <small>Hãy xác minh thông tin trước khi thực hiện giao dịch.</small>
-          </aside>
+          </aside>}
         </div>
       </div>
     </div>

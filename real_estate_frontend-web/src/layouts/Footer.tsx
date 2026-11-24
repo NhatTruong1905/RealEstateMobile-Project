@@ -34,7 +34,7 @@ export function Footer() {
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© 2026 Nhà Việt</span>
+        <span>© 2026 Nhà Thật</span>
         <span>
           Sản phẩm được phát triển bởi <strong>NhatTruong1905</strong>
         </span>

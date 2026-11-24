@@ -1,15 +1,18 @@
-from typing import List, Optional
+from typing import Annotated, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
 class MessageItem(BaseModel):
-    role: str = Field(..., example="user")
-    content: str = Field(..., example="Tôi muốn tìm nhà Quận 1")
+    role: Literal["user", "assistant"] = Field(..., example="user")
+    content: str = Field(..., max_length=12000, example="Tôi muốn tìm nhà Quận 1")
+    property_ids: list[Annotated[str, Field(pattern=r"^[1-9][0-9]{0,9}$")]] = Field(
+        default_factory=list, max_length=20,
+    )
 
 
 class ChatRequest(BaseModel):
-    question: str = Field(..., example="Chào bạn?")
-    history: Optional[List[MessageItem]] = Field(default=None, description="Lịch sử trò chuyện trước đó")
+    question: str = Field(..., min_length=1, max_length=4000, example="Chào bạn?")
+    history: Optional[List[MessageItem]] = Field(default=None, max_length=15, description="Lịch sử trò chuyện trước đó")
 
 
 class ChatResponse(BaseModel):

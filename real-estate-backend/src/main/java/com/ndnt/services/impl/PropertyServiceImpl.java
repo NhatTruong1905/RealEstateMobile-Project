@@ -14,8 +14,10 @@ import com.ndnt.repositories.PropertyTypeRepository;
 import com.ndnt.repositories.PropertyCategoryRepository;
 import com.ndnt.model.entity.UserEntity;
 import com.ndnt.services.property.*;
+
 import java.util.Date;
 import java.util.Objects;
+
 import org.springframework.beans.BeanUtils;
 import com.ndnt.repositories.WardRepository;
 import com.ndnt.services.AddressParseService;
@@ -55,38 +57,53 @@ public class PropertyServiceImpl implements PropertyService {
     @Autowired
     private WardRepository wardRepository;
 
-    @Autowired private PropertyAccess access;
-    @Autowired private PropertyMailOutbox mailOutbox;
-    @Autowired private PropertyIndexOutbox indexOutbox;
-    @Autowired private UserRepository users;
-    @Autowired private PropertyTypeRepository types;
-    @Autowired private PropertyCategoryRepository categories;
+    @Autowired
+    private PropertyAccess access;
+    @Autowired
+    private PropertyMailOutbox mailOutbox;
+    @Autowired
+    private PropertyIndexOutbox indexOutbox;
+    @Autowired
+    private UserRepository users;
+    @Autowired
+    private PropertyTypeRepository types;
+    @Autowired
+    private PropertyCategoryRepository categories;
 
     private PropertyEntity locked(Integer id) {
         return propertyRepository.findLockedById(id).orElseThrow(PropertyProblem::missing);
     }
+
     private boolean published(PropertyEntity property) {
         return StatusProperty.PUBLISHED.getStatus().equals(property.getStatus());
     }
+
     private List<Object> indexedFields(PropertyEntity p) {
-        return java.util.Arrays.asList(p.getTitle(),p.getDescription(),p.getAddress(),p.getCity(),p.getStatus(),
-                p.getLegal(),p.getDirection(),p.getBedroomCount(),p.getBathroomCount(),p.getFloorCount(),
-                p.getPrice()==null ? null : p.getPrice().stripTrailingZeros(),
-                p.getArea()==null ? null : p.getArea().stripTrailingZeros(),
-                p.getWard()==null ? null : p.getWard().getId(),p.getType()==null ? null : p.getType().getId(),
-                p.getCategory()==null ? null : p.getCategory().getId());
+        return java.util.Arrays.asList(p.getTitle(), p.getDescription(), p.getAddress(), p.getCity(), p.getStatus(),
+                p.getLegal(), p.getDirection(), p.getBedroomCount(), p.getBathroomCount(), p.getFloorCount(),
+                p.getPrice() == null ? null : p.getPrice().stripTrailingZeros(),
+                p.getArea() == null ? null : p.getArea().stripTrailingZeros(),
+                p.getWard() == null ? null : p.getWard().getId(), p.getType() == null ? null : p.getType().getId(),
+                p.getCategory() == null ? null : p.getCategory().getId());
     }
+
     private PropertyDTO dto(PropertyEntity entity, boolean privateReview) {
         return dto(entity, privateReview, imageStorage.propertyImages(entity.getId()));
     }
+
     private PropertyDTO dto(PropertyEntity entity, boolean privateReview, List<String> images) {
         PropertyDTO dto = propertyConverter.toPropertyDTO(entity);
         dto.setImages(images);
+        if (privateReview) dto.setReviewVersion(entity.getIndexVersion());
         dto.setAssignmentIds(entity.getAssignments().stream().map(com.ndnt.model.entity.AssignmentPropertyEntity::getId).toList());
         String ward = entity.getWard() == null ? "" : entity.getWard().getName();
         String district = entity.getWard() == null || entity.getWard().getDistrict() == null ? "" : entity.getWard().getDistrict().getName();
         dto.setAddressDetail(Objects.toString(entity.getAddress(), "") + ", " + ward + ", " + district + ", " + Objects.toString(entity.getCity(), ""));
-        if (!privateReview) { dto.setRejectionReason(null); dto.setReviewedAt(null); dto.setReviewedBy(null); }
+        if (!privateReview) {
+            dto.setRejectionReason(null);
+            dto.setReviewedAt(null);
+            dto.setReviewedBy(null);
+        }
         return dto;
     }
 
@@ -170,13 +187,48 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
+    public PropertyDTO findOwnedById(Integer id) {
+        UserEntity actor = access.actor();
+        PropertyEntity property = propertyRepository.findById(id).orElseThrow(PropertyProblem::missing);
+        if (!access.owner(actor, property)) throw PropertyProblem.missing();
+        return dto(property, true);
+    }
+
+    @Override
     public PropertyDTO saveOwnedProperty(PropertyDTO request) {
-        return save(request, false);
+        return save(request, false, false);
+    }
+
+    @Override
+    public PropertyDTO saveRejectedDraft(PropertyDTO request) {
+        if (request.getId() == null) throw PropertyProblem.invalid("id", "Thiếu mã tin đăng.");
+        return save(request, false, true);
+    }
+
+    @Override
+    public PropertyDTO resubmitOwnedProperty(Integer id) {
+        PropertyEntity property = locked(id);
+        access.requireOwner(access.actor(), property);
+        requireRejected(property);
+        property.setStatus(StatusProperty.PENDING.getStatus());
+        property.setRejectionReason(null);
+        property.setReviewedAt(null);
+        property.setReviewedBy(null);
+        property.setIndexVersion(property.getIndexVersion() + 1);
+        mailOutbox.enqueueResubmission(property);
+        indexOutbox.enqueue(property, false);
+        return dto(property, true);
+    }
+
+    private void requireRejected(PropertyEntity property) {
+        if (!StatusProperty.REJECTED.getStatus().equals(property.getStatus())) {
+            throw new PropertyProblem(409, "CONFLICT", "Chỉ có thể sửa bản nháp hoặc gửi lại tin bị từ chối.");
+        }
     }
 
     @Override
     public void createOrUpdateProperty(PropertyDTO request) {
-        PropertyDTO saved = save(request, true);
+        PropertyDTO saved = save(request, true, false);
         BeanUtils.copyProperties(saved, request);
     }
 
@@ -194,7 +246,7 @@ public class PropertyServiceImpl implements PropertyService {
         return Character.isWhitespace(codePoint) || Character.isSpaceChar(codePoint) || codePoint == 0xFEFF;
     }
 
-    private PropertyDTO save(PropertyDTO request, boolean adminRoute) {
+    private PropertyDTO save(PropertyDTO request, boolean adminRoute, boolean rejectedDraft) {
         UserEntity actor = access.actor();
         if (adminRoute && !access.hasRole(actor, "ROLE_ADMIN") && !access.hasRole(actor, "ROLE_STAFF"))
             throw PropertyProblem.forbidden();
@@ -202,7 +254,9 @@ public class PropertyServiceImpl implements PropertyService {
         PropertyEntity entity = create ? new PropertyEntity() : locked(request.getId());
         List<Object> previousIndexFields = indexedFields(entity);
         if (!create) {
-            if (adminRoute) access.requireReviewer(actor, entity); else access.requireOwner(actor, entity);
+            if (adminRoute) access.requireReviewer(actor, entity);
+            else access.requireOwner(actor, entity);
+            if (rejectedDraft) requireRejected(entity);
             if (StatusProperty.DELETED.getStatus().equals(entity.getStatus()))
                 throw new PropertyProblem(409, "CONFLICT", "Bài đăng đã xóa");
         }
@@ -210,6 +264,9 @@ public class PropertyServiceImpl implements PropertyService {
         boolean decision = adminRoute && !create && desired != null &&
                 (StatusProperty.PUBLISHED.getStatus().equals(desired) || StatusProperty.REJECTED.getStatus().equals(desired));
         boolean transitioned = decision && !desired.equals(entity.getStatus());
+        if (decision && request.getReviewVersion() != null && request.getReviewVersion() != entity.getIndexVersion()) {
+            throw new PropertyProblem(409, "CONFLICT", "Tin đã được cập nhật. Hãy tải lại trước khi xét duyệt.");
+        }
         if (adminRoute && !create && desired != null && !desired.equals(entity.getStatus())) {
             if (!decision || !StatusProperty.PENDING.getStatus().equals(entity.getStatus()))
                 throw new PropertyProblem(409, "CONFLICT", "Trạng thái không cho phép xét duyệt");
@@ -219,7 +276,9 @@ public class PropertyServiceImpl implements PropertyService {
                     throw PropertyProblem.invalid("rejectionReason", "Lý do từ chối phải có từ 1 đến 1000 ký tự");
                 entity.setRejectionReason(reason);
             } else entity.setRejectionReason(null);
-            entity.setStatus(desired); entity.setReviewedBy(actor.getId()); entity.setReviewedAt(new Date());
+            entity.setStatus(desired);
+            entity.setReviewedBy(actor.getId());
+            entity.setReviewedAt(new Date());
         }
         if (create) {
 
@@ -227,8 +286,10 @@ public class PropertyServiceImpl implements PropertyService {
             if (adminRoute && request.getUserId() != null) {
                 owner = users.findById(request.getUserId()).orElseThrow(() -> PropertyProblem.invalid("userId", "Tài khoản không tồn tại"));
             }
-            if (!Integer.valueOf(1).equals(owner.getStatus())) throw PropertyProblem.invalid("userId", "Tài khoản không hợp lệ");
-            entity.setUser(owner); entity.setStatus(StatusProperty.PENDING.getStatus());
+            if (!Integer.valueOf(1).equals(owner.getStatus()))
+                throw PropertyProblem.invalid("userId", "Tài khoản không hợp lệ");
+            entity.setUser(owner);
+            entity.setStatus(StatusProperty.PENDING.getStatus());
         }
         Integer wardId = request.getWardId();
         String rawAddress = request.getAddressDetail() != null && !request.getAddressDetail().isBlank() ? request.getAddressDetail() : request.getAddress();
@@ -238,21 +299,33 @@ public class PropertyServiceImpl implements PropertyService {
                 if (parsed != null && parsed.wardName() != null) {
                     Optional<WardEntity> ward = wardRepository.findFirstByMatchingName(parsed.wardName().trim());
                     if (ward.isPresent()) wardId = ward.get().getId();
-                    if (parsed.cityName() != null && !parsed.cityName().isBlank()) request.setCity(parsed.cityName());
-                    if (parsed.addressDetail() != null && !parsed.addressDetail().isBlank()) request.setAddress(parsed.addressDetail());
+                    if ((request.getCity() == null || request.getCity().isBlank())
+                            && parsed.cityName() != null && !parsed.cityName().isBlank())
+                        request.setCity(parsed.cityName());
+                    if (parsed.addressDetail() != null && !parsed.addressDetail().isBlank())
+                        request.setAddress(parsed.addressDetail());
                 }
-            } catch (Exception ignored) {                                                                                  }
+            } catch (Exception ignored) {
+            }
         }
-        if (wardId == null) throw PropertyProblem.invalid("wardId", "Không xác định được phường/xã từ địa chỉ. Vui lòng chọn phường/xã.");
+        if (wardId == null)
+            throw PropertyProblem.invalid("wardId", "Không xác định được phường/xã từ địa chỉ. Vui lòng chọn phường/xã.");
         entity.setWard(wardRepository.findById(wardId).orElseThrow(() -> PropertyProblem.invalid("wardId", "Phường/xã không còn tồn tại. Vui lòng chọn lại.")));
         if (request.getTypeId() == null) throw PropertyProblem.invalid("typeId", "Vui lòng chọn loại hình giao dịch.");
         entity.setType(types.findById(request.getTypeId()).orElseThrow(() -> PropertyProblem.invalid("typeId", "Loại hình giao dịch không còn tồn tại. Vui lòng chọn lại.")));
-        if (request.getCategoryId() == null) throw PropertyProblem.invalid("categoryId", "Vui lòng chọn phân khúc bất động sản.");
+        if (request.getCategoryId() == null)
+            throw PropertyProblem.invalid("categoryId", "Vui lòng chọn phân khúc bất động sản.");
         entity.setCategory(categories.findById(request.getCategoryId()).orElseThrow(() -> PropertyProblem.invalid("categoryId", "Phân khúc bất động sản không còn tồn tại. Vui lòng chọn lại.")));
-        entity.setTitle(request.getTitle()); entity.setDescription(request.getDescription()); entity.setAddress(request.getAddress());
+        entity.setTitle(request.getTitle());
+        entity.setDescription(request.getDescription());
+        entity.setAddress(request.getAddress());
         entity.setCity(request.getCity() == null || request.getCity().isBlank() ? "Hồ Chí Minh" : request.getCity());
-        entity.setPrice(request.getPrice()); entity.setArea(request.getArea()); entity.setLegal(request.getLegal());
-        entity.setFloorCount(request.getFloorCount()); entity.setBedroomCount(request.getBedroomCount()); entity.setBathroomCount(request.getBathroomCount());
+        entity.setPrice(request.getPrice());
+        entity.setArea(request.getArea());
+        entity.setLegal(request.getLegal());
+        entity.setFloorCount(request.getFloorCount());
+        entity.setBedroomCount(request.getBedroomCount());
+        entity.setBathroomCount(request.getBathroomCount());
         entity.setDirection(request.getDirection());
 
         boolean indexChanged = create || !previousIndexFields.equals(indexedFields(entity));
@@ -269,7 +342,8 @@ public class PropertyServiceImpl implements PropertyService {
         imageUrls.addAll(imageStorage.uploadProperty(entity.getId(), request.getFiles(), retained.size()));
         for (String url : existing) if (!retained.contains(url)) imageStorage.retire(url);
         if (create) mailOutbox.enqueue(entity, "RECEIVED");
-        else if (transitioned) mailOutbox.enqueue(entity, StatusProperty.REJECTED.getStatus().equals(desired) ? "REJECTED" : "APPROVED");
+        else if (transitioned)
+            mailOutbox.enqueue(entity, StatusProperty.REJECTED.getStatus().equals(desired) ? "REJECTED" : "APPROVED");
         if (indexChanged) indexOutbox.enqueue(entity, transitioned && published(entity));
         return dto(entity, true, imageUrls);
     }
@@ -277,7 +351,8 @@ public class PropertyServiceImpl implements PropertyService {
     @Override
     public void deleteProperty(Integer id) {
         UserEntity actor = access.actor();
-        PropertyEntity property = locked(id); access.requireReviewer(actor, property);
+        PropertyEntity property = locked(id);
+        access.requireReviewer(actor, property);
         property.setStatus(StatusProperty.DELETED.getStatus());
         property.setIndexVersion(property.getIndexVersion() + 1);
         indexOutbox.enqueue(property, false);
@@ -286,7 +361,8 @@ public class PropertyServiceImpl implements PropertyService {
     @Override
     public void deleteOwnedProperty(Integer id) {
         UserEntity actor = access.actor();
-        PropertyEntity property = locked(id); access.requireOwner(actor, property);
+        PropertyEntity property = locked(id);
+        access.requireOwner(actor, property);
         property.setStatus(StatusProperty.DELETED.getStatus());
         property.setIndexVersion(property.getIndexVersion() + 1);
         indexOutbox.enqueue(property, false);
@@ -296,7 +372,7 @@ public class PropertyServiceImpl implements PropertyService {
     public List<PropertyDTO> getPropertyOfUser(Integer userId) {
         UserEntity actor = access.actor();
         if (!actor.getId().equals(userId)) throw PropertyProblem.forbidden();
-        return propertyRepository.findByUser_IdOrderByIdDesc(userId).stream().map(p -> dto(p, true)).toList();
+        return propertyRepository.findOwnedNewestFirst(userId).stream().map(p -> dto(p, true)).toList();
     }
 
     @Override
@@ -304,7 +380,7 @@ public class PropertyServiceImpl implements PropertyService {
     public Page<PropertyDTO> getPropertyOfUser(Integer userId, Pageable pageable) {
         UserEntity actor = access.actor();
         if (!actor.getId().equals(userId)) throw PropertyProblem.forbidden();
-        return propertyRepository.findByUser_IdOrderByIdDesc(userId, pageable).map(p -> dto(p, true));
+        return propertyRepository.findOwnedNewestFirst(userId, pageable).map(p -> dto(p, true));
     }
 
     @Override
@@ -312,7 +388,7 @@ public class PropertyServiceImpl implements PropertyService {
         UserEntity actor = access.actor();
         if (!actor.getId().equals(id)) throw PropertyProblem.forbidden();
         List<Integer> favorites = favoritePropertyService.getFavoritePropertyIdsByUserId(id);
-        return propertyRepository.findById_In(favorites).stream().filter(p -> published(p) || access.owner(actor,p) || access.reviewer(actor,p))
-                .map(p -> dto(p, access.owner(actor,p) || access.reviewer(actor,p))).toList();
+        return propertyRepository.findById_In(favorites).stream().filter(p -> published(p) || access.owner(actor, p) || access.reviewer(actor, p))
+                .map(p -> dto(p, access.owner(actor, p) || access.reviewer(actor, p))).toList();
     }
 }

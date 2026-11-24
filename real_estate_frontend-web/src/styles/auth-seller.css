@@ -429,6 +429,7 @@
 .seller-pagination .current { background: var(--forest); color: var(--surface); border-color: var(--forest); }
 .seller-pagination > span[aria-disabled] { opacity: 0.4; }
 .seller-row {
+  position: relative;
   display: grid;
   grid-template-columns: 90px 1fr auto auto;
   gap: 20px;
@@ -444,6 +445,26 @@
 .seller-row h3 {
   font-size: 0.96rem;
   margin: 0 0 5px;
+}
+.seller-row-details {
+  color: inherit;
+}
+.seller-row-details::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  content: "";
+}
+.seller-row-details:hover {
+  text-decoration: underline;
+}
+.seller-row-details:focus-visible::after {
+  outline: 2px solid var(--forest);
+  outline-offset: 2px;
+}
+.seller-row-edit {
+  position: relative;
+  z-index: 1;
 }
 .seller-row p {
   font-size: 0.8rem;

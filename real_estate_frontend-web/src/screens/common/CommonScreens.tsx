@@ -25,7 +25,7 @@ export function SimplePage({
     <div className="page-shell">
       <div className="container narrow">
         <div className="page-intro compact-intro">
-          <span className="eyebrow">Nhà Việt</span>
+          <span className="eyebrow">Nhà Thật</span>
           <h1>{content[0]}</h1>
           <p>{content[1]}</p>
         </div>
