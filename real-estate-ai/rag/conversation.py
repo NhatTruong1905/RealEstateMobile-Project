@@ -1,5 +1,7 @@
 import logging
+import re
 from api.schemas import RealEstateIntentSummary
+from rag.criteria import RESET, SearchCriteria, normalize
 
 log = logging.getLogger(__name__)
 
@@ -61,6 +63,26 @@ def extract_user_queries_only(history: list) -> list:
     return user_queries
 
 
+def referenced_property(question, history):
+    query = normalize(question)
+    explicit = re.search(r"\b(?:property id|ma tin)\s*[:#]?\s*([1-9][0-9]{0,9})\b", query)
+    if explicit:
+        return explicit[1] if int(explicit[1]) <= 2_147_483_647 else ""
+    ordinal = re.search(r"\b(?:tin|can|bat dong san)\s+(?:thu|so)\s+(\d{1,2})\b", query)
+    if not ordinal:
+        return None
+    for item in reversed(history):
+        role = item.get("role") if isinstance(item, dict) else item.role
+        ids = item.get("property_ids", []) if isinstance(item, dict) else getattr(item, "property_ids", [])
+        if role == "assistant" and ids:
+            position = int(ordinal[1])
+            if 1 <= position <= len(ids):
+                selected = ids[position - 1]
+                return selected if int(selected) <= 2_147_483_647 else ""
+            return ""
+    return ""
+
+
 class ConversationManager:
     def __init__(self, summary_chain):
         self.summary_chain = summary_chain
@@ -89,10 +111,21 @@ class ConversationManager:
     def _prepare_inputs(self, question: str, history: list = None) -> dict:
         question = question[:4000]
         history_list = history or []
+        if RESET.match(normalize(question)):
+            history_list = []
+        else:
+            for index in range(len(history_list) - 1, -1, -1):
+                item = history_list[index]
+                role = item.get("role") if isinstance(item, dict) else item.role
+                content = item.get("content", "") if isinstance(item, dict) else item.content
+                if role == "user" and RESET.match(normalize(content)):
+                    history_list = history_list[index:]
+                    break
+        reference = referenced_property(question, history_list)
 
         budgeted_history = sanitize_and_budget_history(history_list, max_assistant_chars=150, max_total_chars=1200)
 
-        if len(budgeted_history) <= 4:
+        if len(budgeted_history) <= 4 or reference is not None:
             history_str = format_history_text(budgeted_history)
 
             user_queries = extract_user_queries_only(budgeted_history)
@@ -150,4 +183,8 @@ class ConversationManager:
             "question": question.strip(),
             "search_query": search_query,
             "history_str": history_str,
+            "property_reference": reference,
+            "criteria": SearchCriteria.from_turns(
+                extract_user_queries_only(budgeted_history) + [question]
+            ),
         }

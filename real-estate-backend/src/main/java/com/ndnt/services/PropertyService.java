@@ -13,8 +13,11 @@ public interface PropertyService {
     Page<PropertyDTO> getProperties(PropertyRequestDTO propertyRequestDTO, Pageable pageable);
 
     PropertyDTO findById(Integer id);
+    PropertyDTO findOwnedById(Integer id);
 
     PropertyDTO saveOwnedProperty(PropertyDTO propertyDTO);
+    PropertyDTO saveRejectedDraft(PropertyDTO propertyDTO);
+    PropertyDTO resubmitOwnedProperty(Integer id);
 
     void deleteOwnedProperty(Integer id);
 

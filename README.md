@@ -21,6 +21,8 @@
 
 ## 📖 1. Giới Thiệu Dự Án
 
+Tài liệu chatbot hiện hành ghi lại luồng Gemini, Qdrant, PostgreSQL, RabbitMQ và SSE v2 trên web. Xem [triển khai và benchmark chatbot](docs/CHATBOT_WEB_IMPROVEMENTS.md) và [bàn giao Flutter](docs/CHATBOT_MOBILE_HANDOFF.md).
+
 **Hệ Thống Quản Lý Bất Động Sản Đa Nền Tảng Tích Hợp Tư Vấn Thông Minh** là giải pháp nền tảng công nghệ bất động sản toàn diện (**PropTech Platform**) hiện đại, kết nối trực tiếp giữa người có nhu cầu mua bán/thuê bất động sản và môi giới/chủ sở hữu. Hệ thống được xây dựng trên kiến trúc hướng dịch vụ (**Microservices / Modular Distributed Architecture**) gồm:
 
 1. **Ứng dụng di động đa nền tảng (Flutter)**: Giao diện Material 3 mượt mà, tối ưu hóa trải nghiệm tìm kiếm, quản lý bài đăng và tích hợp trợ lý ảo thông minh.
@@ -413,7 +415,8 @@ Tệp [AppConfig.dart](file:///d:/RealEstateMobile-Project/real_estate_frontend/
 | Tên File | Tham Số Chính | Chức năng |
 | :--- | :--- | :--- |
 | `application.properties` | `server.port=8080`<br>`spring.datasource.url`<br>`spring.jpa.hibernate.ddl-auto` | Cổng dịch vụ backend, thông tin kết nối MySQL/PostgreSQL và chế độ tự sinh schema JPA. |
-| `application-secret.properties` | `JWT_SECRET`<br>`spring.ai.openai.api-key`<br>`GOOGLE_CLIENT_ID`<br>`FACEBOOK_APP_ID`<br>`spring.mail.*` | Chìa khóa mã hóa JWT, API key Gemini (qua OpenAI format), OAuth Client IDs và tài khoản gửi mail OTP. |
+| `application-secret.properties` | `JWT_SECRET`<br>`spring.ai.openai.api-key`<br>`GOOGLE_CLIENT_ID`<br>`FACEBOOK_APP_ID` | Chìa khóa mã hóa JWT, API key Gemini (qua OpenAI format) và OAuth Client IDs. |
+| Biến môi trường backend | `RESEND_API_KEY`, `RESEND_FROM`, `PROPERTY_MAIL_WORKER_ENABLED` | [Cấu hình email qua Resend](docs/RESEND_EMAIL_SETUP.md). |
 | `application-prod.properties` | `spring.datasource.url=${DATABASE_URL}` | Cấu hình nhận biến môi trường khi deploy lên Railway Production. |
 
 ### AI Service Configuration (`real-estate-ai/`)

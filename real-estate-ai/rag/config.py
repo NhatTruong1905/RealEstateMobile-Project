@@ -33,6 +33,8 @@ class Settings:
     rerank_model: str = "Qwen/Qwen3-Reranker-0.6B"
     rerank_api_key: str = field(default="", repr=False)
     candidate_limit: int = 20
+    lexical_fusion: bool = True
+    postgres_lexical: bool = False
     top_n: int = 5
     timeout: float = 5.0
     concurrency: int = 1
@@ -66,6 +68,8 @@ class Settings:
             rerank_model=os.getenv("RERANK_MODEL", "Qwen/Qwen3-Reranker-0.6B"),
             rerank_api_key=os.getenv("RERANK_API_KEY", ""),
             candidate_limit=positive("RERANK_CANDIDATE_LIMIT", 20),
+            lexical_fusion=os.getenv("CHAT_LEXICAL_FUSION", "true").lower() == "true",
+            postgres_lexical=os.getenv("CHAT_POSTGRES_LEXICAL", "false").lower() == "true",
             top_n=positive("RERANK_TOP_N", 5),
             timeout=positive("RERANK_TIMEOUT_SECONDS", 5, float),
             concurrency=positive("RERANK_MAX_CONCURRENCY", 1),

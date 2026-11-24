@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -65,7 +66,7 @@ public class APIPropertyController {
     public ResponseEntity<?> getProperties(@ModelAttribute PropertyRequestDTO propertyRequestDTO,
                                            @RequestParam(defaultValue = "1") int page,
                                            @RequestParam(defaultValue = "6") int limit) {
-        Pageable pageable = PageRequest.of(page - 1, limit);
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "id"));
 
         propertyRequestDTO.setStatus(StatusProperty.PUBLISHED.getStatus());
         Page<PropertyDTO> propertyPage = this.propertyService.getProperties(propertyRequestDTO, pageable);
@@ -113,7 +114,9 @@ public class APIPropertyController {
 
     @PostMapping(path = "/secure/properties", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> updateOrCreateProperty(@Valid @ModelAttribute PropertyDTO propertyDTO, BindingResult bindingResult, Principal principal) {
+    public ResponseEntity<?> updateOrCreateProperty(@Valid @ModelAttribute PropertyDTO propertyDTO, BindingResult bindingResult,
+                                                    @RequestParam(defaultValue = "false") boolean rejectedDraft,
+                                                    Principal principal) {
         if (bindingResult.hasErrors()) {
             Map<String, String> errors = bindingResult.getFieldErrors().stream()
                     .collect(Collectors.toMap(FieldError::getField, this::propertyValidationMessage,
@@ -131,11 +134,20 @@ public class APIPropertyController {
         } else {
             propertyDTO.setUserId(currentUser.getId());
             ResponseDTO responseDTO = new ResponseDTO();
-            propertyDTO = this.propertyService.saveOwnedProperty(propertyDTO);
+            propertyDTO = rejectedDraft ? this.propertyService.saveRejectedDraft(propertyDTO)
+                    : this.propertyService.saveOwnedProperty(propertyDTO);
             responseDTO.setMessage("Success");
             responseDTO.setData(propertyDTO);
             return ResponseEntity.ok().body(responseDTO);
         }
+    }
+
+    @PostMapping("/secure/properties/{id}/resubmit")
+    public ResponseEntity<ResponseDTO> resubmit(@PathVariable Integer id) {
+        ResponseDTO response = new ResponseDTO();
+        response.setMessage("Đã gửi lại tin để xét duyệt.");
+        response.setData(propertyService.resubmitOwnedProperty(id));
+        return ResponseEntity.ok(response);
     }
 
     private String propertyValidationMessage(FieldError error) {
@@ -151,6 +163,14 @@ public class APIPropertyController {
             case "wardId" -> "Lựa chọn phường/xã không hợp lệ. Vui lòng chọn lại.";
             default -> "Giá trị không hợp lệ. Vui lòng kiểm tra lại.";
         };
+    }
+
+    @GetMapping("/secure/properties/{id}/mine")
+    public ResponseEntity<ResponseDTO> getOwnedProperty(@PathVariable Integer id) {
+        ResponseDTO response = new ResponseDTO();
+        response.setMessage("Success");
+        response.setData(propertyService.findOwnedById(id));
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/secure/properties/{id}")

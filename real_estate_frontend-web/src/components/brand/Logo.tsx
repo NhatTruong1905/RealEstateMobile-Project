@@ -3,12 +3,12 @@ import { Link } from "../ui/Navigation";
 
 export function Logo() {
   return (
-    <Link className="logo" to="/" aria-label="Nhà Việt — trang chủ">
+    <Link className="logo" to="/" aria-label="Nhà Thật — trang chủ">
       <span className="logo-mark">
         <House size={20} strokeWidth={1.8} />
       </span>
       <span>
-        Nhà<em>Việt</em>
+        Nhà<em>Thật</em>
       </span>
     </Link>
   );

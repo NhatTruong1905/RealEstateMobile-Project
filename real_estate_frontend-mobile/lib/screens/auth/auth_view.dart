@@ -250,7 +250,7 @@ extension AuthView on _AuthScreenState {
                                                 TextDecoration.underline,
                                           ),
                                         ),
-                                        TextSpan(text: ' của PropertySumDev.'),
+                                        TextSpan(text: ' của Nhà Thật.'),
                                       ],
                                     ),
                                   ),

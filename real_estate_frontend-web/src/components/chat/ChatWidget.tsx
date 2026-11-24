@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, LoaderCircle, MessageCircle, Send, Trash2, X } from "lucide-react";
-import { chatApi, type ChatHistoryItem } from "../../services/api/chat/chatApi";
+import { Bot, MessageCircle, Send, Square, Trash2, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { chatApi, type ChatHistoryItem, type ChatProperty } from "../../services/api/chat/chatApi";
 
 interface ChatMessage extends ChatHistoryItem {
   id: string;
   isError?: boolean;
+  pending?: boolean;
+  properties?: ChatProperty[];
 }
 
 const STORAGE_KEY = "real-estate-web-chat-history";
@@ -12,13 +15,19 @@ const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Chào bạn, tôi là trợ lý Nhà Việt. Bạn đang tìm mua hay thuê bất động sản ở khu vực nào?",
+    "Chào bạn, tôi là trợ lý Nhà Thật. Bạn đang tìm mua hay thuê bất động sản ở khu vực nào?",
 };
 
 function loadHistory(): ChatMessage[] {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(stored) && stored.length ? stored : [WELCOME_MESSAGE];
+    if (Array.isArray(stored)) {
+      const complete = stored
+        .filter((message) => message && !message.pending)
+        .map((message) => message.id === WELCOME_MESSAGE.id ? WELCOME_MESSAGE : message);
+      if (complete.length) return complete;
+    }
+    return [WELCOME_MESSAGE];
   } catch {
     return [WELCOME_MESSAGE];
   }
@@ -37,7 +46,9 @@ export function ChatWidget() {
     if (messages.every((message) => message.id === "welcome")) {
       localStorage.removeItem(STORAGE_KEY);
     } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-30)));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(
+        messages.filter((message) => !message.pending).slice(-30),
+      ));
     }
     endRef.current?.scrollIntoView({ behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   }, [messages]);
@@ -92,20 +103,24 @@ export function ChatWidget() {
     const assistantId = `assistant-${Date.now()}`;
     const history = messages
       .filter((message) => message.id !== "welcome" && !message.isError)
-      .map(({ role, content }) => ({ role, content }));
+      .map(({ role, content, properties }) => ({
+        role,
+        content,
+        property_ids: properties?.map((property) => property.property_id),
+      }));
 
     setDraft("");
     setSending(true);
     setMessages((current) => [
       ...current,
       userMessage,
-      { id: assistantId, role: "assistant", content: "" },
+      { id: assistantId, role: "assistant", content: "", pending: true },
     ]);
 
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      await chatApi.streamAnswer(
+      const properties = await chatApi.streamAnswer(
         question,
         history,
         (chunk) => {
@@ -120,6 +135,11 @@ export function ChatWidget() {
         },
         controller.signal,
       );
+      if (!controller.signal.aborted) {
+        setMessages((current) => current.map((message) =>
+          message.id === assistantId ? { ...message, properties, pending: false } : message,
+        ));
+      }
     } catch (error) {
       if (controller.signal.aborted) return;
       setMessages((current) =>
@@ -128,6 +148,7 @@ export function ChatWidget() {
             ? {
                 ...message,
                 isError: true,
+                pending: false,
                 content:
                   error instanceof Error
                     ? error.message
@@ -152,6 +173,16 @@ export function ChatWidget() {
     setDraft("");
   }
 
+  function stopAnswer() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setSending(false);
+    setMessages((current) => current.map((message) => message.pending
+      ? { ...message, pending: false, isError: true, content: "Đã dừng câu trả lời." }
+      : message));
+    inputRef.current?.focus();
+  }
+
   return (
     <div className={open ? "chat-widget is-open" : "chat-widget"}>
         <section
@@ -166,7 +197,7 @@ export function ChatWidget() {
               <Bot />
             </div>
             <div>
-              <strong>Trợ lý Nhà Việt</strong>
+              <strong>Trợ lý Nhà Thật</strong>
               <span><i /> Tư vấn bất động sản</span>
             </div>
             <button
@@ -188,7 +219,7 @@ export function ChatWidget() {
             </button>
           </header>
 
-          <div className="chat-messages" aria-live="polite">
+          <div className="chat-messages" aria-live="polite" aria-busy={sending}>
             {messages.map((message) => (
               <div
                 className={`chat-message ${message.role}${message.isError ? " error" : ""}`}
@@ -199,13 +230,34 @@ export function ChatWidget() {
                     <Bot />
                   </span>
                 )}
-                <p>
+                <div className="chat-message-body">
+                <p role={message.isError ? "alert" : undefined}>
                   {message.content || (
                     <span className="chat-typing" aria-label="Đang soạn câu trả lời">
                       <i /><i /><i />
                     </span>
                   )}
                 </p>
+                {!!message.properties?.length && (
+                  <ul className="chat-property-list" aria-label="Tin bất động sản">
+                    {message.properties.map((property) => (
+                      <li key={property.property_id}>
+                        <Link to={`/properties/${property.property_id}`} onClick={() => setOpen(false)}>
+                          <strong>{property.title || `Tin #${property.property_id}`}</strong>
+                          <span>{[property.ward, property.district, property.type].filter(Boolean).join(" · ")}</span>
+                          <span>
+                            {/^[0-9]+(?:\.[0-9]+)?$/.test(property.price_vnd) &&
+                              new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(property.price_vnd))}
+                            {property.area_m2 && (
+                              <> {property.price_vnd && "· "}{property.area_m2} m²</>
+                            )}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                </div>
               </div>
             ))}
             <div ref={endRef} />
@@ -227,23 +279,20 @@ export function ChatWidget() {
               rows={1}
               value={draft}
               maxLength={1000}
-              placeholder="Ví dụ: Tìm căn hộ dưới 3 tỷ ở Quận 7"
+              placeholder="Ví dụ: Căn hộ dưới 3 tỷ"
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
+                if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
                   event.preventDefault();
                   void sendMessage();
                 }
               }}
             />
-            <button
-              type="submit"
-              disabled={!draft.trim() || sending}
-              aria-busy={sending}
-              aria-label={sending ? "Đang gửi câu hỏi" : "Gửi câu hỏi"}
-            >
-              {sending ? <LoaderCircle className="spin" /> : <Send />}
-            </button>
+            {sending ? (
+              <button type="button" aria-label="Dừng trả lời" onClick={stopAnswer}><Square /></button>
+            ) : (
+              <button type="submit" disabled={!draft.trim()} aria-label="Gửi câu hỏi"><Send /></button>
+            )}
           </form>
           <small className="chat-disclaimer">
             Thông tin chỉ mang tính tham khảo. Hãy xác minh trước khi giao dịch.

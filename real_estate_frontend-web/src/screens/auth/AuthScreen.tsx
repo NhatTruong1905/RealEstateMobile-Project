@@ -131,7 +131,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
               ? "“Một không gian tốt mở ra một chương sống mới.”"
               : "“Bắt đầu hành trình tìm nơi thuộc về bạn.”"}
           </p>
-          <span>Nhà Việt · 2026</span>
+          <span>Nhà Thật · 2026</span>
         </div>
       </div>
       <div className="auth-form-wrap">
@@ -147,7 +147,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
           onChangeCapture={() => { setError(""); setErrorField(""); }}
         >
           <span className="eyebrow">
-            {mode === "login" ? "Chào mừng trở lại" : "Bắt đầu với Nhà Việt"}
+            {mode === "login" ? "Chào mừng trở lại" : "Bắt đầu với Nhà Thật"}
           </span>
           <h1>{mode === "login" ? "Đăng nhập" : "Tạo tài khoản"}</h1>
           <p>

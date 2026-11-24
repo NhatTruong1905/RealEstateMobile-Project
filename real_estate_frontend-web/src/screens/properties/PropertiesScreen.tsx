@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Building2, ChevronLeft, ChevronRight, List, Map as MapIcon, Search, SlidersHorizontal, X } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { Link } from "../../components/ui/Navigation";
 import { propertyApi } from "../../services/api/property/propertyApi";
 import { PropertyCard } from "../../components/property/PropertyCard";
 import { PropertyMap } from "../../components/property/PropertyMap";
@@ -11,10 +10,12 @@ import type { PropertyPage } from "../../types";
 function FilterPanel({
   params,
   update,
+  reset,
   close,
 }: {
   params: URLSearchParams;
   update: (key: string, value: string) => void;
+  reset: () => void;
   close?: () => void;
 }) {
   return (
@@ -94,10 +95,7 @@ function FilterPanel({
       </label>
       <button
         className="button button-secondary full"
-        onClick={() => {
-          window.history.pushState({}, "", "/properties");
-          location.reload();
-        }}
+        onClick={reset}
       >
         Xóa bộ lọc
       </button>
@@ -116,24 +114,38 @@ export function PropertiesPage() {
   const [selectedProperty, setSelectedProperty] = useState<number>();
   const query = params.toString();
   useEffect(() => {
+    let current = true;
     const q = new URLSearchParams(query);
     if (!q.has("page")) q.set("page", "1");
     if (!q.has("limit")) q.set("limit", "6");
     propertyApi
       .list(q)
       .then((r) => {
+        if (!current) return;
         setResult(r);
         setStatus("ready");
       })
-      .catch(() => setStatus("error"));
+      .catch(() => {
+        if (current) setStatus("error");
+      });
+    return () => {
+      current = false;
+    };
   }, [query]);
-  function update(key: string, value: string) {
+  function applyParams(next: URLSearchParams, filtering = true) {
+    if (next.toString() === query) return;
     setStatus("loading");
+    setParams(next, { replace: true, preventScrollReset: filtering });
+  }
+  function update(key: string, value: string) {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
     else next.delete(key);
-    next.set("page", "1");
-    setParams(next, { replace: true });
+    if (key !== "page") next.set("page", "1");
+    applyParams(next, key !== "page");
+  }
+  function reset() {
+    applyParams(new URLSearchParams());
   }
   return (
     <div className="page-shell">
@@ -163,10 +175,11 @@ export function PropertiesPage() {
             <FilterPanel
               params={params}
               update={update}
+              reset={reset}
               close={() => setFilters(false)}
             />
           </div>
-          <section className="results">
+          <section className="results" aria-busy={status === "loading"}>
             <div className="results-toolbar">
               <p>
                 {status === "ready" ? (
@@ -202,7 +215,7 @@ export function PropertiesPage() {
                 </button>
               </div>
             </div>
-            {status === "loading" && <LoadingGrid />}
+            {status === "loading" && !result?.content.length && <LoadingGrid />}
             {status === "error" && (
               <State
                 icon={<Building2 />}
@@ -224,13 +237,13 @@ export function PropertiesPage() {
                 title="Chưa tìm thấy lựa chọn phù hợp"
                 text="Hãy nới rộng khu vực hoặc khoảng giá để xem thêm kết quả."
                 action={
-                  <Link className="button button-secondary" to="/properties">
+                  <button className="button button-secondary" type="button" onClick={reset}>
                     Xóa bộ lọc
-                  </Link>
+                  </button>
                 }
               />
             )}{" "}
-            {status === "ready" && Boolean(result?.content.length) && (
+            {status !== "error" && Boolean(result?.content.length) && (
               <>
                 {mapView ? (
                   <div className="map-results-split">

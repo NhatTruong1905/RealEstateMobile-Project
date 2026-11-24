@@ -21,7 +21,9 @@ export function validatePropertyFormData(data: FormData, options: PropertyOption
     ["address", "địa chỉ đầy đủ", 255, true],
     ["legal", "thông tin pháp lý", 45, true],
     ["direction", "hướng nhà", 45, false],
+    ["city", "tỉnh/thành phố", 45, false],
   ] as const) {
+    if (name === "city" && !data.has(name)) continue;
     const value = String(data.get(name) || "").trim();
     data.set(name, value);
     if (required && !value) errors[name] = `Vui lòng nhập ${label}.`;

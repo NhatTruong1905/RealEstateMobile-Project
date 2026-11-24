@@ -80,6 +80,7 @@ public class PropertyController {
 
     @GetMapping("/properties-edit")
     public ModelAndView addProperty(@ModelAttribute(name = "property") PropertyDTO propertyDTO) {
+        propertyDTO.setStatus(StatusProperty.PENDING.getStatus());
         ModelAndView mav = new ModelAndView("property/edit");
         mav.addObject("users", this.userService.getUsers());
         mav.addObject("types", this.propertyTypeService.getPropertyTypes());

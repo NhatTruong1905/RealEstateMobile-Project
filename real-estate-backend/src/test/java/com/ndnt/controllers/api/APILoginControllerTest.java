@@ -183,8 +183,8 @@ public class APILoginControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auth/forgot-password - Tài khoản chưa có email -> Yêu cầu nhập email")
-    void forgotPassword_NoEmail_RequireEmail() throws Exception {
+    @DisplayName("Forgot password requires a recovery email")
+    void forgotPassword_NoEmail_ReturnsConflict() throws Exception {
         ForgotPasswordRequest request = ForgotPasswordRequest.builder()
                 .identifier("0987654321")
                 .build();
@@ -199,17 +199,16 @@ public class APILoginControllerTest {
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("REQUIRE_EMAIL"))
-                .andExpect(jsonPath("$.hasEmail").value(false));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value("EMAIL_NOT_CONFIGURED"));
 
         verify(otpService, never()).generateOtp(any(), any());
         verify(emailService, never()).sendOtpEmail(any(), any(), any());
     }
 
     @Test
-    @DisplayName("POST /api/auth/forgot-password - Tài khoản chưa có email + Người dùng cung cấp email -> Gửi OTP thành công")
-    void forgotPassword_NoEmail_WithProvidedEmail_Success() throws Exception {
+    @DisplayName("Forgot password rejects an unregistered recipient")
+    void forgotPassword_NoEmail_RejectsUnregisteredRecipient() throws Exception {
         ForgotPasswordRequest request = ForgotPasswordRequest.builder()
                 .identifier("0987654321")
                 .email("newemail@gmail.com")
@@ -222,18 +221,30 @@ public class APILoginControllerTest {
         user.setFullname("Phone User");
 
         when(userService.findEntityByIdentifier("0987654321")).thenReturn(user);
-        when(otpService.generateOtp("0987654321", "newemail@gmail.com")).thenReturn("654321");
-        doNothing().when(emailService).sendOtpEmail(eq("newemail@gmail.com"), eq("654321"), eq("Phone User"));
-
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("OTP_SENT"))
-                .andExpect(jsonPath("$.hasEmail").value(false))
-                .andExpect(jsonPath("$.maskedEmail").value("ne***@gmail.com"));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value("EMAIL_NOT_CONFIGURED"));
 
-        verify(otpService, times(1)).generateOtp("0987654321", "newemail@gmail.com");
+        verify(otpService, never()).generateOtp(any(), any());
+        verify(emailService, never()).sendOtpEmail(any(), any(), any());
+    }
+
+    @Test
+    void forgotPassword_WhenMailFails_ReturnsServiceUnavailable() throws Exception {
+        UserEntity user = new UserEntity();
+        user.setEmail("owner@example.invalid");
+        when(userService.findEntityByIdentifier("testuser")).thenReturn(user);
+        when(otpService.generateOtp("testuser", "owner@example.invalid")).thenReturn("123456");
+        doThrow(new IllegalStateException("Resend HTTP 429"))
+                .when(emailService).sendOtpEmail("owner@example.invalid", "123456", null);
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"identifier\":\"testuser\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value("EMAIL_UNAVAILABLE"));
     }
 
     @Test

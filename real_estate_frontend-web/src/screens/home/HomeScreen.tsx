@@ -109,7 +109,7 @@ export function HomePage() {
             <div className="hero-stamp">
               KHÁM PHÁ
               <br />
-              NHÀ VIỆT
+              NHÀ THẬT
             </div>
           </div>
         </div>

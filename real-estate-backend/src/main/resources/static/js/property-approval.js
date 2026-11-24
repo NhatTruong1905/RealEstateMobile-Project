@@ -16,8 +16,8 @@
     const errorBox = doc.getElementById("form-error");
     const reasonError = doc.getElementById("error-rejectionReason");
     let busy = false;
-    const originalStatus =
-      form.elements.namedItem("status").value || "Chờ duyệt";
+    const statusField = form.elements.namedItem("status");
+    const originalStatus = statusField.value || "Chờ duyệt";
     function validate() {
       rejectConfirm.disabled = busy || !validReason(reason.value);
     }
@@ -126,27 +126,31 @@
         setBusy(false);
       }
     }
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      save(originalStatus);
-    });
-    doc.getElementById("approve-property")?.addEventListener("click", () => {
-      if (
-        !busy &&
-        confirmRequest(
-          "Phê duyệt và công khai bài đăng này? Hệ thống sẽ xử lý email thông báo.",
-        )
-      )
-        save("Đang mở bán");
-    });
-    doc.getElementById("reject-property")?.addEventListener("click", () => {
-      if (!busy) {
+    function requestStatus(status) {
+      if (busy || !form.reportValidity()) return;
+      if (status === originalStatus) {
+        save(status);
+      } else if (status === "Đang mở bán") {
+        if (confirmRequest("Phê duyệt và công khai bài đăng này? Hệ thống sẽ xử lý email thông báo.")) {
+          save(status);
+        }
+      } else if (status === "Từ chối") {
         reason.value = "";
         reasonError.textContent = "";
         validate();
         dialog.showModal();
         reason.focus();
       }
+    }
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      requestStatus(statusField.value || originalStatus);
+    });
+    doc.getElementById("approve-property")?.addEventListener("click", () => {
+      requestStatus("Đang mở bán");
+    });
+    doc.getElementById("reject-property")?.addEventListener("click", () => {
+      requestStatus("Từ chối");
     });
     reason.addEventListener("input", validate);
     rejectConfirm.addEventListener("click", () =>

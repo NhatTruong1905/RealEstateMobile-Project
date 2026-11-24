@@ -11,7 +11,7 @@ import { NotFound, SimplePage } from "./screens/common/CommonScreens";
 import { HomePage } from "./screens/home/HomeScreen";
 import { PropertiesPage } from "./screens/properties/PropertiesScreen";
 import { PropertyDetailPage } from "./screens/properties/PropertyDetailScreen";
-import { PostProperty } from "./screens/seller/PostPropertyScreen";
+import { EditRejectedProperty, PostProperty } from "./screens/seller/PostPropertyScreen";
 import { SellerOverview } from "./screens/seller/SellerOverviewScreen";
 import { SellerProperties } from "./screens/seller/SellerPropertiesScreen";
 import { FAQPage, PrivacyPage, TermsPage } from "./screens/support/SupportScreens";
@@ -50,6 +50,8 @@ const router = createBrowserRouter(createRoutesFromElements(
           <Route path="overview" element={<SellerOverview />} />
           <Route path="properties" element={<SellerProperties />} />
           <Route path="post" element={<PostProperty />} />
+          <Route path="properties/:id/edit" element={<EditRejectedProperty />} />
+          <Route path="properties/:id" element={<PropertyDetailPage owned />} />
           <Route path="customers" element={<SimplePage type="customers" />} />
           <Route index element={<Navigate to="overview" replace />} />
         </Route>

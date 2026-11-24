@@ -283,30 +283,26 @@ public class APILoginController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
 
-        String targetEmail = null;
-        boolean hasExistingEmail = user.getEmail() != null && !user.getEmail().trim().isEmpty();
-
-        if (hasExistingEmail) {
-            targetEmail = user.getEmail().trim();
-        } else {
-            if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
-                ForgotPasswordResponse response = ForgotPasswordResponse.builder()
-                        .status("REQUIRE_EMAIL")
-                        .hasEmail(false)
-                        .identifier(request.getIdentifier())
-                        .message("Tài khoản của bạn chưa cập nhật email. Vui lòng nhập email để nhận mã xác thực OTP.")
-                        .build();
-                return ResponseEntity.ok(response);
-            }
-            targetEmail = request.getEmail().trim();
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "status", "EMAIL_NOT_CONFIGURED",
+                    "message", "Tài khoản chưa có email khôi phục. Vui lòng liên hệ bộ phận hỗ trợ."
+            ));
         }
-
+        String targetEmail = user.getEmail().trim();
         String otp = this.otpService.generateOtp(request.getIdentifier(), targetEmail);
-        this.emailService.sendOtpEmail(targetEmail, otp, user.getFullname());
+        try {
+            this.emailService.sendOtpEmail(targetEmail, otp, user.getFullname());
+        } catch (IllegalStateException failure) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                    "status", "EMAIL_UNAVAILABLE",
+                    "message", "Chưa thể gửi mã OTP lúc này. Vui lòng thử lại sau."
+            ));
+        }
 
         ForgotPasswordResponse response = ForgotPasswordResponse.builder()
                 .status("OTP_SENT")
-                .hasEmail(hasExistingEmail)
+                .hasEmail(true)
                 .maskedEmail(maskEmail(targetEmail))
                 .identifier(request.getIdentifier())
                 .message("Mã xác thực OTP đã được gửi đến email " + maskEmail(targetEmail) + ". Vui lòng kiểm tra hộp thư!")

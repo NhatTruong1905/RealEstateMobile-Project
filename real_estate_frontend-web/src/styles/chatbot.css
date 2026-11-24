@@ -125,8 +125,11 @@
 .chat-message.user {
   justify-content: flex-end;
 }
-.chat-message p {
+.chat-message-body {
   max-width: 82%;
+  min-width: 0;
+}
+.chat-message p {
   margin: 0;
   padding: 10px 13px;
   border-radius: 12px 12px 12px 4px;
@@ -144,6 +147,31 @@
 .chat-message.error p {
   background: #fce8e5;
   color: var(--danger);
+}
+.chat-property-list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.chat-property-list a {
+  display: grid;
+  gap: 3px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--forest);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+.chat-property-list a:hover strong {
+  text-decoration: underline;
+}
+.chat-property-list span {
+  color: var(--muted);
 }
 .chat-message-icon {
   width: 28px;
@@ -222,16 +250,20 @@
 
 @media (max-width: 600px) {
   .chat-widget {
+    left: 14px;
     right: 14px;
     bottom: 14px;
+    pointer-events: none;
   }
   .chat-panel {
-    width: calc(100vw - 28px);
+    width: min(390px, 100%);
     height: min(620px, calc(100dvh - 96px));
+    pointer-events: auto;
   }
   .chat-launcher {
     width: 54px;
     height: 54px;
+    pointer-events: auto;
   }
 }
 

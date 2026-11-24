@@ -122,13 +122,13 @@ public class PropertyServiceImplTest {
 
         com.ndnt.model.entity.UserEntity actor = new com.ndnt.model.entity.UserEntity(); actor.setId(10);
         when(access.actor()).thenReturn(actor);
-        when(propertyRepository.findByUser_IdOrderByIdDesc(10)).thenReturn(List.of(propertyEntity));
+        when(propertyRepository.findOwnedNewestFirst(10)).thenReturn(List.of(propertyEntity));
         when(propertyConverter.toPropertyDTO(propertyEntity)).thenReturn(propertyDTO);
 
         List<PropertyDTO> result = propertyService.getPropertyOfUser(10);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(propertyRepository, times(1)).findByUser_IdOrderByIdDesc(10);
+        verify(propertyRepository, times(1)).findOwnedNewestFirst(10);
     }
 }

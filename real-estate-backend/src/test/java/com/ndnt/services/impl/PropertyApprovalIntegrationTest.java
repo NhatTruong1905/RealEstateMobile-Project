@@ -41,6 +41,7 @@ class PropertyApprovalIntegrationTest {
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired PropertyService service;
     @Autowired PropertyRepository properties;
+    @jakarta.persistence.PersistenceContext jakarta.persistence.EntityManager entityManager;
     @Autowired PropertyMailEventRepository events;
     @Autowired PropertyIndexEventRepository indexEvents;
     @Autowired PropertyMailDelivery delivery;
@@ -104,26 +105,40 @@ class PropertyApprovalIntegrationTest {
 
     @Test void ownerPaginationIsBoundedOrderedAndPrivate() throws Exception {
         PropertyDTO first = create(), second = create(), third = create();
+        tx.executeWithoutResult(status -> {
+            entityManager.createNativeQuery("update property set createddate = ?1, modifieddate = ?2 where id = ?3")
+                    .setParameter(1, java.sql.Timestamp.from(Instant.parse("2025-12-31T00:00:00Z")))
+                    .setParameter(2, java.sql.Timestamp.from(Instant.parse("2026-01-02T00:00:00Z")))
+                    .setParameter(3, first.getId()).executeUpdate();
+            entityManager.createNativeQuery("update property set createddate = ?1, modifieddate = null where id in (?2, ?3)")
+                    .setParameter(1, java.sql.Timestamp.from(Instant.parse("2026-01-01T00:00:00Z")))
+                    .setParameter(2, second.getId()).setParameter(3, third.getId()).executeUpdate();
+        });
         auth(other); PropertyDTO otherProperty = service.saveOwnedProperty(form());
         clearInvocations(objectStorage);
 
         mvc.perform(get("/api/secure/properties").header("Authorization", bearer(owner))
                 .param("page", "2").param("limit", "2"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.content.length()").value(1))
-            .andExpect(jsonPath("$.data.content[0].id").value(first.getId()))
+            .andExpect(jsonPath("$.data.content[0].id").value(second.getId()))
             .andExpect(jsonPath("$.data.totalItems").value(3))
             .andExpect(jsonPath("$.data.currentPage").value(2))
             .andExpect(jsonPath("$.data.totalPages").value(2));
-        verify(objectStorage).listPropertyImages(first.getId());
-        verify(objectStorage, never()).listPropertyImages(second.getId());
+        verify(objectStorage).listPropertyImages(second.getId());
+        verify(objectStorage, never()).listPropertyImages(first.getId());
         verify(objectStorage, never()).listPropertyImages(third.getId());
         verify(objectStorage, never()).listPropertyImages(otherProperty.getId());
 
         mvc.perform(get("/api/secure/properties").header("Authorization", bearer(owner))
                 .param("page", "1").param("limit", "2"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.content.length()").value(2))
-            .andExpect(jsonPath("$.data.content[0].id").value(third.getId()))
-            .andExpect(jsonPath("$.data.content[1].id").value(second.getId()));
+            .andExpect(jsonPath("$.data.content[0].id").value(first.getId()))
+            .andExpect(jsonPath("$.data.content[1].id").value(third.getId()));
+        mvc.perform(get("/api/secure/properties").header("Authorization", bearer(owner)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].id").value(first.getId()))
+            .andExpect(jsonPath("$.data[1].id").value(third.getId()))
+            .andExpect(jsonPath("$.data[2].id").value(second.getId()));
         mvc.perform(get("/api/secure/properties").header("Authorization", bearer(other))
                 .param("page", "1").param("limit", "2"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.totalItems").value(1))
@@ -137,6 +152,14 @@ class PropertyApprovalIntegrationTest {
         verifyNoInteractions(objectStorage);
         mvc.perform(get("/api/secure/properties").param("page", "1").param("limit", "2"))
             .andExpect(status().isUnauthorized());
+
+        auth(admin);
+        service.createOrUpdateProperty(decision(third, StatusProperty.PUBLISHED.getStatus(), null));
+        service.createOrUpdateProperty(decision(first, StatusProperty.PUBLISHED.getStatus(), null));
+        mvc.perform(get("/api/properties").param("page", "1").param("limit", "2"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.content[0].id").value(third.getId()))
+            .andExpect(jsonPath("$.data.content[1].id").value(first.getId()));
     }
 
     @Test void indexingOutboxVersionsAndProtectedSourceFollowApprovalAndDeletion() throws Exception {
@@ -181,6 +204,51 @@ class PropertyApprovalIntegrationTest {
         return events.findAll().stream().filter(e -> e.getPropertyId().equals(id) && e.getEventType().equals(type)).findFirst().orElseThrow();
     }
 
+    @Test void rejectedListingCanBeRevisedAndReviewedAgain() throws Exception {
+        PropertyDTO property = create();
+        int id = property.getId();
+        auth(admin);
+        service.createOrUpdateProperty(decision(property, StatusProperty.REJECTED.getStatus(), "Bổ sung pháp lý"));
+
+        String detailUrl = "/api/secure/properties/" + id + "/mine";
+        mvc.perform(get(detailUrl).header("Authorization", bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(id))
+                .andExpect(jsonPath("$.data.status").value(StatusProperty.REJECTED.getStatus()))
+                .andExpect(jsonPath("$.data.rejectionReason").value("Bổ sung pháp lý"));
+        mvc.perform(get(detailUrl).header("Authorization", bearer(other))).andExpect(status().isNotFound());
+
+        mvc.perform(createRequest().param("id", String.valueOf(id)).param("rejectedDraft", "true").param("images", "")
+                        .param("city", "Cần Thơ")
+                        .header("Authorization", bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.city").value("Cần Thơ"))
+                .andExpect(jsonPath("$.data.status").value(StatusProperty.REJECTED.getStatus()))
+                .andExpect(jsonPath("$.data.rejectionReason").value("Bổ sung pháp lý"));
+        assertEquals(2, events.countByPropertyId(id));
+
+        String url = "/api/secure/properties/" + id + "/resubmit";
+        mvc.perform(post(url).header("Authorization", bearer(other))).andExpect(status().isForbidden());
+        mvc.perform(post(url).header("Authorization", bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value(StatusProperty.PENDING.getStatus()))
+                .andExpect(jsonPath("$.data.rejectionReason").doesNotExist());
+        mvc.perform(post(url).header("Authorization", bearer(owner))).andExpect(status().isConflict());
+        var notifications = events.findAll().stream()
+                .filter(mail -> mail.getPropertyId().equals(id) && mail.getEventType().equals("RESUBMITTED")).toList();
+        assertTrue(notifications.stream().anyMatch(mail -> admin.getEmail().equals(mail.getRecipient())));
+        assertEquals(notifications.size(), notifications.stream().map(PropertyMailEvent::getRecipient).distinct().count());
+
+        auth(admin);
+        assertEquals(409, assertThrows(PropertyProblem.class, () ->
+                service.createOrUpdateProperty(decision(property, StatusProperty.PUBLISHED.getStatus(), null))).getStatus());
+        service.createOrUpdateProperty(decision(service.findById(id), StatusProperty.REJECTED.getStatus(), "Sửa ảnh"));
+        var rejections = events.findAll().stream()
+                .filter(mail -> mail.getPropertyId().equals(id) && mail.getEventType().equals("REJECTED")).toList();
+        assertEquals(2, rejections.size());
+        assertNotEquals(rejections.get(0).getEventKey(), rejections.get(1).getEventKey());
+    }
+
     @Test void createReturnsPersistedDtoIgnoresClientAuthorityAndQueuesTrustedMail() throws Exception {
         var result = mvc.perform(createRequest().header("Authorization",bearer(owner))
             .param("userId",other.getId().toString()).param("userEmail","attacker@example.invalid")
@@ -191,7 +259,7 @@ class PropertyApprovalIntegrationTest {
         int id = json.readTree(result.getResponse().getContentAsString()).path("data").path("id").asInt();
         assertEquals(owner.getId(), tx.execute(s -> properties.findById(id).orElseThrow().getUser().getId()));
         var event = event(id,"RECEIVED"); assertEquals(owner.getEmail(),event.getRecipient());
-        assertEquals("[RealEstateMobile] Đã tiếp nhận bài đăng bất động sản",event.getSubject());
+        assertEquals("Tin đăng đã được tiếp nhận | Nhà Thật",event.getSubject());
         assertTrue(event.getTextBody().contains("chưa được công khai")); assertEquals(1,events.countByPropertyId(id));
         verifyNoInteractions(parser, mailer);
         mvc.perform(get("/api/properties").param("title","Nhà thử")).andExpect(status().isOk())
@@ -259,7 +327,7 @@ class PropertyApprovalIntegrationTest {
         assertNotNull(stored.getReviewedAt()); assertEquals(StatusProperty.REJECTED.getStatus(),stored.getStatus());
         PropertyMailEvent mail=event(property.getId(),"REJECTED");
         assertTrue(mail.getTextBody().contains("Lý do: "+stored.getRejectionReason()+"."));
-        assertTrue(mail.getHtmlBody().contains("Lý do: "+org.springframework.web.util.HtmlUtils.htmlEscape(normalized,"UTF-8")+"."));
+        assertTrue(mail.getHtmlBody().contains(org.springframework.web.util.HtmlUtils.htmlEscape(normalized,"UTF-8")));
         assertFalse(mail.getTextBody().contains("\uFEFF")); assertEquals(2,events.countByPropertyId(property.getId()));
         verifyNoInteractions(mailer);
     }
@@ -287,7 +355,7 @@ class PropertyApprovalIntegrationTest {
             .andExpect(jsonPath("$.data.rejectionReason").value("Thiếu giấy tờ <script> & xác nhận"))
             .andExpect(jsonPath("$.data.reviewedBy").value(staff.getId()));
         var event=event(property.getId(),"REJECTED");
-        assertEquals("[RealEstateMobile] Bài đăng của bạn chưa được phê duyệt",event.getSubject());
+        assertEquals("Tin đăng cần chỉnh sửa | Nhà Thật",event.getSubject());
         assertTrue(event.getTextBody().contains("Thiếu giấy tờ <script> & xác nhận"));
         assertTrue(event.getHtmlBody().contains("&lt;script&gt; &amp; xác nhận"));
         assertFalse(event.getHtmlBody().contains("<script>")); assertTrue(event.getHtmlBody().contains("&lt;b&gt;"));
@@ -310,7 +378,7 @@ class PropertyApprovalIntegrationTest {
         property.setTitle("Staff sửa nội dung"); service.createOrUpdateProperty(property);
         assertEquals("Staff sửa nội dung",property.getTitle()); assertEquals(reviewedAt,property.getReviewedAt());
         assertEquals(2,events.countByPropertyId(property.getId()));
-        var event=event(property.getId(),"APPROVED"); assertEquals("[RealEstateMobile] Bài đăng của bạn đã được phê duyệt",event.getSubject());
+        var event=event(property.getId(),"APPROVED"); assertEquals("Tin đăng đã được phê duyệt | Nhà Thật",event.getSubject());
         assertTrue(event.getTextBody().contains("đã công khai"));
         auth(other);
         assertNull(service.findById(property.getId()).getReviewedBy());
