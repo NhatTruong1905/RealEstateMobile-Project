@@ -127,7 +127,7 @@ export function FAQPage() {
             <h2>Vẫn cần hỗ trợ thêm?</h2>
             <p>Gửi câu hỏi cho chúng tôi và mô tả rõ vấn đề bạn đang gặp.</p>
           </div>
-          <a className="button button-primary" href="mailto:tn696199@gmail.com">
+          <a className="button button-primary" href="mailto:support@nhtr.id.vn">
             Liên hệ qua email
           </a>
         </aside>

@@ -8,6 +8,7 @@
     const fetchRequest = dependencies.fetch || global.fetch.bind(global);
     const confirmRequest = dependencies.confirm || global.confirm.bind(global);
     const refresh = dependencies.refresh || (() => global.location.reload());
+    const returnToList = () => global.location.assign(form.dataset.listUrl);
     const notify = dependencies.notify || ((message) => global.alert(message));
     const doc = form.ownerDocument;
     const dialog = doc.getElementById("reject-dialog");
@@ -16,6 +17,7 @@
     const errorBox = doc.getElementById("form-error");
     const reasonError = doc.getElementById("error-rejectionReason");
     let busy = false;
+    let afterRejection = refresh;
     const statusField = form.elements.namedItem("status");
     const originalStatus = statusField.value || "Chờ duyệt";
     function validate() {
@@ -35,7 +37,7 @@
       doc.getElementById("approval-loading").hidden = !value;
       validate();
     }
-    async function save(status, rejectionReason) {
+    async function save(status, rejectionReason, onSuccess = refresh) {
       if (busy) return;
       if (!form.reportValidity()) return;
       if (
@@ -117,7 +119,7 @@
               : "Bài đăng đã bị từ chối. Hệ thống sẽ thông báo lý do cho người đăng."
             : "Đã lưu thông tin tin đăng.",
         );
-        refresh();
+        onSuccess();
       } catch {
         showError(
           "Lỗi kết nối. Dữ liệu được giữ lại; hãy tải lại kiểm tra trạng thái trước khi thử lại thao tác.",
@@ -126,15 +128,16 @@
         setBusy(false);
       }
     }
-    function requestStatus(status) {
+    function requestStatus(status, onSuccess = refresh) {
       if (busy || !form.reportValidity()) return;
       if (status === originalStatus) {
-        save(status);
+        save(status, undefined, onSuccess);
       } else if (status === "Đang mở bán") {
         if (confirmRequest("Phê duyệt và công khai bài đăng này? Hệ thống sẽ xử lý email thông báo.")) {
-          save(status);
+          save(status, undefined, onSuccess);
         }
       } else if (status === "Từ chối") {
+        afterRejection = onSuccess;
         reason.value = "";
         reasonError.textContent = "";
         validate();
@@ -144,7 +147,7 @@
     }
     form.addEventListener("submit", (event) => {
       event.preventDefault();
-      requestStatus(statusField.value || originalStatus);
+      requestStatus(statusField.value || originalStatus, returnToList);
     });
     doc.getElementById("approve-property")?.addEventListener("click", () => {
       requestStatus("Đang mở bán");
@@ -154,7 +157,7 @@
     });
     reason.addEventListener("input", validate);
     rejectConfirm.addEventListener("click", () =>
-      save("Từ chối", reason.value),
+      save("Từ chối", reason.value, afterRejection),
     );
     doc.getElementById("cancel-reject").addEventListener("click", () => {
       if (!busy) dialog.close();

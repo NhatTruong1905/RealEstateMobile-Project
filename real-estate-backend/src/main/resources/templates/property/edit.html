@@ -82,7 +82,8 @@
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4 p-md-5">
 
-            <form id="formProperty" th:action="@{/admin/api/properties}" th:object="${property}" method="post">
+            <form id="formProperty" th:action="@{/admin/api/properties}" th:object="${property}"
+                  th:data-list-url="@{/admin/properties-list}" method="post">
 
                 <input type="hidden" th:field="*{id}"/>
                 <input type="hidden" th:if="${property.id != null}" th:field="*{reviewVersion}"/>

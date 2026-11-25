@@ -21,16 +21,16 @@ export function Footer() {
           <Link to="/terms">Điều khoản</Link>
           <Link to="/privacy">Quyền riêng tư</Link>
         </div>
-        <div>
+        <div className="footer-contact">
           <h3>Liên hệ</h3>
-          <a href="mailto:tn696199@gmail.com">tn696199@gmail.com</a>
-          <p>
-            Nếu cần hợp tác, hãy liên hệ với tôi qua số điện thoại
-            <a className="footer-contact-link" href="tel:0967294349">
-              0967 294 349
-            </a>
-            .
-          </p>
+          <div>
+            <p>Hỗ trợ khách hàng</p>
+            <a href="mailto:support@nhtr.id.vn">support@nhtr.id.vn</a>
+          </div>
+          <div>
+            <p>Liên hệ hợp tác</p>
+            <a href="tel:0967294349">0967 294 349</a>
+          </div>
         </div>
       </div>
       <div className="footer-bottom">
