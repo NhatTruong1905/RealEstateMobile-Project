@@ -222,12 +222,15 @@
 .footer-grid p {
   color: #97a49f;
 }
-.footer-contact-link {
-  display: inline;
-  margin-left: 5px;
+.footer-contact p {
+  margin: 0 0 2px;
+}
+.footer-contact a {
   color: #fff;
-  font-weight: 700;
-  white-space: nowrap;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .footer-bottom strong {
   color: #fff;

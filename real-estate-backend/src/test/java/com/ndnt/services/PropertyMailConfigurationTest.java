@@ -1,6 +1,7 @@
 package com.ndnt.services;
 
 import com.ndnt.model.entity.PropertyMailEvent;
+import com.ndnt.services.impl.EmailServiceImpl;
 import com.ndnt.services.property.PropertyMailConfiguration;
 import com.ndnt.services.property.PropertyMailer;
 import org.junit.jupiter.api.Test;
@@ -12,15 +13,36 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 import java.time.Instant;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 class PropertyMailConfigurationTest {
+    @Test void rendersPasswordResetCodeInHtmlAndPlainText() {
+        var resolver = new ClassLoaderTemplateResolver();
+        resolver.setPrefix("templates/");
+        resolver.setSuffix(".html");
+        resolver.setCharacterEncoding("UTF-8");
+        var engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(resolver);
+        var mail = mock(ResendMailClient.class);
+        new EmailServiceImpl(mail, new EmailTemplate(engine))
+                .sendOtpEmail("owner@example.invalid", "012345", "<An>");
+
+        verify(mail).send(eq("owner@example.invalid"), eq("Mã đặt lại mật khẩu | Nhà Thật"),
+                argThat(text -> text.contains("\n\n012345\n\n") && text.contains("2 phút")),
+                argThat(html -> html.contains(">012345</p>") && html.contains("Chào &lt;An&gt;,")
+                        && html.contains("mailto:support@nhtr.id.vn") && !html.contains("Mã tin #")), isNull());
+    }
+
     @Test void applicationDefaultsToResendWithWorkerDisabled() throws Exception {
         try (var context = new AnnotationConfigApplicationContext()) {
             context.getEnvironment().getPropertySources().addFirst(

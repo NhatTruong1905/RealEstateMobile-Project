@@ -236,8 +236,8 @@ class PropertyApprovalIntegrationTest {
         mvc.perform(post(url).header("Authorization", bearer(owner))).andExpect(status().isConflict());
         var notifications = events.findAll().stream()
                 .filter(mail -> mail.getPropertyId().equals(id) && mail.getEventType().equals("RESUBMITTED")).toList();
-        assertTrue(notifications.stream().anyMatch(mail -> admin.getEmail().equals(mail.getRecipient())));
-        assertEquals(notifications.size(), notifications.stream().map(PropertyMailEvent::getRecipient).distinct().count());
+        assertEquals(1, notifications.size());
+        assertEquals("moderation@nhtr.id.vn", notifications.getFirst().getRecipient());
 
         auth(admin);
         assertEquals(409, assertThrows(PropertyProblem.class, () ->
@@ -260,7 +260,7 @@ class PropertyApprovalIntegrationTest {
         assertEquals(owner.getId(), tx.execute(s -> properties.findById(id).orElseThrow().getUser().getId()));
         var event = event(id,"RECEIVED"); assertEquals(owner.getEmail(),event.getRecipient());
         assertEquals("Tin đăng đã được tiếp nhận | Nhà Thật",event.getSubject());
-        assertTrue(event.getTextBody().contains("chưa được công khai")); assertEquals(1,events.countByPropertyId(id));
+        assertTrue(event.getTextBody().contains("Tin đang chờ xét duyệt")); assertEquals(1,events.countByPropertyId(id));
         verifyNoInteractions(parser, mailer);
         mvc.perform(get("/api/properties").param("title","Nhà thử")).andExpect(status().isOk())
             .andExpect(jsonPath("$.data.content[?(@.id == "+id+")]").isEmpty());
@@ -326,7 +326,7 @@ class PropertyApprovalIntegrationTest {
         assertEquals(normalized,stored.getRejectionReason()); assertEquals(staff.getId(),stored.getReviewedBy());
         assertNotNull(stored.getReviewedAt()); assertEquals(StatusProperty.REJECTED.getStatus(),stored.getStatus());
         PropertyMailEvent mail=event(property.getId(),"REJECTED");
-        assertTrue(mail.getTextBody().contains("Lý do: "+stored.getRejectionReason()+"."));
+        assertTrue(mail.getTextBody().contains("Lý do từ chối\n"+stored.getRejectionReason()));
         assertTrue(mail.getHtmlBody().contains(org.springframework.web.util.HtmlUtils.htmlEscape(normalized,"UTF-8")));
         assertFalse(mail.getTextBody().contains("\uFEFF")); assertEquals(2,events.countByPropertyId(property.getId()));
         verifyNoInteractions(mailer);
@@ -379,7 +379,7 @@ class PropertyApprovalIntegrationTest {
         assertEquals("Staff sửa nội dung",property.getTitle()); assertEquals(reviewedAt,property.getReviewedAt());
         assertEquals(2,events.countByPropertyId(property.getId()));
         var event=event(property.getId(),"APPROVED"); assertEquals("Tin đăng đã được phê duyệt | Nhà Thật",event.getSubject());
-        assertTrue(event.getTextBody().contains("đã công khai"));
+        assertTrue(event.getTextBody().contains("hiển thị công khai"));
         auth(other);
         assertNull(service.findById(property.getId()).getReviewedBy());
         mvc.perform(get("/api/properties").param("title","Staff sửa nội dung"))

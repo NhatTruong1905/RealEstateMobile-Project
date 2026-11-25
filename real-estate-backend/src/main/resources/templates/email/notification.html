@@ -5,40 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${heading}">Nhà Thật</title>
 </head>
-<body style="margin:0;background:#f5f1e8;color:#17251f;font:16px/1.6 Arial,sans-serif;">
-<table role="presentation" style="width:100%;border-spacing:0;background:#f5f1e8;">
-    <tr><td style="padding:28px 12px;">
-        <table role="presentation"
-               style="width:100%;max-width:580px;margin:0 auto;border-spacing:0;background:#fffcf6;border:1px solid #d8d1c4;border-radius:12px;">
-            <tr><td style="padding:18px 24px;background:#174f43;color:#ffffff;border-radius:11px 11px 0 0;">
-                <strong style="font-size:20px;">Nhà Thật</strong>
-            </td></tr>
-            <tr><td style="padding:24px;">
-                <h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;" th:text="${heading}"></h1>
-                <p style="margin:0 0 16px;" th:text="${message}"></p>
-                <table th:if="${listingId != null}" role="presentation"
-                       style="width:100%;border-spacing:0;background:#edf3ee;border-radius:8px;">
-                    <tr><td style="padding:14px 16px;overflow-wrap:anywhere;">
-                        <div style="font-size:13px;color:#465b52;" th:text="|Tin #${listingId}|"></div>
-                        <strong th:text="${listingTitle}"></strong>
-                    </td></tr>
-                </table>
-                <p th:if="${reason != null}" style="margin:16px 0 0;overflow-wrap:anywhere;">
-                    <strong>Lý do từ chối</strong><br>
-                    <span th:text="${reason}"></span>
-                </p>
-                <p th:if="${otp != null}" style="margin:0 0 16px;background:#edf3ee;border-radius:8px;padding:12px;text-align:center;color:#174f43;font-size:30px;font-weight:bold;letter-spacing:6px;"
-                   th:text="${otp}"></p>
-                <p th:if="${note != null}" style="margin:16px 0 0;" th:text="${note}"></p>
-                <p th:if="${actionUrl != null}" style="margin:20px 0 0;">
-                    <a th:href="${actionUrl}" style="display:inline-block;background:#174f43;color:#ffffff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;">Xem tin đăng</a>
-                </p>
-            </td></tr>
-            <tr><td style="padding:16px 24px;border-top:1px solid #d8d1c4;color:#465b52;font-size:13px;">
-                Email tự động từ Nhà Thật.
-            </td></tr>
-        </table>
-    </td></tr>
+<body style="margin:0;">
+<table role="presentation" style="width:100%;max-width:600px;margin:0 auto;border-spacing:0;font-family:Arial,sans-serif;font-size:16px;line-height:1.55;">
+    <tr>
+        <td style="padding:18px 22px;background-color:#174f43;color:#ffffff;font-size:22px;font-weight:bold;">Nhà Thật</td>
+    </tr>
+    <tr>
+        <td style="padding:24px 22px 28px;overflow-wrap:anywhere;">
+            <h1 style="margin:0 0 18px;font-size:22px;line-height:1.3;" th:text="${heading}"></h1>
+            <p th:if="${greeting != null}" style="margin:0 0 12px;" th:text="${greeting}"></p>
+            <p style="margin:0 0 16px;" th:text="${message}"></p>
+            <p th:if="${listingId != null}" style="margin:0 0 16px;">
+                <strong th:text="${listingTitle}"></strong><br>
+                <span th:text="|Mã tin #${listingId}|"></span>
+            </p>
+            <p th:if="${reason != null}" style="margin:0 0 16px;">
+                <strong>Lý do từ chối</strong><br>
+                <span style="white-space:pre-line;" th:text="${reason}"></span>
+            </p>
+            <p th:if="${otp != null}" style="margin:0 0 16px;font-size:28px;font-weight:bold;letter-spacing:4px;" th:text="${otp}"></p>
+            <p th:if="${note != null}" style="margin:0 0 16px;" th:text="${note}"></p>
+            <p th:if="${actionUrl != null}" style="margin:0 0 16px;">
+                <a th:href="${actionUrl}">Xem tin đăng</a>
+            </p>
+            <p style="margin:24px 0 0;">Trân trọng,<br><strong>Nhà Thật</strong></p>
+        </td>
+    </tr>
+    <tr th:if="${greeting != null}">
+        <td style="padding:14px 22px;border-top:1px solid #b8c3bf;font-size:14px;">
+            Hỗ trợ qua <a href="mailto:support@nhtr.id.vn">support@nhtr.id.vn</a>
+        </td>
+    </tr>
 </table>
 </body>
 </html>

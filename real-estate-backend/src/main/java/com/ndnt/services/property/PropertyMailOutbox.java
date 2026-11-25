@@ -2,7 +2,6 @@ package com.ndnt.services.property;
 
 import com.ndnt.model.entity.*;
 import com.ndnt.repositories.PropertyMailEventRepository;
-import com.ndnt.repositories.UserRepository;
 import com.ndnt.services.EmailTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,10 +15,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PropertyMailOutbox {
     private final PropertyMailEventRepository events;
-    private final UserRepository users;
     private final EmailTemplate template;
     @Value("${property.mail.zone:Asia/Ho_Chi_Minh}") private String zone;
     @Value("${property.mail.property-url-prefix:}") private String urlPrefix;
+    @Value("${property.mail.review-inbox:moderation@nhtr.id.vn}") private String reviewInbox;
     public void enqueue(PropertyEntity property, String type) {
         UserEntity owner = property.getUser();
         PropertyMailEvent event = new PropertyMailEvent();
@@ -32,26 +31,27 @@ public class PropertyMailOutbox {
         String heading;
         String message;
         var details = new HashMap<String, Object>(listingDetails(property));
+        details.put("greeting", name == null || name.isBlank() ? "Xin chào," : "Chào " + name.trim() + ",");
         switch (type) {
             case "RECEIVED" -> {
                 heading = "Tin đăng đã được tiếp nhận";
-                message = "Tin đã được tiếp nhận lúc " + when
-                        + " và chưa được công khai. Nhà Thật sẽ thông báo khi có kết quả xét duyệt.";
+                message = "Nhà Thật đã nhận tin của bạn lúc " + when
+                        + ". Tin đang chờ xét duyệt. Chúng tôi sẽ gửi email khi có kết quả.";
             }
             case "APPROVED" -> {
                 heading = "Tin đăng đã được phê duyệt";
-                message = "Tin đã được phê duyệt lúc " + when + " và đã công khai.";
+                message = "Tin của bạn được phê duyệt lúc " + when + " và hiện đã hiển thị công khai trên Nhà Thật.";
                 if (urlPrefix != null && !urlPrefix.isBlank()) details.put("actionUrl", urlPrefix + property.getId());
             }
             case "REJECTED" -> {
                 heading = "Tin đăng cần chỉnh sửa";
-                message = "Tin chưa được phê duyệt trong lần xét duyệt lúc " + when + ".";
+                message = "Sau khi xét duyệt lúc " + when + ", Nhà Thật đề nghị bạn chỉnh sửa tin theo lý do bên dưới.";
                 details.put("reason", property.getRejectionReason());
                 details.put("note", "Bạn có thể sửa tin và gửi lại để xét duyệt trong mục Tin đăng của tôi.");
             }
             default -> throw new IllegalArgumentException("Unknown property mail event");
         }
-        saveEmail(event, heading, "Chào " + name + ", " + message, details);
+        saveEmail(event, heading, message, details);
     }
 
     private Map<String, Object> listingDetails(PropertyEntity property) {
@@ -60,33 +60,30 @@ public class PropertyMailOutbox {
 
     private void saveEmail(PropertyMailEvent event, String heading, String message, Map<String, Object> details) {
         event.setSubject(heading + " | Nhà Thật");
-        String text = message + "\n\nTin #" + details.get("listingId") + " - " + details.get("listingTitle");
-        if (details.containsKey("reason")) text += "\nLý do: " + details.get("reason") + ".";
-        if (details.containsKey("note")) text += "\n" + details.get("note");
-        if (details.containsKey("actionUrl")) text += "\nXem tin đăng: " + details.get("actionUrl");
+        Object greeting = details.get("greeting");
+        String text = (greeting == null ? "" : greeting + "\n\n") + message
+                + "\n\n" + details.get("listingTitle") + "\nMã tin #" + details.get("listingId");
+        if (details.get("reason") != null) text += "\n\nLý do từ chối\n" + details.get("reason");
+        if (details.containsKey("note")) text += "\n\n" + details.get("note");
+        if (details.containsKey("actionUrl")) text += "\n\nXem tin đăng: " + details.get("actionUrl");
+        text += "\n\nTrân trọng,\nNhà Thật";
+        if (greeting != null) text += "\n\nHỗ trợ qua support@nhtr.id.vn";
         event.setTextBody(text);
         event.setHtmlBody(template.render(heading, message, details));
         events.save(event);
     }
 
     public void enqueueResubmission(PropertyEntity property) {
-        var admins = users.findAllByStatusAndRole_Code(1, "ROLE_ADMIN").stream()
-                .filter(admin -> admin.getEmail() != null && !admin.getEmail().isBlank()).toList();
-        if (admins.isEmpty()) {
-            throw new PropertyProblem(409, "CONFLICT", "Chưa có email quản trị viên để nhận thông báo xét duyệt.");
+        if (reviewInbox.isBlank()) {
+            throw new PropertyProblem(409, "CONFLICT", "Chưa cấu hình hộp thư xét duyệt.");
         }
-        var notified = new java.util.HashSet<String>();
-        for (UserEntity admin : admins) {
-            String email = admin.getEmail().trim();
-            if (!notified.add(email.toLowerCase(java.util.Locale.ROOT))) continue;
-            var event = new PropertyMailEvent();
-            event.setPropertyId(property.getId());
-            event.setEventType("RESUBMITTED");
-            event.setEventKey(property.getId()+":RESUBMITTED:"+property.getIndexVersion()+":"+admin.getId());
-            event.setRecipient(email);
-            saveEmail(event, "Tin đăng được gửi lại để xét duyệt",
-                    "Người đăng đã gửi lại tin. Vui lòng mở danh sách tin chờ duyệt trong trang quản trị.",
-                    listingDetails(property));
-        }
+        var event = new PropertyMailEvent();
+        event.setPropertyId(property.getId());
+        event.setEventType("RESUBMITTED");
+        event.setEventKey(property.getId() + ":RESUBMITTED:" + property.getIndexVersion());
+        event.setRecipient(reviewInbox.trim());
+        saveEmail(event, "Tin đăng được gửi lại để xét duyệt",
+                "Người đăng đã gửi lại tin. Vui lòng mở danh sách tin chờ duyệt trong trang quản trị.",
+                listingDetails(property));
     }
 }
