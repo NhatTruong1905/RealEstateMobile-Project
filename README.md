@@ -26,9 +26,10 @@ Tài liệu chatbot hiện hành ghi lại luồng Gemini, Qdrant, PostgreSQL, R
 **Hệ Thống Quản Lý Bất Động Sản Đa Nền Tảng Tích Hợp Tư Vấn Thông Minh** là giải pháp nền tảng công nghệ bất động sản toàn diện (**PropTech Platform**) hiện đại, kết nối trực tiếp giữa người có nhu cầu mua bán/thuê bất động sản và môi giới/chủ sở hữu. Hệ thống được xây dựng trên kiến trúc hướng dịch vụ (**Microservices / Modular Distributed Architecture**) gồm:
 
 1. **Ứng dụng di động đa nền tảng (Flutter)**: Giao diện Material 3 mượt mà, tối ưu hóa trải nghiệm tìm kiếm, quản lý bài đăng và tích hợp trợ lý ảo thông minh.
-2. **Hệ thống dịch vụ lõi (Spring Boot Core Backend)**: Quản trị tài khoản, danh mục bất động sản, phân quyền JWT, tương tác dữ liệu và hệ thống tin nhắn **WebSocket STOMP** thời gian thực.
-3. **Trung tâm trí tuệ nhân tạo (FastAPI + LangChain + FAISS + Gemini LLM)**: Trợ lý tư vấn bất động sản thông minh theo kỹ thuật **RAG (Retrieval-Augmented Generation)**, streaming câu trả lời theo thời gian thực (Server-Sent Events).
-4. **Cơ sở dữ liệu linh hoạt**: Tương thích cả **MySQL** (môi trường Local Dev) và **PostgreSQL Supabase Cloud** (môi trường Live Production).
+2. **Ứng dụng web Nhà Thật (React + TypeScript + Vite)**: Mở rộng hệ thống sang trình duyệt với chức năng tìm kiếm, lưu tin, đăng tin và trợ lý AI. Web dùng chung API nghiệp vụ với ứng dụng Flutter.
+3. **Hệ thống dịch vụ lõi (Spring Boot Core Backend)**: Quản trị tài khoản, danh mục bất động sản, phân quyền JWT, tương tác dữ liệu và hệ thống tin nhắn **WebSocket STOMP** thời gian thực.
+4. **Trung tâm trí tuệ nhân tạo (FastAPI + LangChain + FAISS + Gemini LLM)**: Trợ lý tư vấn bất động sản thông minh theo kỹ thuật **RAG (Retrieval-Augmented Generation)**, streaming câu trả lời theo thời gian thực (Server-Sent Events).
+5. **Cơ sở dữ liệu linh hoạt**: Tương thích cả **MySQL** (môi trường Local Dev) và **PostgreSQL Supabase Cloud** (môi trường Live Production).
 
 ---
 
@@ -36,9 +37,10 @@ Tài liệu chatbot hiện hành ghi lại luồng Gemini, Qdrant, PostgreSQL, R
 
 | Thành phần | Công nghệ chính | Trạng thái triển khai | Địa chỉ Live / Kênh phân phối |
 | :--- | :--- | :---: | :--- |
+| **Web App Nhà Thật** | React, TypeScript, Vite, React Router, Leaflet, SSE v2 | Đã tích hợp trong mã nguồn | [Frontend web](real_estate_frontend-web/) |
 | **Mobile App** | Flutter 3.24+, Dart, Material 3, Android App Bundle | ✅ Đã phát hành | Google Play Store (`com.ndnt.realestate`) |
-| **Core Backend** | Spring Boot 3.x, Java 21, Spring Security, JWT, JPA, WebSocket STOMP | ✅ Đang chạy 24/7 | `https://realestatemobile-project-production.up.railway.app` |
-| **AI RAG Service** | Python 3.10+, FastAPI, LangChain, FAISS Vector DB, Google Gemini LLM | ✅ Đang chạy 24/7 | `https://real-estate-ai-production-e985.up.railway.app` |
+| **Core Backend** | Spring Boot 3.x, Java 21, Spring Security, JWT, JPA, WebSocket STOMP | ✅ Đang chạy 24/7 | Railway |
+| **AI RAG Service** | Python 3.10+, FastAPI, LangChain, FAISS Vector DB, Google Gemini LLM | ✅ Đang chạy 24/7 | Railway |
 | **Cơ sở dữ liệu** | PostgreSQL Cloud (Supabase) / MySQL Local, Cloudinary Image Storage | ✅ Đang chạy 24/7 | Supabase Cloud Database & Cloudinary CDN |
 
 ---
@@ -54,6 +56,7 @@ Tài liệu chatbot hiện hành ghi lại luồng Gemini, Qdrant, PostgreSQL, R
 
 | Phân hệ / Khối | Thành phần chi tiết | Công nghệ & Tập tin chính | Vai trò & Trách nhiệm |
 | :--- | :--- | :--- | :--- |
+| **Client Apps** | Web App Nhà Thật | React, TypeScript, Vite, React Router, Leaflet | Gọi REST API của Spring Boot cho nghiệp vụ và nhận phản hồi chatbot từ FastAPI qua SSE v2. |
 | **Client Apps** | `Flutter App` | Flutter 3.24+, Dart, Material 3 | Ứng dụng di động phục vụ Người Mua / Người Bán (`Buyer Seller`), gọi REST API, gửi nhận STOMP messages qua WebSocket và giao tiếp SSE streaming với AI. |
 | **External Services** | `Google / Facebook Identity`, `Gemini LLM` | Google OAuth 2.0, Facebook Graph API, Google Gemini AI | Xác thực token người dùng không cần mật khẩu; sinh câu trả lời tự nhiên thông minh từ tri thức chuyên sâu BĐS. |
 | **AI Assistant** | `RAG API`, `RAG Pipeline` | FastAPI, LangChain, FAISS, Python (`routes.py`, `pipeline.py`) | Tiếp nhận truy vấn tư vấn pháp lý / định giá, trích xuất ngữ cảnh liên quan từ vector store FAISS và streaming kết quả về di động. |
@@ -76,170 +79,41 @@ Tài liệu chatbot hiện hành ghi lại luồng Gemini, Qdrant, PostgreSQL, R
 - **Lưu tin yêu thích & Lịch sử tương tác**: Quản lý tin BĐS quan tâm, hỗ trợ liên hệ lại bất cứ lúc nào.
 - **Chuyển đổi môi trường thông minh (`AppConfig.dart`)**: Tự động nhận biết môi trường máy ảo Android Emulator (`10.0.2.2`) khi Debug hoặc chuyển sang Live Server Railway khi Build Production.
 
-### 4.2. Hệ Thống Dịch Vụ Lõi (Spring Boot)
+### 4.2. Ứng Dụng Web Nhà Thật (React)
+
+- **Khám phá bất động sản**: Duyệt và lọc tin mua hoặc thuê. Người dùng đăng nhập có thể xem ảnh, thông số và vị trí trên bản đồ Leaflet, lưu tin quan tâm và quản lý hồ sơ.
+- **Quản lý tin đăng**: Đăng tin kèm ảnh, xem danh sách phân trang và theo dõi xét duyệt. Chủ tin có thể đọc lý do từ chối, lưu chỉnh sửa và gửi lại tin để xét duyệt.
+- **Trợ lý AI trên trình duyệt**: Nhận câu trả lời từng phần qua SSE v2, hiển thị thẻ bất động sản và hỗ trợ câu hỏi nối tiếp như *“Cho tôi biết thêm về tin thứ hai”*. Người dùng có thể dừng phản hồi đang chạy.
+- **Phạm vi tích hợp**: Các màn hình khôi phục mật khẩu, tin nhắn và khách hàng quan tâm trên web đang chờ kết nối nghiệp vụ.
+
+[Chạy frontend web cục bộ](real_estate_frontend-web/README.md#chạy-local) · [Tích hợp và benchmark chatbot web](docs/frontend/CHATBOT_WEB_IMPROVEMENTS.md)
+
+### 4.3. Hệ Thống Dịch Vụ Lõi (Spring Boot)
 - **Kiến trúc phân tầng chuẩn mực**: Tách biệt rõ rệt `Controller`, `Service`, `Repository`, `Entity`, `DTO` và `Converter`.
 - **Hệ thống bảo mật đa tầng**: Cấu hình Spring Security với cơ chế JWT Stateless Authentication, phân quyền vai trò (Role-Based Access Control).
 - **Trang quản trị Admin Web**: Tích hợp sẵn Thymeleaf quản lý người dùng, danh mục, khu vực địa lý và bài đăng trực tiếp trên trình duyệt.
 - **Đồng bộ hóa tin nhắn**: Xử lý hàng đợi tin nhắn WebSocket và lưu vết lịch sử tương tác khách hàng.
 - **Hỗ trợ đa cơ sở dữ liệu**: Dễ dàng chuyển đổi giữa MySQL (chạy local) và PostgreSQL Supabase (chạy production) chỉ qua profile cấu hình.
 
-### 4.3. Dịch Vụ Trí Tuệ Nhân Tạo (FastAPI & LangChain)
+### 4.4. Dịch Vụ Trí Tuệ Nhân Tạo (FastAPI & LangChain)
 - **Kỹ thuật RAG tiên tiến**: Kết hợp Vector Search (FAISS) với kiến thức pháp lý và dữ liệu BĐS Việt Nam để giảm thiểu tối đa hiện tượng ảo giác (hallucination) của mô hình ngôn ngữ lớn.
 - **Phản hồi Streaming cực nhanh**: Giảm thời gian chờ phản hồi đầu tiên (Time-to-First-Token) xuống dưới 1 giây.
 - **Cơ sở dữ liệu Vector nhúng sẵn**: Lưu trữ sẵn trong `vector_database/` (bao gồm `index.faiss`, `docstore.pkl`, `index.pkl`), không cần build lại index từ đầu khi clone về.
 
 ---
 
-## 📁 5. Cấu Trúc Thư Mục Toàn Vẹn Hệ Thống
-
-Dự án được tổ chức theo mô hình Monorepo chứa trọn vẹn cả 3 tầng ứng dụng:
+## 📁 5. Cấu trúc repository
 
 ```text
 RealEstateMobile-Project/
-│
-├── .vscode/                               # Cấu hình phát triển trên Visual Studio Code
-│   └── launch.json                        # Cấu hình 1-click debug Flutter (Dev Local vs Prod Railway)
-│
-├── docs/
-│   ├── architecture/
-│   ├── backend/
-│   ├── frontend/
-│   ├── handoffs/
-│   ├── integrations/
-│   ├── planning/
-│   └── researchs/
-│
-├── real-estate-backend/                   # 🍃 DỊCH VỤ LÕI BACKEND (SPRING BOOT 3 / JAVA 21)
-│   ├── src/main/java/com/ndnt/
-│   │   ├── configs/                       # Cấu hình hệ thống
-│   │   │   ├── ApiSecurityConfig.java     # Cấu hình Security cho REST API di động
-│   │   │   ├── CloudinaryConfig.java      # Cấu hình tích hợp lưu trữ hình ảnh Cloudinary
-│   │   │   ├── DataSourceConfig.java      # Cấu hình nguồn dữ liệu & kết nối DB
-│   │   │   ├── JpaAuditingConfig.java     # Tự động ghi nhận thời gian tạo/cập nhật entity
-│   │   │   ├── ModelMapperConfig.java     # Cấu hình thư viện map tự động DTO - Entity
-│   │   │   ├── SpringSecurityConfig.java  # Cấu hình phân quyền & Security cho web admin
-│   │   │   └── WebSocketConfig.java       # Cấu hình STOMP WebSocket Message Broker (/ws)
-│   │   ├── controlleradvices/             # Quản lý & bắt lỗi tập trung (Global Exception Handling)
-│   │   │   └── exceptions/                # Các ngoại lệ tùy biến (NotFoundException, AuthException...)
-│   │   ├── controllers/
-│   │   │   ├── admin/                     # Controller phục vụ giao diện quản trị Web (Thymeleaf)
-│   │   │   │   ├── HomeController.java    # Trang chủ dashboard admin
-│   │   │   │   ├── UserController.java    # Quản lý người dùng, phân quyền
-│   │   │   │   ├── PropertyController.java# Kiểm duyệt bài đăng bất động sản
-│   │   │   │   └── ...                    # Quản lý quận huyện, phường xã, loại BĐS
-│   │   │   └── api/                       # REST API Controllers phục vụ Mobile Client
-│   │   │       ├── APILoginController.java        # Đăng ký, đăng nhập JWT, Google/Facebook OAuth
-│   │   │       ├── APIPropertyController.java     # Tìm kiếm, phân trang, lọc, đăng tin BĐS
-│   │   │       ├── APIUserController.java         # Lấy và cập nhật hồ sơ người dùng
-│   │   │       ├── APIInteractionController.java  # Đánh dấu yêu thích, tương tác bài viết
-│   │   │       └── APIChatController.java         # Quản lý lịch sử đoạn chat & tin nhắn
-│   │   ├── converter/                     # Các class mapper chuyển đổi DTO <-> Entity
-│   │   ├── filters/                       # Bộ lọc HTTP Request (JWTAuthenticationFilter)
-│   │   ├── model/
-│   │   │   ├── dto/                       # Data Transfer Objects
-│   │   │   │   ├── request/               # Các DTO nhận payload từ Client
-│   │   │   │   └── response/              # Các DTO chuẩn hóa dữ liệu trả về Client
-│   │   │   ├── entity/                    # Các thực thể cơ sở dữ liệu JPA (ORM)
-│   │   │   │   ├── UserEntity.java        # Bảng người dùng
-│   │   │   │   ├── PropertyEntity.java    # Bảng thông tin bất động sản
-│   │   │   │   ├── FavoritePropertyEntity.java # Bảng BĐS yêu thích
-│   │   │   │   ├── InteractionEntity.java # Bảng tương tác, bình luận, đánh giá
-│   │   │   │   ├── DistrictEntity.java    # Bảng Quận / Huyện
-│   │   │   │   ├── WardEntity.java        # Bảng Phường / Xã
-│   │   │   │   ├── RoleEntity.java        # Bảng vai trò người dùng
-│   │   │   │   └── BaseEntity.java        # Entity nền tảng (id, createdDate, updatedDate)
-│   │   │   └── enums/                     # Định nghĩa hằng số Enum (UserRole, PropertyStatus...)
-│   │   ├── repositories/                  # Spring Data JPA Repositories
-│   │   │   └── custom/impl/               # Truy vấn động tiêu chí BĐS bằng CriteriaBuilder
-│   │   ├── services/                      # Interface các tầng nghiệp vụ logic
-│   │   │   └── impl/                      # Lớp hiện thực hóa nghiệp vụ (UserServiceImpl, PropertyServiceImpl...)
-│   │   └── utils/                         # Tiện ích bổ trợ (JWTProvider, FileUploadUtils...)
-│   ├── src/main/resources/
-│   │   ├── application.properties         # Cấu hình môi trường Local Dev (MySQL cổng 8080)
-│   │   ├── application-prod.properties    # Cấu hình môi trường Production (PostgreSQL Supabase trên Railway)
-│   │   ├── application-secret.properties  # Lưu trữ secret keys (JWT, Mail SMTP, OAuth Client ID)
-│   │   ├── static/                        # CSS, JS, hình ảnh tĩnh cho giao diện Admin Web
-│   │   └── templates/                     # Giao diện HTML Thymeleaf cho Admin Web
-│   ├── Dockerfile                         # Thiết lập đóng gói container backend
-│   ├── pom.xml                            # Quản lý thư viện Maven (Spring Boot, Cloudinary, MySQL, PostgreSQL...)
-│   ├── mvnw & mvnw.cmd                    # Maven Wrapper cho Linux/macOS và Windows
-│   └── HELP.md
-│
-├── real-estate-ai/                        # 🤖 DỊCH VỤ TRÍ TUỆ NHÂN TẠO (FASTAPI / LANGCHAIN / RAG)
-│   ├── api/                               # Tầng giao diện API của AI Service
-│   │   ├── routes.py                      # Định nghĩa route `/api/ask` (hỗ trợ SSE stream & JSON response)
-│   │   └── schemas.py                     # Định nghĩa Pydantic schema (QueryRequest, QueryResponse)
-│   ├── rag/                               # Lõi xử lý RAG (Retrieval-Augmented Generation)
-│   │   └── pipeline.py                    # Nạp VectorStore, thiết lập Prompt Template BĐS, nối chuỗi LLM
-│   ├── vector_database/                   # Cơ sở dữ liệu Vector FAISS đã được build sẵn
-│   │   ├── index.faiss                    # Vector Index nhị phân cho tìm kiếm tương đồng ngữ nghĩa
-│   │   ├── index.pkl                      # Metadata ánh xạ của FAISS
-│   │   └── docstore.pkl                   # Kho tài liệu gốc tương ứng với các vector
-│   ├── papers/                            # Tài liệu văn bản tham khảo & dữ liệu huấn luyện BĐS
-│   ├── main.py                            # Điểm khởi chạy FastAPI, cấu hình CORS, Lifespan nạp AI Model
-│   ├── requirements.txt                   # Danh sách thư viện Python (FastAPI, Uvicorn, LangChain, FAISS...)
-│   ├── Dockerfile                         # Thiết lập đóng gói container AI Service
-│   └── .env                               # Biến môi trường cục bộ (chứa GOOGLE_API_KEY)
-│
-├── real_estate_frontend/                  # 📱 ỨNG DỤNG DI ĐỘNG FLUTTER (MATERIAL 3)
-│   ├── android/                           # Mã nguồn và cấu hình native Android
-│   │   ├── app/
-│   │   │   ├── build.gradle.kts           # Cấu hình App ID, SDK version, Signing Config
-│   │   │   └── src/main/AndroidManifest.xml # Khai báo quyền (Internet, Camera, Storage, Facebook SDK)
-│   │   ├── build.gradle.kts               # Cấu hình Gradle toàn cục của Android
-│   │   └── key.properties (tùy chọn)      # Cấu hình ký số khi release app lên Google Play
-│   ├── lib/                               # Mã nguồn chính của ứng dụng Flutter
-│   │   ├── config/
-│   │   │   └── AppConfig.dart             # Quản lý tập trung URL API, tự động switch Local (10.0.2.2) vs Prod
-│   │   ├── dto/                           # Data Transfer Objects tầng di động
-│   │   │   ├── ChatMessageDTO.dart        # Dữ liệu gói tin nhắn chat
-│   │   │   ├── PropertyDTO.dart           # Dữ liệu bất động sản
-│   │   │   ├── PropertyPageResponseDTO.dart # Dữ liệu phân trang BĐS
-│   │   │   ├── PropertyRequestDTO.dart    # Dữ liệu đăng bài viết BĐS mới
-│   │   │   └── UserDTO.dart               # Dữ liệu thông tin tài khoản người dùng
-│   │   ├── layout/                        # Các thành phần giao diện mẫu dùng chung
-│   │   │   └── Footer.dart
-│   │   ├── mixin/
-│   │   │   ├── api/                       # Các Mixin đóng gói hàm gọi API HTTP
-│   │   │   │   ├── ApiLoginMixin.dart     # API Đăng nhập, Đăng ký, Quên mật khẩu
-│   │   │   │   ├── APIPropertyMixin.dart  # API Lấy danh sách, Lọc, Chi tiết, Đăng tin BĐS
-│   │   │   │   ├── ApiUserMixin.dart      # API Cập nhật thông tin tài khoản
-│   │   │   │   └── APIInteractionMixin.dart # API Yêu thích, Bình luận
-│   │   │   └── validation/
-│   │   │       └── ValidationMixin.dart   # Kiểm tra tính hợp lệ dữ liệu nhập (email, phone...)
-│   │   ├── screens/                       # Các màn hình giao diện chính của ứng dụng
-│   │   │   ├── Account.dart               # Màn hình quản lý tài khoản & trung tâm cài đặt
-│   │   │   ├── Auth.dart                  # Màn hình đăng nhập / đăng ký / OAuth (Google, Facebook)
-│   │   │   ├── ChangePassword.dart        # Màn hình đổi mật khẩu
-│   │   │   ├── ChatScreen.dart            # Màn hình chat trực tiếp 1-1 với người bán qua WebSocket
-│   │   │   ├── FAQ.dart                   # Màn hình câu hỏi thường gặp
-│   │   │   ├── ForgotPassword.dart        # Màn hình khôi phục mật khẩu qua Email OTP
-│   │   │   ├── Home.dart                  # Màn hình trang chủ (Banner, BĐS nổi bật, danh mục)
-│   │   │   ├── MainScreen.dart            # Thanh Bottom Navigation Bar chuyển đổi tab nhanh
-│   │   │   ├── PostProperty.dart          # Màn hình đăng tin bán / cho thuê BĐS
-│   │   │   ├── PrivacyPolicy.dart         # Màn hình chính sách bảo mật
-│   │   │   ├── PropertyDetail.dart        # Màn hình chi tiết BĐS (Gallery, tiện ích, người bán)
-│   │   │   ├── PropertyList.dart          # Màn hình tìm kiếm & lọc BĐS nâng cao
-│   │   │   ├── SaveNews.dart              # Màn hình danh sách tin đăng BĐS đã lưu
-│   │   │   ├── Terms.dart                 # Màn hình điều khoản sử dụng
-│   │   │   ├── UserProfile.dart           # Màn hình xem và chỉnh sửa thông tin cá nhân
-│   │   │   └── seller/                    # Phân hệ dành cho người bán / chuyên viên môi giới
-│   │   │       ├── SellerOverview.dart    # Bảng tổng quan thống kê bài đăng của người bán
-│   │   │       ├── SellerProperties.dart  # Danh sách bài đăng của tôi (Sửa, Xóa, Ẩn)
-│   │   │       ├── SellerCustomers.dart   # Quản lý khách hàng đang quan tâm
-│   │   │       └── SellerChatCustomersScreen.dart # Hộp thư danh sách khách hàng đang chat
-│   │   ├── services/                      # Các dịch vụ kết nối mạng nâng cao
-│   │   │   ├── ChatService.dart           # Dịch vụ WebSocket STOMP (kết nối, subscribe, gửi tin)
-│   │   │   └── RagChatService.dart        # Dịch vụ giao tiếp AI RAG qua Server-Sent Events (SSE)
-│   │   ├── utils/                         # Hàm hỗ trợ tiện ích (Currency format, Date format...)
-│   │   ├── widgets/                       # Các widget UI tùy chỉnh dùng lại
-│   │   │   └── RagChatModal.dart          # Widget Trợ lý ảo AI nổi (Floating Chatbox)
-│   │   └── main.dart                      # Điểm khởi chạy Flutter App, cấu hình Theme & Route
-│   ├── pubspec.yaml                       # Quản lý dependencies thư viện Flutter
-│   └── analysis_options.yaml              # Quy chuẩn phân tích mã nguồn Dart
-│
-└── README.md                              # Tài liệu hướng dẫn toàn diện dự án
+├── real_estate_frontend-web/      # Web Nhà Thật bằng React
+├── real_estate_frontend-mobile/   # Ứng dụng di động bằng Flutter
+├── real-estate-backend/           # REST API, WebSocket và trang quản trị
+├── real-estate-ai/                # API chatbot RAG và worker lập chỉ mục
+└── docs/                         # Kiến trúc, tích hợp và bàn giao
 ```
+
+[Web](real_estate_frontend-web/) · [Mobile](real_estate_frontend-mobile/) · [Backend](real-estate-backend/) · [Chatbot AI](real-estate-ai/) · [Tài liệu](docs/)
 
 ---
 
@@ -434,7 +308,7 @@ Tệp [AppConfig.dart](file:///d:/RealEstateMobile-Project/real_estate_frontend/
 | Chế độ | Biến cấu hình | Giá trị mặc định |
 | :--- | :--- | :--- |
 | **Dev Mode** (Local) | `springBootBaseUrl`<br>`springBootWsUrl`<br>`aiBaseUrl` | `http://10.0.2.2:8080/api`<br>`ws://10.0.2.2:8080/ws`<br>`http://10.0.2.2:8000/api` |
-| **Prod Mode** (Railway) | `--dart-define=ENV=prod`<br>hoặc Release Mode | `https://realestatemobile-project-production.up.railway.app/api`<br>`wss://realestatemobile-project-production.up.railway.app/ws`<br>`https://real-estate-ai-production-e985.up.railway.app/api` |
+| **Prod Mode** (URL minh họa) | `--dart-define=ENV=prod`<br>hoặc Release Mode | `https://api.example.com/api`<br>`wss://api.example.com/ws`<br>`https://ai.example.com/api` |
 
 ---
 
