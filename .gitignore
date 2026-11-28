@@ -32,3 +32,6 @@ key.properties
 *.jks
 
 
+# Python bytecode cache
+__pycache__/
+*.pyc

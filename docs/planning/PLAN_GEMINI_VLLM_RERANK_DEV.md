@@ -1,6 +1,6 @@
 # Kế hoạch chatbot AI: dev local và chuyển sang API production
 
-Cập nhật 14/11/2026. Tài liệu này thay các chỉ dẫn dev trước đây về mock-only, Qdrant local và chưa tích hợp messaging. Hướng dẫn thao tác chính: [SETUP_FULL_STACK.md](../real-estate-ai/docs/SETUP_FULL_STACK.md). Bằng chứng đã chạy và giới hạn: [IMPLEMENTATION_STATUS.md](../real-estate-ai/docs/IMPLEMENTATION_STATUS.md).
+Cập nhật 14/11/2026. Tài liệu này thay các chỉ dẫn dev trước đây về mock-only, Qdrant local và chưa tích hợp messaging. Hướng dẫn thao tác chính: [SETUP_FULL_STACK.md](../../real-estate-ai/docs/SETUP_FULL_STACK.md). Bằng chứng đã chạy và giới hạn: [IMPLEMENTATION_STATUS.md](../../real-estate-ai/docs/IMPLEMENTATION_STATUS.md).
 
 ## 1. Các quyết định hiện tại
 
@@ -60,7 +60,7 @@ RERANK_CONTAINER_BASE_URL=https://api.provider.example/v1
 4. Contract hiện có: Bearer auth; POST body gồm `model`, `query`, `documents`, `top_n`; response có `results` chứa `index` và `relevance_score`. Index phải duy nhất, trỏ về candidates gốc; score là số hữu hạn; số kết quả bằng `min(top_n, số candidates)`. Provider khác contract cần sửa adapter `rag/reranker.py`, không chỉ đổi key.
 5. Chạy `python -m rag.dev rerank-check` để gọi provider thật; lệnh có thể tính phí/quota. Chỉ bật rerank sau kiểm tra thành công và đánh giá chất lượng/độ trễ. Khởi động lại API để nạp cấu hình mới.
 
-Chi tiết từng bước và dọn tài nguyên local: [mục 7 của hướng dẫn service](../real-estate-ai/docs/SETUP_FULL_STACK.md#7-chuyển-production).
+Chi tiết từng bước và dọn tài nguyên local: [mục 7 của hướng dẫn service](../../real-estate-ai/docs/SETUP_FULL_STACK.md#7-chuyển-production).
 
 ## 5. Thư mục deploy khi đổi rerank
 
@@ -90,4 +90,4 @@ Chi tiết từng bước và dọn tài nguyên local: [mục 7 của hướng 
 - Khắc phục hạ tầng vLLM dev; smoke và đánh giá rerank 0.6B. Provider rerank production chưa được chọn hoặc nghiệm thu.
 - Đánh giá chatbot với dữ liệu tiếng Việt đại diện; kiểm tra chat/stream và giới hạn quyền, latency, chi phí.
 
-Không tự commit/push/deploy hoặc coi bằng chứng local/mock là nghiệm thu cloud. Checklist hiện hành: [CONG_VIEC_CHUA_HOAN_THANH.md](../real-estate-ai/docs/CONG_VIEC_CHUA_HOAN_THANH.md).
+Không tự commit/push/deploy hoặc coi bằng chứng local/mock là nghiệm thu cloud. Checklist hiện hành: [CONG_VIEC_CHUA_HOAN_THANH.md](../../real-estate-ai/docs/CONG_VIEC_CHUA_HOAN_THANH.md).

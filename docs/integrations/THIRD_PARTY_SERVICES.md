@@ -14,8 +14,8 @@ Bảng này ghi lại dịch vụ bên thứ ba theo vai trò trong dự án và
 
 ## Tra cứu trong repo
 
-- [Cấu hình mẫu chatbot](../real-estate-ai/.env.example) liệt kê tên biến cần điền cho Gemini, Qdrant và RabbitMQ.
-- [Hướng dẫn chạy chatbot](../real-estate-ai/docs/SETUP_CHATBOT.md) có trình tự kiểm tra kết nối và đồng bộ dữ liệu.
-- [Cấu hình lưu trữ R2](../real-estate-backend/src/main/java/com/ndnt/configs/StorageConfiguration.java) cho biết các biến backend cần để kết nối bucket và tạo URL ảnh.
+- [Cấu hình mẫu chatbot](../../real-estate-ai/.env.example) liệt kê tên biến cần điền cho Gemini, Qdrant và RabbitMQ.
+- [Hướng dẫn chạy chatbot](../../real-estate-ai/docs/SETUP_CHATBOT.md) có trình tự kiểm tra kết nối và đồng bộ dữ liệu.
+- [Cấu hình lưu trữ R2](../../real-estate-backend/src/main/java/com/ndnt/configs/StorageConfiguration.java) cho biết các biến backend cần để kết nối bucket và tạo URL ảnh.
 
 Lưu API key, token và URL AMQPS trong biến môi trường riêng của dịch vụ chạy production hoặc trong `.env` local đã được Git bỏ qua.

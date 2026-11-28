@@ -14,11 +14,11 @@ Spring Boot gửi mã OTP đặt lại mật khẩu và thông báo tiếp nhậ
 | `PROPERTY_REVIEW_INBOX` | Hộp thư chung nhận thông báo khi chủ tin gửi lại để xét duyệt. Mặc định `moderation@nhtr.id.vn`. |
 | `PROPERTY_MAIL_WORKER_ENABLED` | `true` khi muốn gửi mail tiếp nhận, duyệt và từ chối tin. Worker sẽ xử lý các bản ghi `PENDING` đến hạn, gồm cả bản ghi tồn từ trước. OTP gửi trực tiếp qua Resend và dùng chung API key. |
 
-Xóa các biến cấu hình SMTP cũ ở service Spring Boot nếu còn. Nếu dùng thông báo tin, áp dụng migration outbox phù hợp trong [thư mục migrations](../real-estate-backend/db/migrations). Sau khi triển khai, thử đặt lại mật khẩu với tài khoản kiểm thử và xem **Resend → Emails**. Kiểm tra thông báo tin với một tin thử trên môi trường staging.
+Xóa các biến cấu hình SMTP cũ ở service Spring Boot nếu còn. Nếu dùng thông báo tin, áp dụng migration outbox phù hợp trong [thư mục migrations](../../real-estate-backend/db/migrations). Sau khi triển khai, thử đặt lại mật khẩu với tài khoản kiểm thử và xem **Resend → Emails**. Kiểm tra thông báo tin với một tin thử trên môi trường staging.
 
 Backend chỉ trả `OTP_SENT` sau khi Resend chấp nhận yêu cầu. Trạng thái này xác nhận Resend đã nhận thư để xử lý. Khi Resend lỗi, backend trả HTTP 503 để ứng dụng hiện thông báo thử lại. OTP chỉ gửi đến email đã có trong tài khoản. Tài khoản chưa có email khôi phục sẽ nhận hướng dẫn liên hệ hỗ trợ.
 
-HTML của email OTP và thông báo tin dùng chung [template Nhà Thật](../real-estate-backend/src/main/resources/templates/email/notification.html). Tiêu đề và nội dung tóm tắt của thông báo tin được đặt trong [PropertyMailOutbox.java](../real-estate-backend/src/main/java/com/ndnt/services/property/PropertyMailOutbox.java). Outbox lưu nội dung tại thời điểm tạo sự kiện, nên mẫu mới áp dụng cho sự kiện tạo sau khi backend chạy bản mới.
+HTML của email OTP và thông báo tin dùng chung [template Nhà Thật](../../real-estate-backend/src/main/resources/templates/email/notification.html). Tiêu đề và nội dung tóm tắt của thông báo tin được đặt trong [PropertyMailOutbox.java](../../real-estate-backend/src/main/java/com/ndnt/services/property/PropertyMailOutbox.java). Outbox lưu nội dung tại thời điểm tạo sự kiện, nên mẫu mới áp dụng cho sự kiện tạo sau khi backend chạy bản mới.
 
 Email cho người dùng có lời chào, nội dung chính và địa chỉ hỗ trợ `support@nhtr.id.vn`. Thư yêu cầu chỉnh sửa hiển thị lý do và hướng dẫn gửi lại trong mục **Tin đăng của tôi**. Thư đặt lại mật khẩu trình bày mã OTP trên một dòng riêng và ghi thời hạn 2 phút. Cả hai luồng đều gửi kèm bản văn bản thuần.
 

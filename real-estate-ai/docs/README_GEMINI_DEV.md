@@ -48,5 +48,5 @@ Quy trình, cấu hình mẫu và bảng file cần giữ/bỏ: [mục 7](SETUP_
 
 ## Tham chiếu ngoài service
 
-- [Kế hoạch dev/production](../../docs/PLAN_GEMINI_VLLM_RERANK_DEV.md).
-- [Nghiên cứu chatbot](../../docs/RESEARCH_AI_CHATBOT.md): thuật toán và provider ứng viên; baseline cũ không phải hiện trạng đã triển khai.
+- [Kế hoạch dev/production](../../docs/planning/PLAN_GEMINI_VLLM_RERANK_DEV.md).
+- [Nghiên cứu chatbot](../../docs/researchs/RESEARCH_AI_CHATBOT.md): thuật toán và provider ứng viên; baseline cũ không phải hiện trạng đã triển khai.
