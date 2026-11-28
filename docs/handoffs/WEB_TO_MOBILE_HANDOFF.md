@@ -14,9 +14,9 @@ Danh sách **Tin đăng của tôi** từ `GET /api/secure/properties` trả tin
 
 ## Liên hệ hỗ trợ
 
-Cập nhật 25/11/2026. [Chân trang web](../real_estate_frontend-web/src/layouts/Footer.tsx) hiển thị **Hỗ trợ khách hàng** với email `support@nhtr.id.vn` và **Liên hệ hợp tác** với số `0967 294 349`. Hai liên kết mở ứng dụng email và gọi điện tương ứng. Không cần thay đổi API hay quyền truy cập. Khi cập nhật màn hình hỗ trợ trong Flutter, dùng địa chỉ này cho liên hệ hỗ trợ của Nhà Thật. Build và lint đã chạy thành công, hai liên kết đã được kiểm tra trên Edge headless với kích thước cửa sổ 390 và 1440 px.
+Cập nhật 25/11/2026. [Chân trang web](../../real_estate_frontend-web/src/layouts/Footer.tsx) hiển thị **Hỗ trợ khách hàng** với email `support@nhtr.id.vn` và **Liên hệ hợp tác** với số `0967 294 349`. Hai liên kết mở ứng dụng email và gọi điện tương ứng. Không cần thay đổi API hay quyền truy cập. Khi cập nhật màn hình hỗ trợ trong Flutter, dùng địa chỉ này cho liên hệ hỗ trợ của Nhà Thật. Build và lint đã chạy thành công, hai liên kết đã được kiểm tra trên Edge headless với kích thước cửa sổ 390 và 1440 px.
 
-Nút **Liên hệ qua email** trong mục **Vẫn cần hỗ trợ thêm?** trên [trang câu hỏi thường gặp](../real_estate_frontend-web/src/screens/support/SupportScreens.tsx) mở thư mới đến `support@nhtr.id.vn`. Khi triển khai nút tương ứng trên Flutter, dùng cùng địa chỉ.
+Nút **Liên hệ qua email** trong mục **Vẫn cần hỗ trợ thêm?** trên [trang câu hỏi thường gặp](../../real_estate_frontend-web/src/screens/support/SupportScreens.tsx) mở thư mới đến `support@nhtr.id.vn`. Khi triển khai nút tương ứng trên Flutter, dùng cùng địa chỉ.
 
 ## Chi tiết tin của tôi
 
@@ -43,13 +43,13 @@ Màn xác nhận sau khi lưu tách mã tin và trạng thái khỏi tiêu đề
 3. Gửi lại bằng `POST /api/secure/properties/{id}/resubmit`, không có body, dùng JWT của chủ tin. Phản hồi thành công trả DTO ở `data`, trạng thái `Chờ duyệt` và thông tin từ chối của vòng trước được xóa. Lấy trạng thái từ API và tải lại danh sách.
 4. Xử lý 403 nếu không phải chủ tin và 409 nếu trạng thái đã đổi hoặc hộp thư xét duyệt chưa được cấu hình. Ngăn bấm lặp trong khi chờ phản hồi. Nếu lỗi mạng, đọc lại trạng thái trước khi gửi lại.
 
-Backend đưa một sự kiện `RESUBMITTED` vào outbox mỗi lượt gửi lại, mặc định gửi tới `moderation@nhtr.id.vn`. Các lần xét duyệt dùng phiên bản hiện tại của tin trong khóa outbox để gửi được thông báo cho nhiều vòng. Worker Resend cần chạy để thực sự giao thư. Flutter không cần thay đổi API. [Cấu hình gửi email](RESEND_EMAIL_SETUP.md)
+Backend đưa một sự kiện `RESUBMITTED` vào outbox mỗi lượt gửi lại, mặc định gửi tới `moderation@nhtr.id.vn`. Các lần xét duyệt dùng phiên bản hiện tại của tin trong khóa outbox để gửi được thông báo cho nhiều vòng. Worker Resend cần chạy để thực sự giao thư. Flutter không cần thay đổi API. [Cấu hình gửi email](../integrations/RESEND_EMAIL_SETUP.md)
 
 Form quản trị gửi `reviewVersion` khi xét duyệt để backend trả 409 nếu admin đang xem bản cũ. Flutter không cần gửi trường này trong luồng chủ tin.
 
-Cập nhật 25/11/2026. Nút **Lưu bài đăng** trong trang quản trị đưa người dùng về `/admin/properties-list` khi lưu thành công. Khi lưu lỗi, form giữ nguyên dữ liệu và hiển thị thông báo. Thay đổi nằm ở [form quản trị](../real-estate-backend/src/main/resources/templates/property/edit.html) và [mã xử lý form](../real-estate-backend/src/main/resources/static/js/property-approval.js). Đã kiểm tra cú pháp JavaScript và hai nhánh thành công, lỗi 409 bằng phản hồi giả lập. Hợp đồng API giữ nguyên. Flutter không cần thay đổi.
+Cập nhật 25/11/2026. Nút **Lưu bài đăng** trong trang quản trị đưa người dùng về `/admin/properties-list` khi lưu thành công. Khi lưu lỗi, form giữ nguyên dữ liệu và hiển thị thông báo. Thay đổi nằm ở [form quản trị](../../real-estate-backend/src/main/resources/templates/property/edit.html) và [mã xử lý form](../../real-estate-backend/src/main/resources/static/js/property-approval.js). Đã kiểm tra cú pháp JavaScript và hai nhánh thành công, lỗi 409 bằng phản hồi giả lập. Hợp đồng API giữ nguyên. Flutter không cần thay đổi.
 
-Tệp đối chiếu web và backend gồm [màn hình sửa tin](../real_estate_frontend-web/src/screens/seller/PostPropertyScreen.tsx), [seller API](../real_estate_frontend-web/src/services/api/seller/sellerApi.ts) và [APIPropertyController](../real-estate-backend/src/main/java/com/ndnt/controllers/api/APIPropertyController.java).
+Tệp đối chiếu web và backend gồm [màn hình sửa tin](../../real_estate_frontend-web/src/screens/seller/PostPropertyScreen.tsx), [seller API](../../real_estate_frontend-web/src/services/api/seller/sellerApi.ts) và [APIPropertyController](../../real-estate-backend/src/main/java/com/ndnt/controllers/api/APIPropertyController.java).
 
 Kiểm tra đã đạt gồm build/lint web, luồng lưu và gửi lại trên Edge với API giả lập, cùng kiểm thử backend cho quyền chủ tin, gửi lại trùng, phiên xét duyệt cũ và email từ chối vòng thứ hai. Kiểm thử xác nhận email được ghi vào outbox. Chưa gửi email thật cho admin trong lần kiểm tra này.
 

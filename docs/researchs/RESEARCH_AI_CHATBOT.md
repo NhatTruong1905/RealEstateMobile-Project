@@ -1,6 +1,6 @@
 # RESEARCH AI CHATBOT
 
-> Triển khai dev 14/11/2026: Gemini LLM/embedding + Qdrant Cloud + Qwen3-Reranker-0.6B qua vLLM + RabbitMQ Cloud. Xem [hướng dẫn chạy](../real-estate-ai/docs/SETUP_FULL_STACK.md) và [bằng chứng kiểm thử](../real-estate-ai/docs/IMPLEMENTATION_STATUS.md). Nội dung nghiên cứu API production bên dưới không đồng nghĩa đã triển khai toàn bộ.
+> Triển khai dev 14/11/2026: Gemini LLM/embedding + Qdrant Cloud + Qwen3-Reranker-0.6B qua vLLM + RabbitMQ Cloud. Xem [hướng dẫn chạy](../../real-estate-ai/docs/SETUP_FULL_STACK.md) và [bằng chứng kiểm thử](../../real-estate-ai/docs/IMPLEMENTATION_STATUS.md). Nội dung nghiên cứu API production bên dưới không đồng nghĩa đã triển khai toàn bộ.
 
 
 Cập nhật 14/11/2026. Cấu hình dev đã chọn: **Gemini LLM + Gemini Embedding + Qdrant Cloud + Qwen3-Reranker-0.6B qua vLLM local + RabbitMQ Cloud**. Khi production sẽ dùng key production và có thể thay rerank local bằng API. DeepSeek/Qwen API trong các sơ đồ nghiên cứu bên dưới là phương án ứng viên, không phải provider production đã chốt.
@@ -11,7 +11,7 @@ Cập nhật 14/11/2026. Cấu hình dev đã chọn: **Gemini LLM + Gemini Embe
 - Khi chuyển: đổi `RERANK_BASE_URL`, `RERANK_MODEL`, `RERANK_API_KEY`; nếu chạy API bằng Compose phải đổi cả `RERANK_CONTAINER_BASE_URL` vì biến này override base URL của container.
 - Client hiện dùng Bearer auth và `/v1/rerank`; provider khác schema/auth/path cần adapter. Không giả định chỉ đổi key là tương thích. Kiểm tra thật rồi mới bật `RERANK_ENABLED=true`.
 - Sau chuyển hoàn toàn có thể bỏ template, model và service/volume vLLM local. `deploy/property-event.schema.json` là contract RabbitMQ, vẫn giữ hoặc chuyển nơi khác; không phụ thuộc provider rerank.
-- Hướng dẫn chi tiết: [kế hoạch hiện hành](PLAN_GEMINI_VLLM_RERANK_DEV.md) và [mục 7 của setup service](../real-estate-ai/docs/SETUP_FULL_STACK.md#7-chuyển-production).
+- Hướng dẫn chi tiết: [kế hoạch hiện hành](../planning/PLAN_GEMINI_VLLM_RERANK_DEV.md) và [mục 7 của setup service](../../real-estate-ai/docs/SETUP_FULL_STACK.md#7-chuyển-production).
 
 Tài liệu phân biệt phần đã có trong mã và phần cần triển khai. Các cấu hình/model/K là ứng viên thực nghiệm, chưa phải kết quả tối ưu. Lần chỉnh này chỉ sửa tài liệu.
 
@@ -94,7 +94,7 @@ flowchart TD
     Worker -.->|"Sự kiện không thể xử lý"| DLQ["RabbitMQ · hàng đợi lỗi"]
 ```
 
-Tin vừa duyệt xuất hiện trong kết quả sau khi được lập chỉ mục. Trạng thái outbox `SENT` xác nhận publisher đã gửi sự kiện. Cấu hình dịch vụ và các bước chạy thử nằm trong [hướng dẫn chatbot dev](../real-estate-ai/docs/SETUP_CHATBOT.md).
+Tin vừa duyệt xuất hiện trong kết quả sau khi được lập chỉ mục. Trạng thái outbox `SENT` xác nhận publisher đã gửi sự kiện. Cấu hình dịch vụ và các bước chạy thử nằm trong [hướng dẫn chatbot dev](../../real-estate-ai/docs/SETUP_CHATBOT.md).
 
 Các mục 3.1–3.3 mô tả kiến trúc nghiên cứu mục tiêu. Các khối trong AI Service biểu diễn các module có thể chạy trong cùng một dịch vụ.
 

@@ -70,8 +70,8 @@ Người dùng đổi avatar từ A sang B:
 
 ## Mã nguồn liên quan
 
-- [StorageCleanup.java](../real-estate-backend/src/main/java/com/ndnt/services/storage/StorageCleanup.java): tạo task, giữ ảnh, xóa file và retry.
-- [ImageStorageService.java](../real-estate-backend/src/main/java/com/ndnt/services/storage/ImageStorageService.java): upload ảnh và đăng ký callback sau commit/rollback.
-- [StorageCleanupScheduler.java](../real-estate-backend/src/main/java/com/ndnt/services/storage/StorageCleanupScheduler.java): chạy dọn định kỳ.
-- [StorageCleanupRepository.java](../real-estate-backend/src/main/java/com/ndnt/repositories/StorageCleanupRepository.java): chọn task đến hạn và khóa task khi xử lý.
-- [Migration PostgreSQL](../real-estate-backend/db/migrations/002_storage_cleanup_postgresql_forward.sql): cấu trúc bảng.
+- [StorageCleanup.java](../../real-estate-backend/src/main/java/com/ndnt/services/storage/StorageCleanup.java): tạo task, giữ ảnh, xóa file và retry.
+- [ImageStorageService.java](../../real-estate-backend/src/main/java/com/ndnt/services/storage/ImageStorageService.java): upload ảnh và đăng ký callback sau commit/rollback.
+- [StorageCleanupScheduler.java](../../real-estate-backend/src/main/java/com/ndnt/services/storage/StorageCleanupScheduler.java): chạy dọn định kỳ.
+- [StorageCleanupRepository.java](../../real-estate-backend/src/main/java/com/ndnt/repositories/StorageCleanupRepository.java): chọn task đến hạn và khóa task khi xử lý.
+- [Migration PostgreSQL](../../real-estate-backend/db/migrations/002_storage_cleanup_postgresql_forward.sql): cấu trúc bảng.

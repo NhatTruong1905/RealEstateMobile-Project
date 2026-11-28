@@ -38,4 +38,4 @@ Gửi `POST /api/chat-rag/v2/stream` tới AI service, với `Accept: text/event
 4. Kiểm tra riêng thành công, không có kết quả, đổi thuê/mua và ngân sách, tin vừa ẩn, stream ngắt, dừng, xóa lịch sử và đổi tài khoản. Thử cả thiết bị/emulator lẫn URL triển khai thực tế.
 5. Nếu bật `CHAT_GATEWAY_TOKEN` ở FastAPI, mobile cũng phải đi qua gateway được phép chuyển tiếp. Không đưa token nội bộ vào APK. App có thể tiếp tục gọi `POST /api/chat-rag` và `POST /api/chat-rag/stream` trong giai đoạn chuyển đổi khi routing và quyền truy cập còn tương thích.
 
-Tham khảo [báo cáo triển khai và benchmark web](CHATBOT_WEB_IMPROVEMENTS.md) và [client web](../real_estate_frontend-web/src/services/api/chat/chatApi.ts).
+Tham khảo [báo cáo triển khai và benchmark web](../frontend/CHATBOT_WEB_IMPROVEMENTS.md) và [client web](../../real_estate_frontend-web/src/services/api/chat/chatApi.ts).

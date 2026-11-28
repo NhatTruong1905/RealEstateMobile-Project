@@ -1,6 +1,6 @@
 # Chatbot AI và frontend web
 
-Cập nhật ngày 24/11/2026. Phạm vi triển khai là FastAPI và frontend web. [Tài liệu chuyển sang Flutter](CHATBOT_MOBILE_HANDOFF.md) ghi lại hợp đồng và các ca cần kiểm tra khi quay lại mobile.
+Cập nhật ngày 24/11/2026. Phạm vi triển khai là FastAPI và frontend web. [Tài liệu chuyển sang Flutter](../handoffs/CHATBOT_MOBILE_HANDOFF.md) ghi lại hợp đồng và các ca cần kiểm tra khi quay lại mobile.
 
 ## Thay đổi
 
@@ -19,7 +19,7 @@ Cập nhật ngày 24/11/2026. Phạm vi triển khai là FastAPI và frontend w
 | `VITE_AI_BASE_URL` | `http://localhost:8000/api`. Khi deploy trỏ tới URL AI hoặc đường dẫn qua gateway, gồm tiền tố `/api`. |
 | `CHAT_CORS_ORIGINS` | Danh sách origin phân tách bằng dấu phẩy. Đặt domain web chính xác nếu gọi khác origin. |
 | `CHAT_LEXICAL_FUSION` | `true`. Tắt để đo riêng lọc cứng trên dense retrieval. |
-| `CHAT_POSTGRES_LEXICAL` | `false`. Khi bật, dùng nhánh FTS độc lập thay cho bước BM25-style cục bộ. Áp dụng [SQL GIN index](../real-estate-ai/deploy/postgres_lexical_index.sql) trước khi rollout trên catalog lớn. Không cần tạo lại vector. |
+| `CHAT_POSTGRES_LEXICAL` | `false`. Khi bật, dùng nhánh FTS độc lập thay cho bước BM25-style cục bộ. Áp dụng [SQL GIN index](../../real-estate-ai/deploy/postgres_lexical_index.sql) trước khi rollout trên catalog lớn. Không cần tạo lại vector. |
 | `CHAT_REQUESTS_PER_MINUTE`, `CHAT_MAX_CONCURRENT_REQUESTS` | `60`, `8` mỗi worker FastAPI. Gateway public cần thêm quota theo người dùng hoặc IP, body size limit và giới hạn riêng cho kết nối dài. |
 | `CHAT_GATEWAY_TOKEN` | Trống trong dev. Gateway tin cậy đặt header `X-Chat-Gateway-Token` sau bước kiểm tra quyền hoặc guest policy. Khi bật, cả API legacy cũng yêu cầu header. Kiểm tra client mobile đang phát hành trước khi đổi routing. |
 
